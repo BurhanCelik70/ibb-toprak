@@ -5,7 +5,9 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { ISTANBUL_ILCELERI, type SoilReport } from '@/lib/toprak';
+import { ISTANBUL_ILCELERI, PARAMS, parseNumber, type ParamKey, type SoilReport } from '@/lib/toprak';
+
+export const maxDuration = 60;
 
 const client = new Anthropic();
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
@@ -47,16 +49,22 @@ export async function POST(req: Request) {
 
     const msg = await client.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 8000,
       messages: [{ role: 'user', content: [source, { type: 'text', text: PROMPT }] }],
     });
 
     const text = msg.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim()) as SoilReport[];
+    const raw = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const parsed = (Array.isArray(raw) ? raw : [raw]) as SoilReport[];
 
     const reports = parsed.map((r) => ({
       ...r,
-      values: r.values ?? {},
+      // null, metin ya da birimli değerleri sayıya çevir; okunamayanları at
+      values: Object.fromEntries(
+        (Object.keys(PARAMS) as ParamKey[])
+          .map((k) => [k, parseNumber(r.values?.[k])] as const)
+          .filter(([, v]) => v !== undefined),
+      ),
       labDegerlendirme: r.labDegerlendirme ?? {},
       ilce:
         r.ilce ??

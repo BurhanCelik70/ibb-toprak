@@ -9,6 +9,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { buildAiPayload, type SoilReport } from '@/lib/toprak';
 
+export const maxDuration = 60;
+
 const client = new Anthropic();
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 

@@ -119,20 +119,25 @@ export default function Home() {
     const d = emptyDraft();
     const m = emptyMissing();
     PARAM_KEYS.forEach((k) => {
-      const v = r.values[k];
+      // Yapay zeka okuyamadığı değeri null ya da "658 µS/cm" gibi metin döndürebilir
+      const v = parseNumber(r.values?.[k]);
       if (v === undefined) m[k] = true;
       else d[k] = formatNumber(v, 4);
     });
     setDraft(d);
     setMissing(m);
     setMeta({
-      ilce: r.ilce ?? '',
-      bitki: r.bitki ?? '',
-      numuneAdi: r.numuneAdi ?? '',
-      bunyeSinifi: r.bunyeSinifi ?? '',
-      raporNo: r.raporNo ?? '',
+      ilce: typeof r.ilce === 'string' ? r.ilce : '',
+      bitki: typeof r.bitki === 'string' ? r.bitki : '',
+      numuneAdi: typeof r.numuneAdi === 'string' ? r.numuneAdi : '',
+      bunyeSinifi: typeof r.bunyeSinifi === 'string' ? r.bunyeSinifi : '',
+      raporNo: typeof r.raporNo === 'string' ? r.raporNo : '',
     });
-    setLabEval(r.labDegerlendirme ?? {});
+    const lab: SoilReport['labDegerlendirme'] = {};
+    Object.entries(r.labDegerlendirme ?? {}).forEach(([k, v]) => {
+      if (typeof v === 'string' && v.trim()) lab[k as ParamKey] = v.trim();
+    });
+    setLabEval(lab);
     setSource('dosya');
     setCandidates([]);
     setPickerOpen(false);

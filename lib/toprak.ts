@@ -229,13 +229,14 @@ export const ISTANBUL_ILCELERI = [
   'Ümraniye', 'Üsküdar', 'Zeytinburnu',
 ];
 
-/** "7,12" / "7.12" / " 658 " -> number. Türkçe virgülü destekler. */
-export function parseNumber(input: string | number | null | undefined): number | undefined {
+/** "7,12" / "7.12" / " 658 " / "658 µS/cm" / null -> number. Türkçe virgülü destekler. */
+export function parseNumber(input: unknown): number | undefined {
   if (input === null || input === undefined) return undefined;
   if (typeof input === 'number') return Number.isFinite(input) ? input : undefined;
-  const s = input.trim().replace(/\s/g, '');
-  if (!s) return undefined;
-  // "1.234,5" -> 1234.5 ; "7,12" -> 7.12 ; "7.12" -> 7.12
+  if (typeof input !== 'string') return undefined;
+  // Birim ve boşlukları at: "658 µS/cm" -> "658", "%1,64" -> "1,64"
+  const s = input.replace(/[^\d.,-]/g, '');
+  if (!s || s === '-') return undefined;
   const normalized = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s;
   const n = Number(normalized);
   return Number.isFinite(n) ? n : undefined;
@@ -372,7 +373,8 @@ export function classify(report: SoilReport): ParamResult[] {
       tone: 'bilgi',
       meaning: 'Toprağın yapısını (bünyesini) oluşturan tanelerin oranı. Tek başına iyi ya da kötü değildir.',
     };
-    const lab = report.labDegerlendirme[key];
+    const rawLab = report.labDegerlendirme?.[key];
+    const lab = typeof rawLab === 'string' && rawLab.trim() ? rawLab.trim() : undefined;
     if (lab) {
       const tone = TONE_BY_LABEL[lab.toLocaleLowerCase('tr-TR')] ?? computed.tone;
       out.push({ key, value, source: 'laboratuvar', classification: { label: lab, tone, meaning: computed.meaning } });
