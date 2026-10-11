@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  BarChart3,
   Camera,
   Check,
   ChevronRight,
@@ -16,10 +15,8 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   Info,
-  Leaf,
   Loader2,
   Printer,
-  Recycle,
   Sprout,
   Upload,
   UserRound,
@@ -29,6 +26,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { parseLabWorkbook } from '@/lib/excelRapor';
 import { ORGANIK_MADDE_PROTOKOLU, ZKART_BITKILERI, zkartBul } from '@/lib/igsas';
 import { kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
+import { KURUM, VIDEO_LISTESI } from '@/lib/iletisim';
 import { VIDEOLAR, youtubeId } from '@/lib/videolar';
 import { type ZKart } from '@/lib/zkartlar';
 import {
@@ -244,9 +242,9 @@ export default function Home() {
       {screen === 'home' && <HomeScreen onStart={() => go('guide')} />}
 
       {screen !== 'home' && (
-        <div className="min-h-screen bg-gradient-to-b from-[#eef6eb] via-[#f7faf5] to-white">
-          <TopBar onHome={resetAll} />
-          <section className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+        <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#eef6eb] via-[#f7faf5] to-white">
+          <SiteHeader compact onHome={resetAll} />
+          <section className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 sm:px-8 sm:py-14">
             {screen === 'guide' && <MethodScreen method={method} onSelect={chooseMethod} />}
 
             {screen === 'manual' && (
@@ -293,6 +291,7 @@ export default function Home() {
               />
             )}
           </section>
+          <SiteFooter />
         </div>
       )}
 
@@ -319,109 +318,440 @@ export default function Home() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Ana sayfa                                                                   */
+/* Kurumsal başlık, alt bilgi ve ana sayfa                                     */
 /* -------------------------------------------------------------------------- */
 
-function HomeScreen({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="animate-[fadeIn_.5s_ease-out]">
-      <section className="relative min-h-[720px] overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=2200&q=90')",
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#07281f]/95 via-[#123d2d]/75 to-[#123d2d]/25" />
+const LACIVERT = '#1d3b7a';
+const KIRMIZI = '#c8102e';
 
-        <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-lg">
-              <span className="text-[15px] font-extrabold text-[#18794e]">İBB</span>
-            </div>
-            <div className="leading-tight text-white">
-              <div className="text-sm text-white/70">Çevre Koruma ve Kontrol Dairesi Başkanlığı</div>
-              <div className="text-lg font-bold">Toprak Rehberi</div>
-            </div>
-          </div>
-        </header>
-
-        <div className="relative z-10 mx-auto max-w-7xl px-6 pb-28 pt-20 lg:px-10">
-          <div className="max-w-[820px] text-white">
-            <h1 className="text-5xl font-extrabold leading-[1.05] tracking-[-0.04em] sm:text-6xl lg:text-[64px]">
-              Toprak analiz raporunuzu
-              <br />
-              <span className="text-[#9bdd68]">birlikte okuyalım.</span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-base leading-7 text-white/80 sm:text-lg">
-              İBB Çevre Laboratuvarı’ndan aldığınız raporu yükleyin. Her değerin ne anlama geldiğini,
-              toprağınızın güçlü ve zayıf yanlarını sade bir dille anlatalım.
-            </p>
-
-            <div className="mt-8 grid max-w-[680px] grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
-              <Feature icon={<FileSpreadsheet size={25} />} text="Excel, PDF veya fotoğraf yükleyin" />
-              <Feature icon={<Leaf size={25} />} text="Laboratuvar değerlendirmesi esas alınır" />
-              <Feature icon={<BarChart3 size={25} />} text="Her değer sade dille açıklanır" />
-              <Feature icon={<Recycle size={25} />} text="Ekeceğiniz bitkiye göre öneriler" />
-            </div>
-
-            <button
-              onClick={onStart}
-              className="group mt-10 inline-flex items-center gap-5 rounded-full bg-gradient-to-r from-[#70c93b] to-[#20a875] px-8 py-4 text-lg font-bold text-white shadow-[0_15px_40px_rgba(0,0,0,0.25)] transition-all duration-300 hover:-translate-y-1"
-            >
-              Raporumu yorumla
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:translate-x-1">
-                <ArrowRight size={20} />
-              </span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-5 py-20 sm:px-8 lg:px-10">
-        <div className="mx-auto max-w-7xl">
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Nasıl çalışır?</h2>
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            <StepCard number="1" title="Raporu verin" description="Laboratuvarın gönderdiği dosyayı yükleyin ya da değerleri raporunuzdan bakarak girin." />
-            <StepCard number="2" title="Değerleri onaylayın" description="Okunan değerleri raporunuzla karşılaştırın; hatalı olan varsa düzeltin." />
-            <StepCard number="3" title="Yorumu okuyun" description="Her değerin durumu, toprağınız için ne anlama geldiği ve atabileceğiniz adımlar." />
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-[#102f25] px-6 py-8 text-center text-sm text-white/60">
-        Bu uygulama bilgilendirme amaçlıdır; gübreleme reçetesi yerine geçmez.
-      </footer>
-    </div>
-  );
+function KurumLogosu({ className = 'h-11' }: { className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/ibb-ckkdb-logo.png" alt={`${KURUM.ust} ${KURUM.ad}`} className={`${className} w-auto`} />;
 }
 
-function TopBar({ onHome }: { onHome: () => void }) {
+function SiteHeader({ onStart, onHome, compact }: { onStart?: () => void; onHome?: () => void; compact?: boolean }) {
   return (
-    <header className="border-b border-[#dfe9df] bg-white/80 backdrop-blur-xl print:hidden">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-        <button
-          onClick={onHome}
-          className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-[#476456] transition hover:bg-[#edf5ea]"
-        >
-          <ArrowLeft size={18} />
-          Ana sayfa
-        </button>
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eaf5e6]">
-            <Leaf size={20} className="text-[#238f61]" />
-          </div>
-          <div className="hidden sm:block">
-            <div className="text-xs text-[#718078]">İBB Toprak Rehberi</div>
-            <div className="text-sm font-bold">Rapor yorumlama</div>
-          </div>
+    <header className="sticky top-0 z-40 border-b border-[#e3e8e4] bg-white/95 backdrop-blur print:static">
+      <div className="hidden text-white sm:block" style={{ background: LACIVERT }}>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-1.5 text-xs sm:px-8">
+          <span>{KURUM.ust}</span>
+          <span className="flex items-center gap-4">
+            <a href={KURUM.telefonlar[0].href} className="hover:underline">{KURUM.telefonlar[0].etiket}</a>
+            <a href={`mailto:${KURUM.eposta}`} className="hover:underline">{KURUM.eposta}</a>
+          </span>
         </div>
+      </div>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
+        <button onClick={onHome} className="flex items-center gap-4 text-left" aria-label="Ana sayfa">
+          <KurumLogosu className="h-10 sm:h-12" />
+          <span className="hidden border-l border-[#dfe5e1] pl-4 md:block">
+            <span className="block text-lg font-extrabold leading-tight text-[#17352a]">Toprak Rehberi</span>
+            <span className="block text-xs text-[#6b7d72]">Toprak analiz raporu yorumlama</span>
+          </span>
+        </button>
+        {!compact ? (
+          <nav className="flex items-center gap-1 text-sm font-semibold text-[#3e5248]">
+            <a href="#ornek" className="hidden rounded-full px-3 py-2 hover:bg-[#f0f5f1] lg:block">Örnek alma</a>
+            <a href="#videolar" className="hidden rounded-full px-3 py-2 hover:bg-[#f0f5f1] lg:block">Videolar</a>
+            <a href="#iletisim" className="hidden rounded-full px-3 py-2 hover:bg-[#f0f5f1] lg:block">İletişim</a>
+            <button onClick={onStart} className="ml-2 rounded-full bg-[#238f61] px-4 py-2 font-bold text-white hover:bg-[#1d7d54]">
+              Raporumu yorumla
+            </button>
+          </nav>
+        ) : (
+          <button
+            onClick={onHome}
+            className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-[#476456] hover:bg-[#edf5ea] print:hidden"
+          >
+            <ArrowLeft size={18} />
+            Ana sayfa
+          </button>
+        )}
       </div>
     </header>
   );
 }
+
+function SiteFooter() {
+  return (
+    <footer id="iletisim" className="mt-auto border-t-4 bg-[#10291f] text-white/80 print:hidden" style={{ borderColor: KIRMIZI }}>
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-8 md:grid-cols-[1.2fr_1fr_1fr]">
+        <div>
+          <div className="inline-block rounded-xl bg-white p-3">
+            <KurumLogosu className="h-12" />
+          </div>
+          <p className="mt-4 max-w-sm text-sm leading-6">
+            {KURUM.birim}. Toprak, su ve çevre analizleriyle İstanbul’un tarımına ve çevresine bilimsel destek.
+          </p>
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-white">İletişim</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            {KURUM.telefonlar.map((t) => (
+              <li key={t.href}>
+                <a href={t.href} className="hover:text-white hover:underline">{t.etiket}</a>
+              </li>
+            ))}
+            <li>
+              <a href={`mailto:${KURUM.eposta}`} className="hover:text-white hover:underline">{KURUM.eposta}</a>
+            </li>
+          </ul>
+          <p className="mt-4 text-sm leading-6">{KURUM.adres}</p>
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-white">Numune teslimi</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            {KURUM.numuneGunleri.map((g) => (
+              <li key={g.yaka}>
+                <span className="font-semibold text-white">{g.yaka}:</span> {g.gun}
+              </li>
+            ))}
+            <li>Türkiye’nin her yerinden kargoyla gönderilebilir.</li>
+          </ul>
+          <a
+            href={KURUM.resmiSayfa}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            Analiz ücretleri ve ödeme <ArrowRight size={16} />
+          </a>
+        </div>
+      </div>
+      <div className="border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-5 py-4 text-xs text-white/50 sm:px-8">
+          © {new Date().getFullYear()} {KURUM.ust} · {KURUM.ad}
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/** Tarlada zikzak örnek alma noktaları (broşürdeki çizimin sade hâli). */
+function ZikzakCizimi() {
+  const pts = [
+    [40, 150], [80, 50], [120, 150], [160, 50], [200, 150], [240, 50], [280, 150], [320, 50], [360, 150], [400, 50],
+  ];
+  return (
+    <svg viewBox="0 0 440 200" className="w-full" role="img" aria-label="Tarlada zikzak çizerek 10 noktadan örnek alma">
+      <rect x="10" y="20" width="420" height="160" rx="18" fill="#e9f3e3" stroke="#bcd8b0" />
+      {Array.from({ length: 9 }).map((_, i) => (
+        <line key={i} x1="10" x2="430" y1={36 + i * 16} y2={36 + i * 16} stroke="#d5e8cc" strokeWidth="1" />
+      ))}
+      <polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke="#238f61" strokeWidth="2.5" strokeDasharray="6 6" />
+      {pts.map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r="13" fill="#fff" stroke="#238f61" strokeWidth="2.5" />
+          <text x={x} y={y + 4.5} textAnchor="middle" fontSize="12" fontWeight="700" fill="#17352a">
+            {i + 1}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** Örnek alma derinlikleri. */
+function DerinlikCizimi() {
+  const katman = [
+    { h: 'h-14', renk: '#8b6a45', etiket: '0–30 cm', not: 'Tarla, sera ve tek yıllık bitkiler' },
+    { h: 'h-14', renk: '#a6845c', etiket: '30–60 cm', not: 'Meyve bahçesi ve bağ (0–30 cm ile birlikte)' },
+    { h: 'h-11', renk: '#c2a47e', etiket: '60–90 cm', not: 'Meyve bahçesi kurulumu öncesi' },
+    { h: 'h-9', renk: '#d6bf9f', etiket: '90–120 cm', not: 'Meyve bahçesi kurulumu öncesi' },
+  ];
+  return (
+    <div className="flex gap-4" role="img" aria-label="Bitkiye göre toprak örneği alma derinlikleri">
+      <div className="w-20 shrink-0 overflow-hidden rounded-xl sm:w-28">
+        <div className="h-2.5 bg-[#5aa832]" />
+        {katman.map((k) => (
+          <div key={k.etiket} className={k.h} style={{ background: k.renk }} />
+        ))}
+      </div>
+      <ul className="flex-1 pt-2.5">
+        {katman.map((k) => (
+          <li key={k.etiket} className={`${k.h} flex flex-col justify-center border-b border-dashed border-[#e1e7e2] last:border-0`}>
+            <span className="text-sm font-bold text-[#17352a]">{k.etiket}</span>
+            <span className="text-xs leading-4 text-[#5b6f65]">{k.not}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function HomeScreen({ onStart }: { onStart: () => void }) {
+  const ornekRef = useRef<HTMLDivElement>(null);
+  return (
+    <div className="flex min-h-screen flex-col animate-[fadeIn_.5s_ease-out]">
+      <SiteHeader onStart={onStart} onHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
+
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#eef5ec] to-[#f7faf5]">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:py-20">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold" style={{ color: LACIVERT }}>
+              <span className="h-0.5 w-8 rounded" style={{ background: KIRMIZI }} />
+              Asya Yakası Çevre Laboratuvarı
+            </p>
+            <h1 className="mt-4 text-4xl font-extrabold leading-[1.08] tracking-[-0.03em] text-[#17352a] sm:text-5xl lg:text-[56px]">
+              Toprak analiz raporunuz, anlaşılır bir yol haritasına dönüşsün.
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#4b5f55] sm:text-lg">
+              Laboratuvarımızdan aldığınız raporu yükleyin. Her değerin ne anlama geldiğini, toprağınızın kalite indeksini ve
+              ekeceğiniz bitkiye göre dönem dönem gübreleme programını birkaç saniyede görün.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={onStart}
+                className="group inline-flex items-center justify-center gap-3 whitespace-nowrap rounded-full bg-[#238f61] px-6 py-3.5 text-base font-bold text-white shadow-[0_14px_30px_rgba(35,143,97,0.28)] transition hover:-translate-y-0.5 hover:bg-[#1d7d54]"
+              >
+                Raporumu yorumla
+                <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
+              </button>
+              <button
+                onClick={() => ornekRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-[#cfdcd3] bg-white px-6 py-3.5 text-base font-semibold text-[#2c4238] hover:bg-[#f2f7f3]"
+              >
+                Toprak örneği nasıl alınır?
+              </button>
+            </div>
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#4b5f55]">
+              {['Excel, PDF veya fotoğraf', 'Laboratuvar değerlendirmesi esas alınır', '23 bitki için Z-kart programı'].map((t) => (
+                <li key={t} className="flex items-center gap-2">
+                  <Check size={16} className="text-[#238f61]" /> {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Örnek sonuç önizlemesi */}
+          <div className="relative">
+            <div
+              className="aspect-[4/3] w-full rounded-[32px] bg-[#9cc48a] bg-gradient-to-br from-[#b8d9a6] to-[#5f8f4e] bg-cover bg-center shadow-[0_30px_60px_rgba(16,41,31,0.18)]"
+              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=80')" }}
+              role="img"
+              aria-label="Tarla"
+            />
+            <div className="absolute -bottom-6 left-4 right-4 rounded-[24px] border border-[#e3e8e4] bg-white p-4 shadow-xl sm:left-8 sm:right-auto sm:w-[340px] sm:p-5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#6b7d72]">Örnek sonuç</span>
+                <span className="rounded-full bg-[#5aa832] px-2.5 py-0.5 text-xs font-bold text-white">İyi</span>
+              </div>
+              <div className="mt-2 flex items-end gap-2">
+                <span className="text-4xl font-extrabold text-[#17352a]">64</span>
+                <span className="pb-1 text-sm text-[#6b7d72]">/ 100 Toprak Kalite İndeksi</span>
+              </div>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#4b5f55]">Organik madde</span>
+                  <span className="font-semibold text-[#8a5a00]">Az</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 rounded-xl bg-[#f3f8f1] px-3 py-2">
+                  <span className="font-bold text-[#17352a]">LEONARDİT GRANÜL</span>
+                  <span className="text-xs font-bold text-[#1f7a45]">300–400 kg/da</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Toprak hakkında */}
+      <section className="bg-[#17352a] text-white">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
+          <blockquote>
+            <p className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
+              1 santimetre verimli toprağın oluşması
+              <span className="block text-[#9bdd68]">1.000 yıla kadar sürebilir.</span>
+            </p>
+            <p className="mt-5 max-w-xl text-base leading-7 text-white/75">
+              Bir mevsimlik yanlış gübreleme ise bu birikimi tuzlanma ve çoraklaşmayla hızla tüketebilir. Toprak analizi, toprağa
+              ihtiyacı olanı, ihtiyacı kadar vermenin en güvenilir yoludur.
+            </p>
+          </blockquote>
+          <dl className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="border-l-2 border-[#9bdd68] pl-5">
+              <dt className="text-2xl font-extrabold">%95</dt>
+              <dd className="mt-1 text-sm leading-6 text-white/75">Gıdamızın yaklaşık %95’i doğrudan ya da dolaylı olarak topraktan gelir.</dd>
+            </div>
+            <div className="border-l-2 border-[#9bdd68] pl-5">
+              <dt className="text-2xl font-extrabold">1 kaşık toprak</dt>
+              <dd className="mt-1 text-sm leading-6 text-white/75">Bir yemek kaşığı sağlıklı toprakta dünyadaki insan sayısından fazla canlı yaşar.</dd>
+            </div>
+            <p className="text-xs text-white/45 sm:col-span-2 lg:col-span-1">Kaynak: BM Gıda ve Tarım Örgütü (FAO)</p>
+          </dl>
+        </div>
+      </section>
+
+      {/* Nasıl çalışır */}
+      <section id="nasil" className="px-5 py-16 sm:px-8 lg:py-20">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Nasıl çalışır?</h2>
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            <StepCard number="1" title="Raporu verin" description="Laboratuvarın gönderdiği Excel dosyasını, PDF’i ya da kâğıt raporun fotoğrafını yükleyin. Dilerseniz değerleri elle girin." />
+            <StepCard number="2" title="Değerleri onaylayın" description="Okunan değerleri raporunuzla karşılaştırın; farklı olan varsa düzeltin." />
+            <StepCard number="3" title="Programınızı alın" description="Kalite indeksi, değer değer sonuçlar, ürün ve doz önerileri ile bitkinize özel dönem dönem gübreleme programı." />
+          </div>
+        </div>
+      </section>
+
+      {/* Toprak analizi nedir */}
+      <section className="bg-white px-5 py-16 sm:px-8 lg:py-20">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Toprak analizi nedir?</h2>
+            <p className="mt-5 text-base leading-7 text-[#4b5f55]">
+              Toprak analizi; doğru ürünün doğru toprağa ekilmesi, kaliteli ve yüksek verim alınması ve dengeli bir gübreleme
+              yapılabilmesi için toprağın verimlilik durumunun belirlenmesidir.
+            </p>
+            <p className="mt-4 text-base leading-7 text-[#4b5f55]">
+              En önemli özelliği, yetiştirilecek bitkinin ihtiyaç duyacağı besin miktarının ekim ya da dikimden <strong>önce</strong>{' '}
+              belirlenebilmesidir. Böylece hem gübreleme maliyeti düşer hem de uzun vadede toprağın çoraklaşması engellenir.
+            </p>
+          </div>
+          <div className="rounded-[28px] border border-[#e1ebdf] bg-[#f8fbf7] p-6 sm:p-8">
+            <h3 className="font-bold text-[#17352a]">Analiz sonucuyla neler belirlenir?</h3>
+            <ul className="mt-4 space-y-3 text-[15px] leading-6 text-[#3e5248]">
+              {[
+                'Toprağın besin elementi miktarı',
+                'Kullanılacak gübrenin cinsi ve miktarı',
+                'Bitkilerdeki beslenme bozukluklarının nedeni',
+                'Tuz ve sodyumu yüksek alanların teşhisi ve ıslahı',
+                'Toprağa en uygun bitki çeşitleri',
+              ].map((t) => (
+                <li key={t} className="flex gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#238f61] text-white">
+                    <Check size={12} strokeWidth={3} />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Örnek alma rehberi */}
+      <section id="ornek" ref={ornekRef} className="scroll-mt-24 px-5 py-16 sm:px-8 lg:py-20">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Toprak örneği nasıl alınır?</h2>
+          <p className="mt-3 max-w-2xl text-[#4b5f55]">
+            Analizden doğru sonuç almanın yarısı doğru örnektir. Örnek, alındığı araziyi tam olarak temsil etmelidir.
+          </p>
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-2">
+            <div className="rounded-[28px] border border-[#e1ebdf] bg-white p-6 sm:p-8">
+              <h3 className="text-xl font-bold">Nasıl?</h3>
+              <div className="mt-4">
+                <ZikzakCizimi />
+              </div>
+              <ol className="mt-5 space-y-2 text-[15px] leading-6 text-[#3e5248]">
+                <li><strong>1.</strong> Tarlanın büyüklüğüne göre zikzak çizerek 8–10 noktadan, küreğin 3–4 cm’lik dilimiyle örnek alın.</li>
+                <li><strong>2.</strong> Toprakları temiz bir zeminde toplayıp iyice karıştırın; kesekleri ufalayın, taş ve bitki artıklarını atın.</li>
+                <li><strong>3.</strong> Karışımdan yaklaşık <strong>2 kg</strong> toprak alıp temiz bir torbaya koyun ve etiketleyin.</li>
+              </ol>
+            </div>
+
+            <div className="grid gap-6">
+              <div className="rounded-[28px] border border-[#e1ebdf] bg-white p-6 sm:p-8">
+                <h3 className="text-xl font-bold">Hangi derinlikten?</h3>
+                <div className="mt-4">
+                  <DerinlikCizimi />
+                </div>
+              </div>
+              <div className="rounded-[28px] border border-[#e1ebdf] bg-white p-6 sm:p-8">
+                <h3 className="text-xl font-bold">Ne zaman?</h3>
+                <ul className="mt-3 space-y-2 text-[15px] leading-6 text-[#3e5248]">
+                  <li><strong>Tek yıllık bitki ve seracılık:</strong> ekim ya da dikimden 1–2 ay önce.</li>
+                  <li><strong>Meyve bahçesi ve bağ:</strong> gübreleme tarihinden 1–2 ay önce.</li>
+                  <li className="text-[#a83422]">Donmuş ya da çok çamurlu topraktan örnek almayın.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Çiftçimizin Yanındayız */}
+      <section className="px-5 sm:px-8">
+        <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[32px] text-white lg:grid-cols-[1.2fr_1fr]" style={{ background: LACIVERT }}>
+          <div className="p-8 sm:p-10">
+            <h2 className="text-3xl font-extrabold tracking-tight">Çiftçimizin Yanındayız</h2>
+            <p className="mt-4 max-w-xl leading-7 text-white/80">
+              Doğru gübre kullanımını desteklemek ve tarımda verimliliği artırmak için İstanbul’daki çiftçilerimizin toprak
+              numunelerini <strong className="text-white">mahalle muhtarlıklarından</strong> teslim alıyoruz. Türkiye’nin her yerinden
+              numunelerinizi kargoyla da gönderebilirsiniz.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {KURUM.telefonlar.map((t) => (
+                <a key={t.href} href={t.href} className="rounded-full bg-white px-5 py-2.5 font-bold" style={{ color: LACIVERT }}>
+                  {t.etiket}
+                </a>
+              ))}
+            </div>
+          </div>
+          <div className="grid content-center gap-4 bg-white/10 p-8 sm:p-10">
+            <h3 className="text-sm font-semibold text-white/70">Numune teslim günleri</h3>
+            {KURUM.numuneGunleri.map((g) => (
+              <div key={g.yaka} className="flex items-center justify-between rounded-2xl bg-white/10 px-5 py-4">
+                <span className="font-semibold">{g.yaka}</span>
+                <span className="font-extrabold">{g.gun}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Videolar */}
+      <section id="videolar" className="scroll-mt-24 px-5 py-16 sm:px-8 lg:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{VIDEO_LISTESI.baslik}</h2>
+              <p className="mt-2 text-[#4b5f55]">
+                Toprak, gübreleme ve bitki besleme üzerine kısa uzman cevapları. Liste otomatik olarak sıradaki videoya geçer.
+              </p>
+            </div>
+            <a
+              href={VIDEO_LISTESI.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#cfdcd3] bg-white px-5 py-2.5 font-semibold text-[#2c4238] hover:bg-[#f2f7f3]"
+            >
+              <CirclePlay size={18} className="text-[#c4302b]" /> YouTube’da tüm liste
+            </a>
+          </div>
+          <div className="mt-8 overflow-hidden rounded-[28px] border border-[#e1ebdf] bg-black shadow-[0_24px_50px_rgba(16,41,31,0.15)]">
+            <iframe
+              className="aspect-video w-full"
+              src={`https://www.youtube-nocookie.com/embed/videoseries?list=${VIDEO_LISTESI.listeId}`}
+              title={`${VIDEO_LISTESI.baslik} – video listesi`}
+              loading="lazy"
+              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Son çağrı */}
+      <section className="px-5 pb-16 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 rounded-[32px] border border-[#d9e7d4] bg-[#eef6ea] p-8 sm:flex-row sm:items-center sm:p-10">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight">Raporunuz elinizde mi?</h2>
+            <p className="mt-2 text-[#4b5f55]">Yükleyin; toprağınızın kalite indeksini ve size özel programı hemen görün.</p>
+          </div>
+          <button onClick={onStart} className="inline-flex items-center gap-3 rounded-full bg-[#238f61] px-7 py-4 font-bold text-white hover:bg-[#1d7d54]">
+            Raporumu yorumla <ArrowRight size={20} />
+          </button>
+        </div>
+      </section>
+
+      <SiteFooter />
+    </div>
+  );
+}
+
 
 /* -------------------------------------------------------------------------- */
 /* Yöntem seçimi                                                               */
@@ -1437,15 +1767,6 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
     <div className="flex items-center justify-between gap-4 py-3">
       <dt className="text-sm font-semibold text-[#51675d]">{label}</dt>
       <dd className={`text-right text-sm font-bold ${muted ? 'text-[#9aa7a0]' : ''}`}>{value}</dd>
-    </div>
-  );
-}
-
-function Feature({ icon, text }: { icon: ReactNode; text: string }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="text-[#91d965]">{icon}</div>
-      <p className="max-w-[145px] text-xs font-medium leading-5 text-white/80">{text}</p>
     </div>
   );
 }

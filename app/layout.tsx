@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Toprak Rehberi | İstanbul Büyükşehir Belediyesi",
-  description: "İstanbul Büyükşehir Belediyesi Toprak Rehberi uygulaması.",
+  title: "Toprak Rehberi | İBB Çevre Koruma ve Kontrol Dairesi Başkanlığı",
+  description:
+    "İstanbul Büyükşehir Belediyesi Çevre Koruma ve Kontrol Dairesi Başkanlığı Toprak Rehberi: toprak analiz raporunuzu yükleyin, kalite indeksini ve bitkinize özel gübreleme programını görün.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
