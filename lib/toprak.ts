@@ -6,7 +6,8 @@
  *   EC  -> µS/cm   (dS/m DEĞİL)
  *   P   -> P2O5 kg/da  (mg/kg DEĞİL)
  *   K   -> K2O  kg/da  (mg/kg DEĞİL)
- * Raporda azot (N) ölçülmüyor; bu yüzden modelde yok.
+ * Standart İBB raporunda azot ve mikro besinler yok; raporda bulunursa
+ * (ek analiz istendiğinde) "ek değerler" olarak okunur ve tabloya eklenir.
  *
  * Sınıf sınırları "Toprak, Su, Bitki ve Gübre Analiz Metotları Laboratuvar
  * El Kitabı" sınıflamasıyla uyumlu olacak şekilde seçildi ve yüklenen
@@ -26,7 +27,26 @@ export type ParamKey =
   | 'kirec'
   | 'organikMadde'
   | 'fosfor'
-  | 'potasyum';
+  | 'potasyum'
+  // Ek analizler (her raporda bulunmaz)
+  | 'azot'
+  | 'demir'
+  | 'cinko'
+  | 'mangan'
+  | 'bakir'
+  | 'bor';
+
+/** Raporda bulunan ama yukarıdaki listede olmayan ölçümler (ör. kalsiyum, sodyum). */
+export type EkDeger = { ad: string; deger: number; birim?: string; labDegerlendirme?: string };
+
+export type ParamGroup = 'temel' | 'besin' | 'mikro' | 'yapi';
+
+export const GROUP_LABELS: Record<ParamGroup, string> = {
+  temel: 'Tuzluluk, asitlik ve kireç',
+  besin: 'Besin maddeleri',
+  mikro: 'Mikro besinler',
+  yapi: 'Toprağın yapısı',
+};
 
 export type Tone = 'iyi' | 'dikkat' | 'sorun' | 'bilgi';
 
@@ -48,6 +68,7 @@ export type SoilReport = {
   values: Partial<Record<ParamKey, number>>;
   /** Laboratuvarın "Değerlendirme" sütunu – varsa her zaman bunu esas alıyoruz. */
   labDegerlendirme: Partial<Record<ParamKey | 'bunye', string>>;
+  ekDegerler?: EkDeger[];
 };
 
 export type ParamDef = {
@@ -60,9 +81,16 @@ export type ParamDef = {
   min: number;
   max: number;
   why: string; // Bu değer neden önemli (sade dil)
+  group: ParamGroup;
+  /** Çoğu bitki için uygun aralık (raporun birimiyle). Yoksa değer yalnızca bilgi amaçlıdır. */
+  uygun?: { min?: number; max?: number };
+  /** Ek analiz: manuel girişte isteğe bağlı adımda sorulur. */
+  ek?: boolean;
 };
 
-export const PARAMS: Record<ParamKey, ParamDef> = {
+type BaseDef = Omit<ParamDef, 'group' | 'uygun' | 'ek'>;
+
+const BASE_PARAMS: Record<string, BaseDef> = {
   ph: {
     key: 'ph',
     label: 'pH',
@@ -186,6 +214,74 @@ export const PARAMS: Record<ParamKey, ParamDef> = {
   },
 };
 
+/**
+ * Uygun aralıklar, aşağıdaki RULES tablosunda "iyi" sayılan aralıkla birebir aynıdır;
+ * böylece tablo ve renkler birbiriyle çelişmez.
+ * Mikro besin sınırları DTPA yöntemi kritik değerleridir (Lindsay & Norvell, 1978).
+ * ⚠️ Yayına almadan önce laboratuvar sorumlusuna onaylatın.
+ */
+const BASE_META: Record<string, Pick<ParamDef, 'group' | 'uygun'>> = {
+  ph: { group: 'temel', uygun: { min: 5.5, max: 7.5 } },
+  ec: { group: 'temel', uygun: { max: 4000 } },
+  tuz: { group: 'temel', uygun: { max: 0.15 } },
+  kirec: { group: 'temel', uygun: { max: 5 } },
+  organikMadde: { group: 'besin', uygun: { min: 2 } },
+  fosfor: { group: 'besin', uygun: { min: 6, max: 12 } },
+  potasyum: { group: 'besin', uygun: { min: 20 } },
+  doygunluk: { group: 'yapi' },
+  kum: { group: 'yapi' },
+  silt: { group: 'yapi' },
+  kil: { group: 'yapi' },
+};
+
+const mikro = (key: ParamKey, label: string, sembol: string, min: number, why: string, max?: number): ParamDef => ({
+  key,
+  label: `${label} (${sembol})`,
+  reportLabel: `${label} (${sembol})`,
+  unit: 'mg/kg',
+  helper: 'Birim mg/kg ya da ppm olmalı (ikisi aynıdır).',
+  placeholder: String(min).replace('.', ','),
+  min: 0,
+  max: 1000,
+  why,
+  group: 'mikro',
+  uygun: { min, max },
+  ek: true,
+});
+
+export const PARAMS: Record<ParamKey, ParamDef> = {
+  ...(Object.fromEntries(
+    Object.entries(BASE_PARAMS).map(([k, d]) => [k, { ...d, ...BASE_META[k] }]),
+  ) as Record<Exclude<ParamKey, 'azot' | 'demir' | 'cinko' | 'mangan' | 'bakir' | 'bor'>, ParamDef>),
+  azot: {
+    key: 'azot',
+    label: 'Toplam azot (N)',
+    reportLabel: 'Toplam Azot / Azot (N)',
+    unit: '%',
+    helper: 'Standart raporda yoktur; ek analiz yaptırdıysanız girin. Genelde 0,05 – 0,3 arasıdır.',
+    placeholder: '0,12',
+    min: 0,
+    max: 5,
+    why: 'Bitkinin yeşil aksamını ve büyümesini sağlar; eksikliğinde yapraklar sararır.',
+    group: 'besin',
+    uygun: { min: 0.09 },
+    ek: true,
+  },
+  demir: mikro('demir', 'Demir', 'Fe', 4.5, 'Yaprakların yeşil kalması için gerekir; kireçli topraklarda sık eksiklik görülür.'),
+  cinko: mikro('cinko', 'Çinko', 'Zn', 0.7, 'Büyüme ve tane doldurma için gerekir; buğdayda eksikliği yaygındır.'),
+  mangan: mikro('mangan', 'Mangan', 'Mn', 1, 'Fotosentez ve bitkinin hastalığa direnci için gerekir.'),
+  bakir: mikro('bakir', 'Bakır', 'Cu', 0.2, 'Tohum oluşumu ve bitkinin dayanıklılığı için az miktarda gerekir.'),
+  bor: mikro('bor', 'Bor', 'B', 0.5, 'Çiçeklenme ve tohum bağlama için gerekir; fazlası zehirleyicidir.', 3),
+};
+
+/** Ek analizlerin beklenen birimi; okunan birim uyuşmazsa değer "ek değerler"e taşınır. */
+export function unitCompatible(key: ParamKey, unit?: string): boolean {
+  if (!unit || !PARAMS[key].ek) return true;
+  const u = unit.toLocaleLowerCase('tr-TR').replace(/\s/g, '');
+  if (key === 'azot') return u.includes('%');
+  return u.includes('ppm') || u.includes('mg/kg') || u.includes('mgkg');
+}
+
 /** Manuel giriş adımları – raporun satır sırasını takip eder. */
 export const MANUAL_STEPS: { title: string; description: string; fields: ParamKey[] }[] = [
   {
@@ -202,6 +298,11 @@ export const MANUAL_STEPS: { title: string; description: string; fields: ParamKe
     title: 'Kireç ve besinler',
     description: 'Raporun alt kısmındaki satırlar.',
     fields: ['kirec', 'organikMadde', 'fosfor', 'potasyum'],
+  },
+  {
+    title: 'Ek analizler (varsa)',
+    description: 'Standart raporda bulunmaz. Ek analiz yaptırdıysanız girin; yoksa bu adımı boş geçin.',
+    fields: ['azot', 'demir', 'cinko', 'mangan', 'bakir', 'bor'],
   },
 ];
 
@@ -343,13 +444,60 @@ const RULES: Partial<Record<ParamKey, (v: number) => Classification>> = {
     ]),
 };
 
+/** Ek analizler için uygun aralıktan sınıf üretir. */
+function fromRange(key: ParamKey, v: number): Classification {
+  const { min, max } = PARAMS[key].uygun ?? {};
+  if (min !== undefined && v < min / 2)
+    return { label: 'Çok düşük', tone: 'sorun', meaning: 'Belirgin eksiklik var; takviye gerekebilir.' };
+  if (min !== undefined && v < min)
+    return { label: 'Yetersiz', tone: 'dikkat', meaning: 'Uygun seviyenin altında; takviye düşünülmeli.' };
+  if (max !== undefined && v > max)
+    return { label: 'Fazla', tone: 'dikkat', meaning: 'Uygun seviyenin üstünde; bu besini içeren gübrelerden kaçının.' };
+  return { label: 'Yeterli', tone: 'iyi', meaning: 'Uygun seviyede.' };
+}
+(['azot', 'demir', 'cinko', 'mangan', 'bakir', 'bor'] as ParamKey[]).forEach((k) => {
+  RULES[k] = (v) => fromRange(k, v);
+});
+
 const TONE_BY_LABEL: Record<string, Tone> = {
   'nötr': 'iyi', 'hafif asit': 'iyi', 'tuzsuz': 'iyi', 'kireçsiz': 'iyi', 'az kireçli': 'iyi',
   'orta': 'iyi', 'iyi': 'iyi', 'yüksek': 'iyi', 'yeterli': 'iyi',
   'hafif alkali': 'dikkat', 'orta asit': 'dikkat', 'hafif tuzlu': 'dikkat', 'orta kireçli': 'dikkat', 'az': 'dikkat',
   'çok az': 'sorun', 'kuvvetli asit': 'sorun', 'kuvvetli alkali': 'sorun', 'orta tuzlu': 'sorun',
   'çok tuzlu': 'sorun', 'fazla kireçli': 'sorun', 'çok fazla kireçli': 'sorun',
+  'normal': 'iyi', 'düşük': 'dikkat', 'yetersiz': 'dikkat', 'fazla': 'dikkat', 'çok yüksek': 'dikkat',
+  'çok düşük': 'sorun', 'toksik': 'sorun', 'noksan': 'dikkat',
 };
+
+export type Fark = { durum: 'eksik' | 'fazla' | 'uygun' | 'yok'; miktar?: number; yuzde?: number; metin: string };
+
+/** Değerin uygun aralığa göre ne kadar eksik/fazla olduğunu hesaplar. */
+export function uygunFark(key: ParamKey, value: number): Fark {
+  const def = PARAMS[key];
+  const r = def.uygun;
+  if (!r) return { durum: 'yok', metin: '' };
+  // Yüzdeli değerlerde fark "puan" olarak yazılır: "%0,36 eksik (%18)" kafa karıştırır
+  const unit = def.unit === '%' ? ' puan' : def.unit ? ` ${def.unit}` : '';
+  if (r.min !== undefined && value < r.min) {
+    const miktar = r.min - value;
+    const yuzde = Math.round((miktar / r.min) * 100);
+    return { durum: 'eksik', miktar, yuzde, metin: `${formatNumber(miktar, 2)}${unit} eksik (%${yuzde})` };
+  }
+  if (r.max !== undefined && value > r.max) {
+    const miktar = value - r.max;
+    const yuzde = Math.round((miktar / r.max) * 100);
+    return { durum: 'fazla', miktar, yuzde, metin: `${formatNumber(miktar, 2)}${unit} fazla (%${yuzde})` };
+  }
+  return { durum: 'uygun', metin: 'Uygun aralıkta' };
+}
+
+export function uygunAralikMetni(key: ParamKey): string {
+  const r = PARAMS[key].uygun;
+  if (!r) return '—';
+  if (r.min !== undefined && r.max !== undefined) return `${formatNumber(r.min)} – ${formatNumber(r.max)}`;
+  if (r.min !== undefined) return `en az ${formatNumber(r.min)}`;
+  return `en çok ${formatNumber(r.max!)}`;
+}
 
 export type ParamResult = {
   key: ParamKey;
@@ -393,17 +541,29 @@ export function buildAiPayload(report: SoilReport) {
     numune: report.numuneAdi,
     planlananBitki: report.bitki,
     bunyeSinifi: report.bunyeSinifi,
-    parametreler: classify(report).map((r) => ({
-      parametre: PARAMS[r.key].label,
-      deger: r.value,
-      birim: PARAMS[r.key].unit,
-      sinif: r.classification?.label,
-      durum: r.classification?.tone,
-      kaynak: r.source,
+    parametreler: classify(report).map((r) => {
+      const fark = uygunFark(r.key, r.value);
+      return {
+        parametre: PARAMS[r.key].label,
+        deger: r.value,
+        birim: PARAMS[r.key].unit,
+        sinif: r.classification?.label,
+        durum: r.classification?.tone,
+        kaynak: r.source,
+        uygunAralik: PARAMS[r.key].uygun ? uygunAralikMetni(r.key) : undefined,
+        fark: fark.durum === 'yok' ? undefined : fark.metin,
+      };
+    }),
+    ekDegerler: (report.ekDegerler ?? []).map((e) => ({
+      parametre: e.ad,
+      deger: e.deger,
+      birim: e.birim,
+      sinif: e.labDegerlendirme,
+      kaynak: 'laboratuvar',
     })),
   };
 }
 
 export function emptyReport(): SoilReport {
-  return { values: {}, labDegerlendirme: {} };
+  return { values: {}, labDegerlendirme: {}, ekDegerler: [] };
 }

@@ -8,7 +8,8 @@ import {
   Camera,
   Check,
   ChevronRight,
-  CircleCheck,
+  ClipboardList,
+  Droplets,
   FileSpreadsheet,
   Info,
   Leaf,
@@ -24,6 +25,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { parseLabWorkbook } from '@/lib/excelRapor';
 import {
   BUNYE_SINIFLARI,
+  GROUP_LABELS,
   ISTANBUL_ILCELERI,
   MANUAL_STEPS,
   PARAMS,
@@ -32,7 +34,12 @@ import {
   parseNumber,
   sanityWarning,
   textureSumWarning,
+  uygunAralikMetni,
+  uygunFark,
+  type EkDeger,
+  type ParamGroup,
   type ParamKey,
+  type ParamResult,
   type SoilReport,
   type Tone,
 } from '@/lib/toprak';
@@ -44,12 +51,14 @@ type Meta = { ilce: string; bitki: string; numuneAdi: string; bunyeSinifi: strin
 type Draft = Record<ParamKey, string>;
 type Missing = Record<ParamKey, boolean>;
 
-type AiYorum = {
+type CozumPlani = {
   ozet: string;
-  gucluYonler: string[];
-  dikkatEdilecekler: string[];
-  oneriler: { baslik: string; aciklama: string }[];
+  sorunlar: { parametre: string; etki: string; cozum: string; zaman: string }[];
+  gubreleme: string[];
+  toprakIyilestirme: string[];
+  sulama: string[];
   bitkiUygunlugu: string | null;
+  ekAnalizOnerisi: string | null;
 };
 
 const PARAM_KEYS = Object.keys(PARAMS) as ParamKey[];
@@ -72,9 +81,10 @@ export default function Home() {
   const [missing, setMissing] = useState<Missing>(emptyMissing);
   const [meta, setMeta] = useState<Meta>(emptyMeta);
   const [labEval, setLabEval] = useState<SoilReport['labDegerlendirme']>({});
+  const [ekDegerler, setEkDegerler] = useState<EkDeger[]>([]);
   const [source, setSource] = useState<'manuel' | 'dosya'>('manuel');
 
-  const [ai, setAi] = useState<AiYorum | null>(null);
+  const [ai, setAi] = useState<CozumPlani | null>(null);
   const [aiState, setAiState] = useState<'idle' | 'loading' | 'error'>('idle');
 
   const go = (s: Screen) => {
@@ -92,6 +102,7 @@ export default function Home() {
     setMissing(emptyMissing());
     setMeta(emptyMeta());
     setLabEval({});
+    setEkDegerler([]);
     setAi(null);
     setAiState('idle');
     go('home');
@@ -112,6 +123,7 @@ export default function Home() {
       bunyeSinifi: meta.bunyeSinifi || undefined,
       values,
       labDegerlendirme: labEval,
+      ekDegerler,
     };
   };
 
@@ -138,6 +150,7 @@ export default function Home() {
       if (typeof v === 'string' && v.trim()) lab[k as ParamKey] = v.trim();
     });
     setLabEval(lab);
+    setEkDegerler(Array.isArray(r.ekDegerler) ? r.ekDegerler : []);
     setSource('dosya');
     setCandidates([]);
     setPickerOpen(false);
@@ -177,6 +190,7 @@ export default function Home() {
     if (m === 'manuel') {
       setSource('manuel');
       setLabEval({});
+      setEkDegerler([]);
       setStep(0);
       go('manual');
     } else {
@@ -735,7 +749,7 @@ function ReviewScreen({
   onEdit: () => void;
   onConfirm: () => void;
 }) {
-  const count = Object.keys(report.values).length;
+  const count = Object.keys(report.values).length + (report.ekDegerler?.length ?? 0);
 
   return (
     <div className="mx-auto max-w-3xl rounded-[32px] border border-[#dfe9df] bg-white p-6 shadow-[0_18px_50px_rgba(19,53,41,.08)] sm:p-8">
@@ -750,7 +764,9 @@ function ReviewScreen({
         <Row label="Rapor / numune" value={[report.raporNo, report.numuneAdi].filter(Boolean).join(' – ') || 'Belirtilmedi'} />
         <Row label="İlçe" value={report.ilce ?? 'Belirtilmedi'} />
         <Row label="Planlanan bitki" value={report.bitki ?? 'Belirtilmedi'} />
-        {(Object.keys(PARAMS) as ParamKey[]).map((k) => (
+        {(Object.keys(PARAMS) as ParamKey[])
+          .filter((k) => !PARAMS[k].ek || report.values[k] !== undefined)
+          .map((k) => (
           <Row
             key={k}
             label={PARAMS[k].label}
@@ -759,7 +775,15 @@ function ReviewScreen({
           />
         ))}
         <Row label="Bünye sınıfı" value={report.bunyeSinifi ?? 'Belirtilmedi'} muted={!report.bunyeSinifi} />
+        {(report.ekDegerler ?? []).map((e, i) => (
+          <Row key={`ek-${i}`} label={e.ad} value={`${formatNumber(e.deger, 4)} ${e.birim ?? ''}`.trim()} />
+        ))}
       </dl>
+      {(report.ekDegerler?.length ?? 0) > 0 && (
+        <p className="mt-3 text-xs leading-5 text-[#75867a]">
+          Son {report.ekDegerler!.length} satır raporunuzdaki ek ölçümlerdir; tabloda “Diğer ölçümler” başlığında gösterilir.
+        </p>
+      )}
 
       {count === 0 && <Warning text="Yorum için en az bir değer girmelisiniz." />}
 
@@ -784,12 +808,268 @@ function ReviewScreen({
 /* Sonuç ekranı                                                                */
 /* -------------------------------------------------------------------------- */
 
-const TONE_STYLE: Record<Tone, { box: string; dot: string; text: string }> = {
-  iyi: { box: 'border-[#cfe9c9] bg-[#f2fbef]', dot: 'bg-[#2e9e5b]', text: 'İyi durumda' },
-  dikkat: { box: 'border-[#f2dca6] bg-[#fffaf0]', dot: 'bg-[#d99a00]', text: 'Dikkat' },
-  sorun: { box: 'border-[#f1c4bd] bg-[#fff5f3]', dot: 'bg-[#cf4a35]', text: 'İyileştirilmeli' },
-  bilgi: { box: 'border-[#d6e3ea] bg-[#f5f9fb]', dot: 'bg-[#5b8aa3]', text: 'Bilgi' },
+const TONE_STYLE: Record<Tone, { dot: string; text: string; bar: string; label: string }> = {
+  iyi: { dot: 'bg-[#2e9e5b]', text: 'text-[#1f7a45]', bar: 'bg-[#2e9e5b]', label: 'Uygun' },
+  dikkat: { dot: 'bg-[#d99a00]', text: 'text-[#8a5a00]', bar: 'bg-[#d99a00]', label: 'Dikkat' },
+  sorun: { dot: 'bg-[#cf4a35]', text: 'text-[#a83422]', bar: 'bg-[#cf4a35]', label: 'İyileştirilmeli' },
+  bilgi: { dot: 'bg-[#5b8aa3]', text: 'text-[#3d6478]', bar: 'bg-[#5b8aa3]', label: 'Bilgi' },
 };
+
+const GROUP_ORDER: ParamGroup[] = ['temel', 'besin', 'mikro', 'yapi'];
+
+/** Değerin uygun aralığa göre konumunu gösteren ince çubuk. */
+function RangeBar({ k, value, tone }: { k: ParamKey; value: number; tone: Tone }) {
+  const r = PARAMS[k].uygun;
+  if (!r) return null;
+  const lo = k === 'ph' ? 3 : 0;
+  const ref = r.max ?? (r.min ?? 1) * 2;
+  const hi = k === 'ph' ? 10 : Math.max(value, ref) * 1.25;
+  const pct = (x: number) => Math.min(100, Math.max(0, ((x - lo) / (hi - lo)) * 100));
+  const from = pct(r.min ?? lo);
+  const to = pct(r.max ?? hi);
+  return (
+    <div className="relative mt-2 h-1.5 w-full max-w-[140px] rounded-full bg-[#e7ece8]" aria-hidden>
+      <div className="absolute inset-y-0 rounded-full bg-[#bfe3c4]" style={{ left: `${from}%`, width: `${to - from}%` }} />
+      <div
+        className={`absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white ${TONE_STYLE[tone].bar}`}
+        style={{ left: `${pct(value)}%` }}
+      />
+    </div>
+  );
+}
+
+function StatusCell({ tone, label, fark, lab }: { tone: Tone; label: string; fark?: string; lab?: boolean }) {
+  const s = TONE_STYLE[tone];
+  return (
+    <div>
+      <div className={`flex items-center gap-2 font-semibold ${s.text}`}>
+        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${s.dot}`} />
+        {label}
+      </div>
+      {fark && <div className="mt-0.5 text-xs text-[#51675d]">{fark}</div>}
+      {lab && <div className="mt-0.5 hidden text-[11px] text-[#8a978f] sm:block">Laboratuvar değerlendirmesi</div>}
+    </div>
+  );
+}
+
+function AnalysisTable({ report, results }: { report: SoilReport; results: ParamResult[] }) {
+  const byGroup = GROUP_ORDER.map((g) => ({ g, rows: results.filter((r) => PARAMS[r.key].group === g) })).filter(
+    (x) => x.rows.length > 0,
+  );
+  const ek = report.ekDegerler ?? [];
+
+  const groupHeader = (title: string) => (
+    <tr className="bg-[#f3f7f2]">
+      <th colSpan={4} scope="colgroup" className="px-3 py-2 sm:px-4 text-left text-xs font-bold text-[#476456]">
+        {title}
+      </th>
+    </tr>
+  );
+
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-[#dfe9df] bg-white">
+      <table className="w-full border-collapse text-[13px] sm:text-sm">
+        <thead>
+          <tr className="border-b border-[#dfe9df] text-left text-xs text-[#6b7d72]">
+            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">Parametre</th>
+            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">Sonuç</th>
+            <th scope="col" className="hidden px-3 py-3 sm:px-4 font-semibold sm:table-cell">Uygun aralık</th>
+            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">Durum ve fark</th>
+          </tr>
+        </thead>
+        {byGroup.map(({ g, rows }) => (
+          <tbody key={g} className="divide-y divide-[#edf2ee]">
+            {groupHeader(GROUP_LABELS[g])}
+            {g === 'yapi' && report.bunyeSinifi && (
+              <tr>
+                <th scope="row" className="px-3 py-3 sm:px-4 text-left font-semibold">Bünye sınıfı</th>
+                <td className="px-3 py-3 sm:px-4 font-bold">{report.bunyeSinifi}</td>
+                <td className="hidden px-3 py-3 sm:px-4 text-[#8a978f] sm:table-cell">—</td>
+                <td className="px-3 py-3 sm:px-4">
+                  <StatusCell tone="bilgi" label="Bilgi" lab={!!report.labDegerlendirme.bunye} />
+                </td>
+              </tr>
+            )}
+            {rows.map((r) => {
+              const def = PARAMS[r.key];
+              const c = r.classification!;
+              const fark = uygunFark(r.key, r.value);
+              const isTexture = r.key === 'kum' || r.key === 'silt' || r.key === 'kil';
+              return (
+                <tr key={r.key} className="align-top">
+                  <th scope="row" className="px-3 py-3 sm:px-4 text-left font-semibold">
+                    {def.label}
+                    {def.unit && <span className="block text-xs font-normal text-[#8a978f]">{def.unit}</span>}
+                  </th>
+                  <td className="px-3 py-3 sm:px-4">
+                    <span className="text-base font-bold tabular-nums">{formatNumber(r.value, 4)}</span>
+                    <RangeBar k={r.key} value={r.value} tone={c.tone} />
+                    {def.uygun && (
+                      <span className="mt-1 block text-xs text-[#8a978f] sm:hidden">Uygun: {uygunAralikMetni(r.key)}</span>
+                    )}
+                  </td>
+                  <td className="hidden px-3 py-3 sm:px-4 tabular-nums text-[#51675d] sm:table-cell">{uygunAralikMetni(r.key)}</td>
+                  <td className="px-3 py-3 sm:px-4">
+                    {isTexture ? (
+                      <StatusCell tone="bilgi" label="Bilgi" />
+                    ) : (
+                      <StatusCell
+                        tone={c.tone}
+                        label={c.label}
+                        fark={fark.durum === 'eksik' || fark.durum === 'fazla' ? fark.metin : undefined}
+                        lab={r.source === 'laboratuvar'}
+                      />
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        ))}
+        {ek.length > 0 && (
+          <tbody className="divide-y divide-[#edf2ee]">
+            {groupHeader('Diğer ölçümler')}
+            {ek.map((e, i) => (
+              <tr key={`ek-${i}`} className="align-top">
+                <th scope="row" className="px-3 py-3 sm:px-4 text-left font-semibold">
+                  {e.ad}
+                  {e.birim && <span className="block text-xs font-normal text-[#8a978f]">{e.birim}</span>}
+                </th>
+                <td className="px-3 py-3 sm:px-4 text-base font-bold tabular-nums">{formatNumber(e.deger, 4)}</td>
+                <td className="hidden px-3 py-3 sm:px-4 text-[#8a978f] sm:table-cell">—</td>
+                <td className="px-3 py-3 sm:px-4">
+                  <StatusCell tone="bilgi" label={e.labDegerlendirme || 'Bilgi'} lab={!!e.labDegerlendirme} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        )}
+      </table>
+    </div>
+  );
+}
+
+function AdviceBlock({ icon, title, items }: { icon: ReactNode; title: string; items: string[] }) {
+  if (!items?.length) return null;
+  return (
+    <div className="rounded-2xl border border-[#e1ebdf] bg-[#f9fbf9] p-5">
+      <h4 className="flex items-center gap-2 font-bold text-[#17352a]">
+        <span className="text-[#238f61]">{icon}</span>
+        {title}
+      </h4>
+      <ul className="mt-3 space-y-2 text-sm leading-6 text-[#42564b]">
+        {items.map((t, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#9ac79f]" />
+            <span>{t}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SolutionPlan({
+  report,
+  ai,
+  aiState,
+  onRetryAi,
+}: {
+  report: SoilReport;
+  ai: CozumPlani | null;
+  aiState: 'idle' | 'loading' | 'error';
+  onRetryAi: () => void;
+}) {
+  return (
+    <section className="mt-10 rounded-[28px] border border-[#dfe9df] bg-white p-5 shadow-sm sm:p-8" aria-labelledby="cozum">
+      <h2 id="cozum" className="flex items-center gap-2 text-xl font-bold">
+        <ClipboardList size={22} className="text-[#238f61]" />
+        Çözüm planı
+      </h2>
+
+      {aiState === 'loading' && (
+        <div className="mt-5 flex items-center gap-3 text-[#64766c]">
+          <Loader2 className="animate-spin" size={20} /> Analiz sonuçlarınıza göre çözüm planı hazırlanıyor…
+        </div>
+      )}
+      {aiState === 'error' && (
+        <div className="mt-5 text-sm text-[#7a4b00]">
+          Çözüm planı şu anda hazırlanamadı. Yukarıdaki tablo laboratuvar sonuçlarına dayanır ve geçerlidir.{' '}
+          <button onClick={onRetryAi} className="font-bold underline">
+            Tekrar dene
+          </button>
+        </div>
+      )}
+
+      {ai && (
+        <div className="mt-5 space-y-8">
+          <p className="max-w-[70ch] text-base leading-7 text-[#2a3d36]">{ai.ozet}</p>
+
+          {ai.bitkiUygunlugu && report.bitki && (
+            <div className="rounded-2xl bg-[#f2fbef] p-4 text-sm leading-6">
+              <span className="font-bold">{report.bitki} için değerlendirme: </span>
+              {ai.bitkiUygunlugu}
+            </div>
+          )}
+
+          <div>
+            <h3 className="font-bold">Tespit edilen sorunlar ve çözümleri</h3>
+            {ai.sorunlar?.length ? (
+              <div className="mt-3 overflow-hidden rounded-2xl border border-[#dfe9df]">
+                <div className="hidden grid-cols-[1.1fr_1.7fr_0.9fr] gap-4 border-b border-[#dfe9df] bg-[#f3f7f2] px-4 py-2 text-xs font-semibold text-[#6b7d72] sm:grid">
+                  <span>Sorun</span>
+                  <span>Ne yapılmalı?</span>
+                  <span>Ne zaman?</span>
+                </div>
+                <ol className="divide-y divide-[#edf2ee]">
+                  {ai.sorunlar.map((x, i) => (
+                    <li key={i} className="grid gap-2 px-4 py-4 text-sm leading-6 sm:grid-cols-[1.1fr_1.7fr_0.9fr] sm:gap-4">
+                      <div>
+                        <div className="font-bold text-[#17352a]">{x.parametre}</div>
+                        <div className="text-[#5b6f65]">{x.etki}</div>
+                      </div>
+                      <div className="text-[#2a3d36]">
+                        <span className="font-semibold sm:hidden">Ne yapılmalı? </span>
+                        {x.cozum}
+                      </div>
+                      <div className="text-[#5b6f65]">
+                        <span className="font-semibold text-[#2a3d36] sm:hidden">Ne zaman? </span>
+                        {x.zaman}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-[#5b6f65]">
+                Belirgin bir sorun görünmüyor. Mevcut durumu korumaya yönelik öneriler aşağıda.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <h3 className="font-bold">Uzman önerileri</h3>
+            <div className="mt-3 grid gap-4 lg:grid-cols-3">
+              <AdviceBlock icon={<Sprout size={18} />} title="Gübreleme" items={ai.gubreleme} />
+              <AdviceBlock icon={<Leaf size={18} />} title="Toprak iyileştirme" items={ai.toprakIyilestirme} />
+              <AdviceBlock icon={<Droplets size={18} />} title="Sulama ve toprak işleme" items={ai.sulama} />
+            </div>
+          </div>
+
+          {ai.ekAnalizOnerisi && (
+            <p className="flex gap-2 rounded-2xl border border-[#d6e3ea] bg-[#f5f9fb] p-4 text-sm leading-6 text-[#3d6478]">
+              <Info size={18} className="mt-0.5 shrink-0" />
+              <span>
+                <span className="font-semibold">Ek analiz önerisi: </span>
+                {ai.ekAnalizOnerisi}
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function ResultScreen({
   report,
@@ -800,115 +1080,63 @@ function ResultScreen({
   onNew,
 }: {
   report: SoilReport;
-  ai: AiYorum | null;
+  ai: CozumPlani | null;
   aiState: 'idle' | 'loading' | 'error';
   onRetryAi: () => void;
   onBack: () => void;
   onNew: () => void;
 }) {
   const results = classify(report);
-  const order: Tone[] = ['sorun', 'dikkat', 'iyi', 'bilgi'];
-  const sorted = [...results].sort((a, b) => order.indexOf(a.classification!.tone) - order.indexOf(b.classification!.tone));
-  const issues = results.filter((r) => r.classification?.tone === 'sorun' || r.classification?.tone === 'dikkat').length;
+  const count = (t: Tone) => results.filter((r) => r.classification?.tone === t).length;
+  const issues = count('sorun') + count('dikkat');
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-4xl">
       <div className="text-center">
         <div className="text-sm font-semibold text-[#32965e]">
-          {[report.numuneAdi, report.ilce, report.bitki && `${report.bitki} için`].filter(Boolean).join(' / ')}
+          {[report.raporNo, report.numuneAdi, report.ilce, report.bitki && `${report.bitki} için`].filter(Boolean).join(' / ')}
         </div>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
           {issues === 0 ? 'Toprağınız genel olarak iyi durumda' : `Toprağınızda ${issues} konu ilgi bekliyor`}
         </h1>
-      </div>
-
-      {/* Yapay zeka yorumu */}
-      <div className="mt-8 rounded-[28px] border border-[#dfe9df] bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex items-center gap-2 text-sm font-bold text-[#238f61]">
-          <Sprout size={18} />
-          Sade dille özet
+        <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-semibold">
+          {(['iyi', 'dikkat', 'sorun'] as Tone[]).map((t) => (
+            <span key={t} className="inline-flex items-center gap-2 rounded-full border border-[#dfe9df] bg-white px-3 py-1.5">
+              <span className={`h-2.5 w-2.5 rounded-full ${TONE_STYLE[t].dot}`} />
+              {count(t)} {TONE_STYLE[t].label.toLocaleLowerCase('tr-TR')}
+            </span>
+          ))}
         </div>
-        {aiState === 'loading' && (
-          <div className="mt-4 flex items-center gap-3 text-[#64766c]">
-            <Loader2 className="animate-spin" size={20} /> Yorum hazırlanıyor…
-          </div>
-        )}
-        {aiState === 'error' && (
-          <div className="mt-4 text-sm text-[#7a4b00]">
-            Özet şu anda hazırlanamadı. Aşağıdaki tablo laboratuvar sonuçlarına dayanır ve geçerlidir.{' '}
-            <button onClick={onRetryAi} className="font-bold underline">
-              Tekrar dene
-            </button>
-          </div>
-        )}
-        {ai && (
-          <div className="mt-4 space-y-6">
-            <p className="text-lg leading-8">{ai.ozet}</p>
-            {ai.bitkiUygunlugu && (
-              <div className="rounded-2xl bg-[#f2fbef] p-4 text-sm leading-6">
-                <span className="font-bold">{report.bitki} için: </span>
-                {ai.bitkiUygunlugu}
-              </div>
-            )}
-            <div className="grid gap-5 sm:grid-cols-2">
-              <BulletList title="Güçlü yanlar" items={ai.gucluYonler} icon={<CircleCheck size={16} className="text-[#2e9e5b]" />} />
-              <BulletList title="Dikkat edilecekler" items={ai.dikkatEdilecekler} icon={<AlertTriangle size={16} className="text-[#d99a00]" />} />
-            </div>
-            {ai.oneriler?.length > 0 && (
-              <div>
-                <h3 className="font-bold">Neler yapabilirsiniz?</h3>
-                <ol className="mt-3 space-y-3">
-                  {ai.oneriler.map((o, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#238f61] text-sm font-bold text-white">{i + 1}</span>
-                      <span>
-                        <span className="font-semibold">{o.baslik}. </span>
-                        <span className="text-[#51675d]">{o.aciklama}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Parametre kartları – yapay zekadan bağımsız, kural tabanlı */}
-      <h2 className="mt-10 text-xl font-bold">Değer değer sonuçlarınız</h2>
-      <div className="mt-4 space-y-3">
-        {sorted.map((r) => {
-          const c = r.classification!;
-          const s = TONE_STYLE[c.tone];
-          const def = PARAMS[r.key];
-          return (
-            <div key={r.key} className={`rounded-2xl border p-5 ${s.box}`}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <div className="font-bold">{def.label}</div>
-                <div className="text-sm">
-                  <span className="font-bold">{formatNumber(r.value, 4)}</span> {def.unit}
-                </div>
+      <section className="mt-8" aria-labelledby="tablo">
+        <h2 id="tablo" className="mb-3 text-xl font-bold">Analiz sonuçları</h2>
+        <AnalysisTable report={report} results={results} />
+        <p className="mt-3 text-xs leading-5 text-[#75867a]">
+          “Uygun aralık” çoğu bitki için genel kabul gören değerlerdir; bitkiye göre değişebilir. “Fark”, değerin bu aralığın
+          ne kadar altında ya da üstünde olduğunu gösterir. Durum sütununda, varsa laboratuvarın kendi değerlendirmesi esas alınmıştır.
+        </p>
+        <details className="mt-3 rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 text-sm">
+          <summary className="cursor-pointer font-semibold text-[#476456]">Bu değerler ne anlama geliyor?</summary>
+          <dl className="mt-3 space-y-2">
+            {results.map((r) => (
+              <div key={r.key}>
+                <dt className="font-semibold">{PARAMS[r.key].label}</dt>
+                <dd className="text-[#5b6f65]">{PARAMS[r.key].why}</dd>
               </div>
-              <div className="mt-2 flex items-center gap-2 text-sm font-semibold">
-                <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
-                {c.label}
-                {r.source === 'laboratuvar' && (
-                  <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#476456]">Laboratuvar değerlendirmesi</span>
-                )}
-              </div>
-              <p className="mt-2 text-sm leading-6 text-[#42564b]">{c.meaning}</p>
-              <p className="mt-1 text-xs leading-5 text-[#75867a]">{def.why}</p>
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </dl>
+        </details>
+      </section>
+
+      <SolutionPlan report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} />
 
       <div className="mt-8 flex gap-3 rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-5 text-xs leading-5 text-[#5b6f65]">
         <Info size={18} className="shrink-0 text-[#238f61]" />
         <p>
-          Bu yorum bilgilendirme amaçlıdır ve bağlayıcı bir gübreleme reçetesi değildir. Gübre çeşidi ve miktarı için
-          İlçe Tarım ve Orman Müdürlüğü’ne veya bir ziraat mühendisine danışın. Sarı/kırmızı işaretli değerler için
-          laboratuvar değerlendirmesi esas alınmıştır.
+          Bu değerlendirme bilgilendirme amaçlıdır ve bağlayıcı bir gübreleme reçetesi değildir. Gübre miktarı (doz) verim
+          hedefinize, bitkiye ve önceki gübrelemeye göre değişir; uygulamadan önce İlçe Tarım ve Orman Müdürlüğü’ne veya bir
+          ziraat mühendisine danışın.
         </p>
       </div>
 
@@ -983,23 +1211,6 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
     <div className="flex items-center justify-between gap-4 py-3">
       <dt className="text-sm font-semibold text-[#51675d]">{label}</dt>
       <dd className={`text-right text-sm font-bold ${muted ? 'text-[#9aa7a0]' : ''}`}>{value}</dd>
-    </div>
-  );
-}
-
-function BulletList({ title, items, icon }: { title: string; items: string[]; icon: ReactNode }) {
-  if (!items?.length) return null;
-  return (
-    <div>
-      <h3 className="font-bold">{title}</h3>
-      <ul className="mt-2 space-y-2">
-        {items.map((t, i) => (
-          <li key={i} className="flex gap-2 text-sm leading-6">
-            <span className="mt-1">{icon}</span>
-            {t}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

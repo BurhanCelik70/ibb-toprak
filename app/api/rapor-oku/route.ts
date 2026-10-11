@@ -5,7 +5,15 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { ISTANBUL_ILCELERI, PARAMS, parseNumber, type ParamKey, type SoilReport } from '@/lib/toprak';
+import {
+  ISTANBUL_ILCELERI,
+  PARAMS,
+  parseNumber,
+  unitCompatible,
+  type EkDeger,
+  type ParamKey,
+  type SoilReport,
+} from '@/lib/toprak';
 
 export const maxDuration = 60;
 
@@ -14,18 +22,78 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 const MAX_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
-const PROMPT = `Bu belge İBB Çevre Laboratuvarı toprak analiz raporu. Değerleri OKU, hesaplama yapma.
-Belgede birden fazla rapor varsa hepsini dizi olarak ver. Okuyamadığın değeri dahil etme (tahmin etme).
-Sayıları nokta ondalık ayırıcı ile ver (7,12 -> 7.12). EC değerini raporda yazan birimle (µS/cm) ver.
+const PROMPT = `Bu belge bir toprak analiz raporu (genelde İBB Çevre Laboratuvarı). Değerleri OKU, hesaplama yapma.
+Belgede birden fazla rapor/numune varsa hepsini dizi olarak ver. Okuyamadığın değeri dahil etme, tahmin etme.
+Sayıları nokta ondalık ayırıcı ile ver (7,12 -> 7.12). Her değeri raporda yazan birimle ver ve birimi "birimler" içine yaz.
+
+"values" anahtarları (raporda varsa):
+doygunluk (Su ile doygunluk %), ph, ec (EC, µS/cm), tuz (%), kum, silt, kil (%), kirec (Kireç %),
+organikMadde (%), fosfor (Yarayışlı fosfor, P2O5 kg/da), potasyum (Yarayışlı potasyum, K2O kg/da),
+azot (Toplam azot %), demir (Fe), cinko (Zn), mangan (Mn), bakir (Cu), bor (B).
+
+ÖNEMLİ: Tablodaki HER ölçüm satırını al. Yukarıdaki listede olmayan her ölçümü (ör. kalsiyum, magnezyum,
+sodyum, kükürt, nitrat) "ekDegerler" içine yaz. Hiçbir satırı atlama.
+
 Sadece şu JSON dizisini döndür, başka metin ekleme:
 [{
-  "raporNo": "T26-286", "raporTarihi": "...", "adres": "...", "numuneAdi": "...", "bitki": "...",
+  "raporNo": "...", "raporTarihi": "...", "adres": "...", "numuneAdi": "...", "bitki": "...",
   "bunyeSinifi": "CL (Killi Tın Bünyeli)",
-  "values": {"doygunluk": 0, "ph": 0, "ec": 0, "tuz": 0, "kum": 0, "silt": 0, "kil": 0,
-             "kirec": 0, "organikMadde": 0, "fosfor": 0, "potasyum": 0},
-  "labDegerlendirme": {"doygunluk": "...", "ph": "...", "ec": "...", "bunye": "...", "kirec": "...",
-                       "organikMadde": "...", "fosfor": "...", "potasyum": "..."}
+  "values": {"ph": 7.12, "ec": 658},
+  "birimler": {"ph": "-", "ec": "µS/cm"},
+  "labDegerlendirme": {"ph": "Nötr", "ec": "Tuzsuz", "bunye": "..."},
+  "ekDegerler": [{"ad": "Kalsiyum (Ca)", "deger": 3200, "birim": "mg/kg", "labDegerlendirme": "Yeterli"}]
 }]`;
+
+type RawReport = SoilReport & { birimler?: Record<string, unknown> };
+
+/** Yapay zekanın döndürdüğü raporu temizler: sayıya çevirir, birimi uymayanı "ek değerler"e taşır. */
+function cleanReport(r: RawReport): SoilReport {
+  const values: SoilReport['values'] = {};
+  const labDegerlendirme: SoilReport['labDegerlendirme'] = {};
+  const ekDegerler: EkDeger[] = [];
+
+  (Object.keys(PARAMS) as ParamKey[]).forEach((k) => {
+    const v = parseNumber(r.values?.[k]);
+    if (v === undefined) return;
+    const unit = typeof r.birimler?.[k] === 'string' ? (r.birimler[k] as string) : undefined;
+    const lab = r.labDegerlendirme?.[k];
+    if (unitCompatible(k, unit)) {
+      values[k] = v;
+      if (typeof lab === 'string' && lab.trim()) labDegerlendirme[k] = lab.trim();
+    } else {
+      ekDegerler.push({ ad: PARAMS[k].label, deger: v, birim: unit, labDegerlendirme: typeof lab === 'string' ? lab : undefined });
+    }
+  });
+  if (typeof r.labDegerlendirme?.bunye === 'string') labDegerlendirme.bunye = r.labDegerlendirme.bunye;
+
+  for (const e of Array.isArray(r.ekDegerler) ? r.ekDegerler : []) {
+    const deger = parseNumber(e?.deger);
+    if (typeof e?.ad !== 'string' || deger === undefined) continue;
+    ekDegerler.push({
+      ad: e.ad.trim(),
+      deger,
+      birim: typeof e.birim === 'string' ? e.birim : undefined,
+      labDegerlendirme: typeof e.labDegerlendirme === 'string' ? e.labDegerlendirme : undefined,
+    });
+  }
+
+  const str = (x: unknown) => (typeof x === 'string' && x.trim() ? x.trim() : undefined);
+  const adres = str(r.adres);
+  return {
+    raporNo: str(r.raporNo),
+    raporTarihi: str(r.raporTarihi),
+    adres,
+    numuneAdi: str(r.numuneAdi),
+    bitki: str(r.bitki),
+    bunyeSinifi: str(r.bunyeSinifi),
+    ilce:
+      str(r.ilce) ??
+      ISTANBUL_ILCELERI.find((i) => adres?.toLocaleLowerCase('tr-TR').includes(i.toLocaleLowerCase('tr-TR'))),
+    values,
+    labDegerlendirme,
+    ekDegerler,
+  };
+}
 
 export async function POST(req: Request) {
   try {
@@ -54,22 +122,13 @@ export async function POST(req: Request) {
     });
 
     const text = msg.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
-    const raw = JSON.parse(text.replace(/```json|```/g, '').trim());
+    // Cevabın başında/sonunda açıklama metni olsa bile yalnızca JSON kısmını al
+    const start = text.search(/[[{]/);
+    const end = Math.max(text.lastIndexOf(']'), text.lastIndexOf('}'));
+    const raw = JSON.parse(text.slice(start, end + 1));
     const parsed = (Array.isArray(raw) ? raw : [raw]) as SoilReport[];
 
-    const reports = parsed.map((r) => ({
-      ...r,
-      // null, metin ya da birimli değerleri sayıya çevir; okunamayanları at
-      values: Object.fromEntries(
-        (Object.keys(PARAMS) as ParamKey[])
-          .map((k) => [k, parseNumber(r.values?.[k])] as const)
-          .filter(([, v]) => v !== undefined),
-      ),
-      labDegerlendirme: r.labDegerlendirme ?? {},
-      ilce:
-        r.ilce ??
-        ISTANBUL_ILCELERI.find((i) => r.adres?.toLocaleLowerCase('tr-TR').includes(i.toLocaleLowerCase('tr-TR'))),
-    }));
+    const reports = parsed.map((r) => cleanReport(r as RawReport));
 
     return NextResponse.json({ reports });
   } catch (err) {
