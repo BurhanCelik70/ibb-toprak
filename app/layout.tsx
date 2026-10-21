@@ -1,30 +1,26 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata, Viewport } from 'next';
+import '@fontsource-variable/fraunces';
+import '@fontsource-variable/plus-jakarta-sans';
+import './globals.css';
+import { MARKA } from '@/lib/marka';
 
 export const metadata: Metadata = {
-  title: "Toprak Rehberi | İBB Çevre Koruma ve Kontrol Dairesi Başkanlığı",
-  description:
-    "İstanbul Büyükşehir Belediyesi Çevre Koruma ve Kontrol Dairesi Başkanlığı Toprak Rehberi: toprak analiz raporunuzu yükleyin, kalite indeksini ve bitkinize özel gübreleme programını görün.",
+  title: { default: `${MARKA.ad} · ${MARKA.slogan}`, template: `%s · ${MARKA.ad}` },
+  description: MARKA.aciklama,
+  applicationName: MARKA.ad,
+  appleWebApp: { capable: true, title: MARKA.ad, statusBarStyle: 'default' },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  themeColor: '#1f6f4a',
+  width: 'device-width',
+  initialScale: 1,
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="tr" className="h-full antialiased" data-scroll-behavior="smooth">
+      <body className="flex min-h-full flex-col bg-[#f4f7f1] text-[#17352a]">{children}</body>
     </html>
   );
 }

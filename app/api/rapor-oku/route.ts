@@ -14,6 +14,7 @@ import {
   type ParamKey,
   type SoilReport,
 } from '@/lib/toprak';
+import { oturumKullanici } from '@/lib/supabase/server';
 
 export const maxDuration = 60;
 
@@ -97,6 +98,9 @@ function cleanReport(r: RawReport): SoilReport {
 
 export async function POST(req: Request) {
   try {
+    const { kullaniciId } = await oturumKullanici();
+    if (!kullaniciId) return NextResponse.json({ error: 'Devam etmek için giriş yapın.' }, { status: 401 });
+
     const form = await req.formData();
     const file = form.get('file');
     if (!(file instanceof File)) return NextResponse.json({ error: 'Dosya bulunamadı.' }, { status: 400 });
