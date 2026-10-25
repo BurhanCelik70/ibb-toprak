@@ -6,17 +6,10 @@ import Link from 'next/link';
 import { MARKA } from '@/lib/marka';
 import { oturumKullanici } from '@/lib/supabase/server';
 
-/** Marka işareti: filiz + "4.0" */
+/** Marka işareti: dışı çim, içi toprak kesiti olan küre (public/logo.png) */
 export function LogoIsareti({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
-      <rect width="48" height="48" rx="13" fill="#1f6f4a" />
-      <path d="M24 38V22" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
-      <path d="M24 25c0-6.5 4.5-11 11.5-11 0 7-4.5 11-11.5 11Z" fill="#9bdd68" />
-      <path d="M24 29c0-5.5-3.8-9.5-9.8-9.5 0 6 3.8 9.5 9.8 9.5Z" fill="#d7f3c2" />
-      <path d="M14 38h20" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/logo.png" width={size} height={size} alt="" aria-hidden className="shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,.25)]" />;
 }
 
 export function Logo({ size = 40, yazi = true, acik = false }: { size?: number; yazi?: boolean; acik?: boolean }) {
@@ -25,7 +18,7 @@ export function Logo({ size = 40, yazi = true, acik = false }: { size?: number; 
     <span className="flex items-center gap-2.5">
       <LogoIsareti size={size} />
       {yazi && (
-        <span className={`text-xl font-extrabold tracking-tight ${acik ? 'text-white' : 'text-[#17352a]'}`}>
+        <span className={`font-display text-[1.4rem] font-medium leading-none tracking-[-0.01em] ${acik ? 'text-white' : 'text-[#17352a]'}`}>
           {ana} <span className={acik ? 'text-[#9bdd68]' : 'text-[#2f8f57]'}>{surum}</span>
         </span>
       )}
