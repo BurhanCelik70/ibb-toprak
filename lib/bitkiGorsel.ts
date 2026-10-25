@@ -15,6 +15,26 @@ const SETLER: Record<string, GorselSeti> = {
   Arpa: { klasor: '/buyume', kare: 97 }, // buğdaya çok benzer; arpa videosu gelince değiştirin
   // Evre başına resim (public/bitkiler/<klasor>/1.webp … n.webp; n = Z-karttaki evre sayısı)
   'Mısır (dane)': { klasor: '/bitkiler/misir', kare: 5, tur: 'evre' },
+  Domates: { klasor: '/bitkiler/domates', kare: 6, tur: 'evre' },
+  Ayçiçeği: { klasor: '/bitkiler/aycicegi', kare: 5, tur: 'evre' },
+  Pamuk: { klasor: '/bitkiler/pamuk', kare: 6, tur: 'evre' },
+  Patates: { klasor: '/bitkiler/patates', kare: 5, tur: 'evre' },
+  'Üzüm (bağ)': { klasor: '/bitkiler/uzum', kare: 6, tur: 'evre' },
+  Elma: { klasor: '/bitkiler/elma', kare: 5, tur: 'evre' },
+  Zeytin: { klasor: '/bitkiler/zeytin', kare: 6, tur: 'evre' },
+  Fındık: { klasor: '/bitkiler/findik', kare: 5, tur: 'evre' },
+  'Narenciye (mandalina)': { klasor: '/bitkiler/narenciye', kare: 6, tur: 'evre' },
+  'Şeftali / nektarin': { klasor: '/bitkiler/seftali', kare: 6, tur: 'evre' },
+  Kayısı: { klasor: '/bitkiler/kayisi', kare: 6, tur: 'evre' },
+  Nar: { klasor: '/bitkiler/nar', kare: 6, tur: 'evre' },
+  İncir: { klasor: '/bitkiler/incir', kare: 5, tur: 'evre' },
+  Çay: { klasor: '/bitkiler/cay', kare: 5, tur: 'evre' },
+  Susam: { klasor: '/bitkiler/susam', kare: 5, tur: 'evre' },
+  Tütün: { klasor: '/bitkiler/tutun', kare: 5, tur: 'evre' },
+  Salatalık: { klasor: '/bitkiler/salatalik', kare: 5, tur: 'evre' },
+  'Çeltik (pirinç)': { klasor: '/bitkiler/celtik', kare: 5, tur: 'evre' },
+  'Şeker pancarı': { klasor: '/bitkiler/sekerpancari', kare: 5, tur: 'evre' },
+  Soğan: { klasor: '/bitkiler/sogan', kare: 5, tur: 'evre' },
 };
 
 export function gorselSeti(bitki?: string | null): GorselSeti | undefined {
