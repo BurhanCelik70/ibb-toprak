@@ -197,7 +197,7 @@ export default function AnaSayfa() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#121410] via-[#121410]/70 to-transparent" aria-hidden />
         <div className="relative mx-auto max-w-6xl px-5 py-24 sm:px-8 lg:py-32">
           <h2 className="max-w-lg font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">İlk tarlanızı bugün ekleyin.</h2>
-          <p className="mt-5 max-w-md text-white/70">Telefon numaranızla bir dakikada hesap açın. Şifre yok, ücret yok.</p>
+          <p className="mt-5 max-w-md text-white/70">E-posta adresinizle bir dakikada hesap açın. Şifre yok, ücret yok.</p>
           <Link
             href="/tarlalar"
             className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#f5f0e6] px-7 py-4 font-semibold text-[#121410] transition hover:bg-white"

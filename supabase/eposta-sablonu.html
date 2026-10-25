@@ -1,0 +1,15 @@
+<!--
+  Supabase → Authentication → Emails → Templates
+  Bu şablonu hem "Magic Link" hem "Confirm signup" şablonuna yapıştırın.
+  Konu (Subject): Tarım 4.0 giriş kodunuz: {{ .Token }}
+-->
+<div style="margin:0;padding:32px 16px;background:#f5f0e6;font-family:Arial,Helvetica,sans-serif;color:#1d2a22">
+  <div style="max-width:440px;margin:0 auto;background:#ffffff;border-radius:20px;padding:32px">
+    <p style="margin:0 0 4px;font-size:18px;font-weight:bold;color:#1f6f4a">Tarım 4.0</p>
+    <p style="margin:0 0 24px;font-size:13px;color:#6d786f">Yapay zekâ destekli toprak analizi</p>
+    <p style="margin:0 0 12px;font-size:15px">Giriş kodunuz:</p>
+    <p style="margin:0 0 24px;font-size:36px;font-weight:bold;letter-spacing:8px;color:#1d2a22">{{ .Token }}</p>
+    <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#5e6a60">Bu kodu uygulamadaki kutuya yazın. Kod 1 saat geçerlidir ve yalnızca bir kez kullanılabilir.</p>
+    <p style="margin:0;font-size:13px;line-height:20px;color:#5e6a60">Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
+  </div>
+</div>

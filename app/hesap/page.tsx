@@ -9,6 +9,9 @@ export default async function HesapSayfasi() {
   const { supabase, kullaniciId } = await oturumKullanici();
   if (!kullaniciId) redirect('/giris?sonra=/hesap');
   const { data: profil } = await supabase.from('profiller').select('ad_soyad, telefon, olusturma').eq('id', kullaniciId).maybeSingle();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { count } = await supabase.from('tarlalar').select('id', { count: 'exact', head: true });
   return (
     <div className="flex min-h-screen flex-col bg-[#f7faf5]">
@@ -18,7 +21,7 @@ export default async function HesapSayfasi() {
         <dl className="mt-6 divide-y divide-[#edf2ee] rounded-[24px] border border-[#dfe9df] bg-white px-5">
           {[
             ['Ad soyad', profil?.ad_soyad ?? '—'],
-            ['Telefon', profil?.telefon ?? '—'],
+            ['E-posta', user?.email ?? profil?.telefon ?? '—'],
             ['Kayıtlı tarla', String(count ?? 0)],
             ['Üyelik', profil?.olusturma ? new Date(profil.olusturma).toLocaleDateString('tr-TR') : '—'],
           ].map(([k, v]) => (

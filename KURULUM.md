@@ -22,13 +22,21 @@ npm run dev                    # http://localhost:3000
    - Publishable key (`sb_publishable_…`) → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - `service_role` / secret anahtarını **hiçbir yere koymayın**, gerekmiyor.
 
-## 3. SMS ile giriş
+## 3. E-postayla giriş (şifresiz, ücretsiz)
 
-1. **Authentication → Sign In / Providers → Phone** → **Enable**.
-2. SMS sağlayıcısı seçin. Türkiye'ye gönderim yapabilen: **Twilio** (en kolayı) veya **Vonage**. Sağlayıcıdan aldığınız bilgileri (Twilio: Account SID, Auth Token, Messaging Service SID) girin.
-3. **Geliştirirken para harcamamak için:** aynı sayfada **Test phone numbers** kısmına örneğin `905551111111=123456` ekleyin. Bu numarayla girişte SMS gitmez, kod hep `123456` olur.
-4. **Authentication → URL Configuration → Site URL**: canlı adresiniz (ör. `https://tarim40.vercel.app`).
-5. Tavsiye: **Authentication → Rate Limits** bölümünde saatlik SMS sınırını makul tutun (kötüye kullanımda fatura şişmesin).
+Kullanıcı e-postasını yazar, gelen 6 haneli kodu girer. Hesap yoksa otomatik açılır.
+
+1. **Authentication → Sign In / Providers → Email**: açık olsun. **Confirm email** açık kalabilir.
+2. **Authentication → Emails → Templates**: `supabase/eposta-sablonu.html` dosyasının içeriğini hem **Magic Link** hem **Confirm signup** şablonuna yapıştırın. Konu satırı: `Tarım 4.0 giriş kodunuz: {{ .Token }}`. (Şablonda `{{ .Token }}` yoksa kod yerine bağlantı gider ve giriş çalışmaz.)
+3. **E-posta gönderici (zorunlu):** Supabase'in kendi göndericisi yalnızca deneme içindir; saatte çok az e-posta gönderir. Ücretsiz **Resend** bağlayın (ayda 3.000, günde 100 e-posta):
+   - resend.com'da hesap açın → **Domains → Add Domain** → `toprakanaliz40.online`.
+   - Resend'in gösterdiği DNS kayıtlarını (TXT/MX/DKIM) GoDaddy → DNS'e ekleyin, Resend'de **Verify**'a basın.
+   - **API Keys → Create** (yetki: Sending access) → anahtarı kopyalayın.
+   - Supabase → **Authentication → Emails → SMTP Settings → Enable custom SMTP**:
+     - Sender email: `kod@toprakanaliz40.online` · Sender name: `Tarım 4.0`
+     - Host: `smtp.resend.com` · Port: `465` · Username: `resend` · Password: Resend API anahtarı
+4. **Authentication → Rate Limits**: "emails per hour" değerini ihtiyaca göre artırın (ör. 100).
+5. **Authentication → URL Configuration → Site URL**: `https://www.toprakanaliz40.online`
 
 ## 4. Yapay zekâ anahtarı
 
@@ -52,7 +60,7 @@ Uygulama simgesiyle, tam ekran açılır ve doğrudan "Tarlalarım"a gider.
 
 ## Nasıl çalışıyor
 
-- **Giriş:** telefon → SMS kodu → (ilk girişte) ad soyad.
+- **Giriş:** e-posta → e-postaya gelen kod → (ilk girişte) ad soyad.
 - **Tarlalarım → +:** tarla adı, dekar, ilçe, bitki, sulama yöntemi (damla / yağmurlama / pivot / salma / kuru) ve süresi bir kez girilir.
 - **Analiz ekle:** Excel/PDF/fotoğraf ya da elle giriş. Tarla bilgileri tekrar sorulmaz. Kayıt sonrası yapay zekâ çözüm planını bir kez üretir ve saklar (tekrar açınca ücret ödenmez; "Çözüm planını yenile" ile yeniden üretilir).
 - **İkinci analizden itibaren:** her parametre için İyileşti / Kötüleşti / Değişmedi / Uygun kaldı, kalite indeksi seyri grafiği.
