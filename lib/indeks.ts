@@ -22,7 +22,8 @@ type Kural =
   | { tip: 'azalan'; ust: number[] } // puan i: değer <= ust[5-i] ... düşük değer iyi
   | { tip: 'ph' };
 
-type IndeksParam = { ad: string; birim: string; kural: Kural };
+export type IndeksGrup = 'kimyasal' | 'fiziksel' | 'biyolojik';
+type IndeksParam = { ad: string; birim: string; kural: Kural; grup?: IndeksGrup };
 
 /** Tablodaki sınıf alt sınırları (puan 0 … 5). */
 const T: Record<string, IndeksParam> = {
@@ -50,7 +51,19 @@ const T: Record<string, IndeksParam> = {
   nikel: { ad: 'Nikel (Ni)', birim: 'mg/kg', kural: { tip: 'azalan', ust: [0.01, 0.025, 0.05, 0.1, 0.5] } },
   kirec: { ad: 'Kireç', birim: '%', kural: { tip: 'artan', alt: [0, 1, 2, 3, 4, 5] } },
   kdk: { ad: 'Katyon değişim kapasitesi', birim: 'cmol/kg', kural: { tip: 'artan', alt: [0, 5, 7.5, 10, 20, 30] } },
+  // Fiziksel (tablodaki sınırlarla)
+  hacimAgirligi: { ad: 'Hacim ağırlığı', birim: 'g/cm³', grup: 'fiziksel', kural: { tip: 'azalan', ust: [0.5, 1, 1.2, 1.4, 1.5] } },
+  agregat: { ad: 'Suya dayanıklı agregat', birim: '%', grup: 'fiziksel', kural: { tip: 'artan', alt: [0, 25, 50, 70, 80, 90] } },
+  faydaliSu: { ad: 'Faydalı su kapasitesi', birim: '%', grup: 'fiziksel', kural: { tip: 'artan', alt: [0, 25, 50, 70, 80, 90] } },
+  // Biyolojik (tablodaki sınırlarla)
+  solunum: { ad: 'Toprak solunumu', birim: 'µmol/m²/s', grup: 'biyolojik', kural: { tip: 'artan', alt: [0, 0.5, 1, 1.25, 1.5, 1.75] } },
+  dehidrogenaz: { ad: 'Dehidrogenaz', birim: 'µg TPF/g', grup: 'biyolojik', kural: { tip: 'artan', alt: [0, 15, 20, 25, 30, 60] } },
+  glukozidaz: { ad: 'β-Glukozidaz', birim: 'µg MUF/g', grup: 'biyolojik', kural: { tip: 'artan', alt: [0, 15, 20, 25, 30, 60] } },
+  ureaz: { ad: 'Üreaz', birim: 'µg N/g', grup: 'biyolojik', kural: { tip: 'artan', alt: [0, 50, 100, 200, 400, 800] } },
+  katalaz: { ad: 'Katalaz', birim: 'ml/g·h', grup: 'biyolojik', kural: { tip: 'artan', alt: [0, 0.5, 1, 1.25, 1.5, 1.75] } },
 };
+
+export const GRUP_ADLARI: Record<IndeksGrup, string> = { kimyasal: 'Kimyasal', fiziksel: 'Fiziksel', biyolojik: 'Biyolojik' };
 
 export function puanla(key: keyof typeof T, v: number): number {
   const k = T[key].kural;
@@ -67,8 +80,9 @@ export function puanla(key: keyof typeof T, v: number): number {
   return i < 0 ? 0 : 5 - i;
 }
 
-export type IndeksSatiri = { key: string; ad: string; deger: number; birim: string; puan: number; not?: string };
-export type IndeksSonucu = { satirlar: IndeksSatiri[]; ortalama: number; yuzde: number; sinif: string; renk: string };
+export type IndeksSatiri = { key: string; ad: string; deger: number; birim: string; puan: number; not?: string; grup: IndeksGrup };
+export type GrupSkoru = { grup: IndeksGrup; ad: string; yuzde: number | null; adet: number };
+export type IndeksSonucu = { satirlar: IndeksSatiri[]; ortalama: number; yuzde: number; sinif: string; renk: string; gruplar: GrupSkoru[] };
 
 export const SINIFLAR = [
   { min: 80, ad: 'Çok iyi', renk: '#1f8a4c' },
@@ -97,6 +111,14 @@ function ekEslestir(ad: string, birim = ''): keyof typeof T | undefined {
   if (/no3|nitrat/.test(a)) return mg ? 'no3' : undefined;
   if (/nh4|amonyum/.test(a)) return mg ? 'nh4' : undefined;
   if (/katyon|kdk|cec/.test(a)) return 'kdk';
+  if (/hacim ağırlığı|hacim agirligi|bulk density|toprak yoğunluğu/.test(a)) return 'hacimAgirligi';
+  if (/agregat|aggregate/.test(a)) return 'agregat';
+  if (/faydalı su|faydali su|yarayışlı su|available water/.test(a)) return 'faydaliSu';
+  if (/solunum|respirat/.test(a)) return 'solunum';
+  if (/dehidrogenaz|dehydrogenase/.test(a)) return 'dehidrogenaz';
+  if (/glukozidaz|glucosidase/.test(a)) return 'glukozidaz';
+  if (/üreaz|ureaz|urease/.test(a)) return 'ureaz';
+  if (/katalaz|catalase/.test(a)) return 'katalaz';
   return undefined;
 }
 
@@ -106,7 +128,7 @@ export function kaliteIndeksi(r: SoilReport): IndeksSonucu | undefined {
   const ekle = (key: keyof typeof T, deger: number | undefined, not?: string) => {
     if (deger === undefined || !Number.isFinite(deger)) return;
     if (satirlar.some((s) => s.key === key)) return;
-    satirlar.push({ key, ad: T[key].ad, deger, birim: T[key].birim, puan: puanla(key, deger), not });
+    satirlar.push({ key, ad: T[key].ad, deger, birim: T[key].birim, puan: puanla(key, deger), not, grup: T[key].grup ?? 'kimyasal' });
   };
 
   ekle('ph', v.ph);
@@ -130,5 +152,9 @@ export function kaliteIndeksi(r: SoilReport): IndeksSonucu | undefined {
   const ortalama = satirlar.reduce((s, x) => s + x.puan, 0) / satirlar.length;
   const yuzde = Math.round((ortalama / 5) * 100);
   const s = SINIFLAR.find((c) => yuzde >= c.min)!;
-  return { satirlar, ortalama, yuzde, sinif: s.ad, renk: s.renk };
+  const gruplar = (Object.keys(GRUP_ADLARI) as IndeksGrup[]).map((g) => {
+    const xs = satirlar.filter((x) => x.grup === g);
+    return { grup: g, ad: GRUP_ADLARI[g], adet: xs.length, yuzde: xs.length ? Math.round((xs.reduce((t, x) => t + x.puan, 0) / xs.length / 5) * 100) : null };
+  });
+  return { satirlar, ortalama, yuzde, sinif: s.ad, renk: s.renk, gruplar };
 }

@@ -3,10 +3,10 @@
  * Analiz sonucu: kalite indeksi, analiz tablosu, çözüm planı, karşılaştırma ve sulama reçetesi.
  */
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Info, Loader2, MapPin, Minus, ShieldCheck, Sprout } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { evreGorseli } from '@/lib/bitkiGorsel';
 import { ORGANIK_MADDE_PROTOKOLU, zkartBul } from '@/lib/igsas';
-import { kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
+import { SINIFLAR, kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
 import { karsilastir, ozetle } from '@/lib/karsilastir';
 import {
   KURALLAR,
@@ -331,6 +331,129 @@ function UrunBolumu({ icon, title, items }: { icon: ReactNode; title: string; it
   );
 }
 
+/** Kapağın hemen altı: kısa özet ve sorun başına "ne, ne kadar, ne zaman" kartları */
+function OncelikliIsler({
+  report,
+  ai,
+  aiState,
+  onRetryAi,
+  ilgi,
+}: {
+  report: SoilReport;
+  ai: CozumPlani | null;
+  aiState: 'idle' | 'loading' | 'error';
+  onRetryAi: () => void;
+  ilgi: { key: ParamKey; ad: string; tone: Tone; etiket: string }[];
+}) {
+  return (
+    <section className="mt-6 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8" aria-labelledby="oncelik">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Bir bilenden tavsiyeler</p>
+      <h2 id="oncelik" className="mt-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
+        Önce bunları yapın
+      </h2>
+      {ilgi.length > 0 && (
+        <div className="mt-4">
+          <p className="text-sm font-semibold text-[#5b6f65]">İlgilenmeniz gerekenler</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {ilgi.map((x) => (
+              <li key={x.key} className="flex items-center gap-2 rounded-full bg-[#f7f4ec] px-3 py-1.5 text-sm">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: TON_RENK[x.tone] }} />
+                <span className="font-semibold text-[#17352a]">{x.ad}</span>
+                <span className="text-[#6d786f]">{x.etiket}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {aiState === 'loading' && (
+        <div className="mt-5 flex items-center gap-3 text-[#64766c]">
+          <Loader2 className="animate-spin" size={20} /> Analiz sonuçlarınıza göre öneriler hazırlanıyor…
+        </div>
+      )}
+      {aiState === 'error' && (
+        <div className="mt-5 text-sm text-[#7a4b00]">
+          Öneriler şu anda hazırlanamadı.{' '}
+          <button onClick={onRetryAi} className="font-bold underline">
+            Tekrar dene
+          </button>
+        </div>
+      )}
+
+      {ai && (
+        <>
+          <p className="mt-3 max-w-[70ch] text-base leading-7 text-[#2a3d36]">{ai.ozet}</p>
+
+          {ai.sorunlar?.length > 0 && (
+            <ol className="mt-5 space-y-3">
+              {ai.sorunlar.map((x, i) => (
+                <li key={i} className="flex gap-4 rounded-2xl bg-[#f7f4ec] p-4 sm:p-5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1d2a22] text-sm font-bold text-white">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-[#17352a]">{x.parametre}</h3>
+                    <p className="mt-0.5 text-sm leading-6 text-[#5b6f65]">{x.etki}</p>
+                    <ul className="mt-3 flex flex-wrap gap-2">
+                      {x.urunler.map((u, j) => (
+                        <li key={j} className="rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-[#1d2a22]/8">
+                          <span className="font-semibold text-[#17352a]">{u.urun}</span>
+                          <span className="ml-2 font-bold text-[#1f7a45]">{u.doz}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-sm text-[#5b6f65]">
+                      <span className="font-semibold text-[#2a3d36]">Ne zaman: </span>
+                      {x.zaman}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {(ai.bitkiUygunlugu && report.bitki) || ai.bolgeNotu ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {ai.bitkiUygunlugu && report.bitki && (
+                <p className="flex gap-3 rounded-2xl bg-[#eef8ea] p-4 text-sm leading-6">
+                  <Sprout size={18} className="mt-0.5 shrink-0 text-[#2f7a4f]" />
+                  <span>
+                    <span className="font-bold">{report.bitki}: </span>
+                    {ai.bitkiUygunlugu}
+                  </span>
+                </p>
+              )}
+              {ai.bolgeNotu && (
+                <p className="flex gap-3 rounded-2xl bg-[#f6efe2] p-4 text-sm leading-6 text-[#4a3d22]">
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-[#a87a2a]" />
+                  <span>
+                    <span className="font-bold">{report.ilce ? `${report.ilce}: ` : 'Bölgeniz: '}</span>
+                    {ai.bolgeNotu}
+                  </span>
+                </p>
+              )}
+            </div>
+          ) : null}
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Açılır-kapanır detay kutusu (varsayılan kapalı) */
+function Detay({ baslik, alt, children }: { baslik: string; alt?: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-2xl bg-white ring-1 ring-[#1d2a22]/8 open:pb-4 print:open">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="block font-semibold text-[#17352a]">{baslik}</span>
+          {alt && <span className="block text-xs text-[#7a877e]">{alt}</span>}
+        </span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f1efe8] text-[#476456] transition group-open:rotate-45">+</span>
+      </summary>
+      <div className="px-3 sm:px-5">{children}</div>
+    </details>
+  );
+}
+
 export function SolutionPlan({
   report,
   ai,
@@ -344,85 +467,22 @@ export function SolutionPlan({
   onRetryAi: () => void;
   omDusuk: boolean;
 }) {
+  // Özet ve "önce bunları yapın" listesi artık OncelikliIsler bileşeninde; burada yalnızca ürün grupları var.
+  void report;
+  void onRetryAi;
+  if (!ai && !(omDusuk && aiState !== 'loading')) return null;
   return (
     <section className="mt-10 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8" aria-labelledby="cozum">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Bir bilenden tavsiyeler</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Sezon boyunca</p>
       <h2 id="cozum" className="mt-2 flex items-center gap-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
         <ClipboardList size={26} className="text-[#2f7a4f]" />
-        Çözüm planı
+        Ürün önerileri
       </h2>
 
-      {aiState === 'loading' && (
-        <div className="mt-5 flex items-center gap-3 text-[#64766c]">
-          <Loader2 className="animate-spin" size={20} /> Analiz sonuçlarınıza göre ürün programı hazırlanıyor…
-        </div>
-      )}
       {!ai && omDusuk && <OrganikMaddeProtokolu />}
-      {aiState === 'error' && (
-        <div className="mt-5 text-sm text-[#7a4b00]">
-          Çözüm planı şu anda hazırlanamadı.{' '}
-          <button onClick={onRetryAi} className="font-bold underline">
-            Tekrar dene
-          </button>
-        </div>
-      )}
 
       {ai && (
         <div className="mt-5 space-y-9">
-          <div className="space-y-3">
-            <p className="max-w-[70ch] text-base leading-7 text-[#2a3d36]">{ai.ozet}</p>
-            {ai.bitkiUygunlugu && report.bitki && (
-              <p className="rounded-2xl bg-[#eef8ea] p-4 text-sm leading-6">
-                <span className="font-bold">{report.bitki}: </span>
-                {ai.bitkiUygunlugu}
-              </p>
-            )}
-            {ai.bolgeNotu && (
-              <p className="flex gap-3 rounded-2xl bg-[#f6efe2] p-4 text-sm leading-6 text-[#4a3d22]">
-                <MapPin size={18} className="mt-0.5 shrink-0 text-[#a87a2a]" />
-                <span>
-                  <span className="font-bold">{report.ilce ? `${report.ilce}: ` : 'Bölgeniz: '}</span>
-                  {ai.bolgeNotu}
-                </span>
-              </p>
-            )}
-          </div>
-
-          {ai.sorunlar?.length > 0 && (
-            <div>
-              <h3 className="font-bold">Sorunlar ve önerilen ürünler</h3>
-              <div className="mt-3 overflow-hidden rounded-2xl border border-[#dfe9df] bg-white">
-                <div className="hidden grid-cols-[1fr_1.4fr_0.8fr] gap-4 border-b border-[#dfe9df] bg-[#f3f7f2] px-4 py-2 text-xs font-semibold text-[#6b7d72] sm:grid">
-                  <span>Sorun</span>
-                  <span>Ürün ve doz</span>
-                  <span>Ne zaman?</span>
-                </div>
-                <ol className="divide-y divide-[#edf2ee]">
-                  {ai.sorunlar.map((x, i) => (
-                    <li key={i} className="grid gap-3 px-4 py-4 text-sm leading-6 sm:grid-cols-[1fr_1.4fr_0.8fr] sm:gap-4">
-                      <div>
-                        <div className="font-bold text-[#17352a]">{x.parametre}</div>
-                        <div className="text-[#5b6f65]">{x.etki}</div>
-                      </div>
-                      <ul className="space-y-1.5">
-                        {x.urunler.map((u, j) => (
-                          <li key={j} className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-[#17352a]">{u.urun}</span>
-                            <span className="rounded-full bg-[#edf7ed] px-2 py-0.5 text-xs font-bold text-[#1f7a45]">{u.doz}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="text-[#5b6f65]">
-                        <span className="font-semibold text-[#2a3d36] sm:hidden">Ne zaman? </span>
-                        {x.zaman}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          )}
-
           {omDusuk && <OrganikMaddeProtokolu />}
           <UrunBolumu icon={<Sprout size={20} />} title="Kök gelişimi ve toprak canlılığı" items={ai.kokGelisimi} />
           <UrunBolumu icon={<ShieldCheck size={20} />} title="İklim stresine karşı koruma (don, sıcak, kuraklık)" items={ai.iklimKoruma} />
@@ -595,7 +655,7 @@ export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
                   key={i}
                   className={`flex flex-col overflow-hidden rounded-[22px] border bg-white ${suAn ? 'border-[#2f8f57] ring-2 ring-[#cde9d4]' : 'border-[#dfe9df]'}`}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-[#0b0c09]">
+                  <div className="relative aspect-video overflow-hidden bg-[#0b0c09]">
                     {(() => {
                       const gorsel = evreGorseli(zkart.bitki, i, zkart.evreler.length);
                       if (gorsel)
@@ -822,97 +882,189 @@ export function IndeksSeyri({ noktalar }: { noktalar: { tarih: string; indeks: n
 
 const TON_RENK: Record<Tone, string> = { iyi: '#5fbf6a', dikkat: '#e2b65c', sorun: '#e0674f', bilgi: '#8fb8cc' };
 
-/** Kapaktaki özet halkaları: en önemli 6 parametre, renkli daireyle */
-const OZET_ANAHTARLAR: { k: ParamKey; ad: string }[] = [
-  { k: 'ph', ad: 'Asitlik (pH)' },
-  { k: 'ec', ad: 'Tuzluluk' },
-  { k: 'kirec', ad: 'Kireç' },
-  { k: 'organikMadde', ad: 'Organik madde' },
-  { k: 'fosfor', ad: 'Fosfor' },
-  { k: 'potasyum', ad: 'Potasyum' },
-];
+
+
+const SINIF_ACIKLAMA: Record<string, string> = {
+  'Çok iyi': 'Toprağınız çok sağlıklı. Mevcut programınızı koruyun.',
+  İyi: 'Toprağınız genel olarak sağlıklı. Birkaç eksik giderilirse verim belirgin şekilde artar.',
+  Orta: 'Toprağınız orta seviyede. Eksikler giderilmezse verim kaybı yaşanabilir.',
+  Zayıf: 'Toprağınız zayıf. Aşağıdaki öneriler bu sezon için önemli.',
+  'Çok zayıf': 'Toprağınız ciddi destek istiyor. Önerileri öncelikle uygulayın.',
+};
+
+/** Toprak karnesi göstergesi: 5 renkli dilim, ibre ve puan. İbre açılışta 0'dan değere döner. */
+function KarneGostergesi({ yuzde, sinif, renk }: { yuzde: number; sinif: string; renk: string }) {
+  const [gosterilen, setGosterilen] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setGosterilen(yuzde), 150);
+    return () => clearTimeout(t);
+  }, [yuzde]);
+  const cx = 150, cy = 150, r = 118, kalinlik = 22, bosluk = 1.6; // derece
+  const nokta = (aci: number, rr = r) => {
+    const rad = (Math.PI * (180 - aci)) / 180;
+    return [cx + rr * Math.cos(rad), cy - rr * Math.sin(rad)];
+  };
+  const yay = (a1: number, a2: number) => {
+    const [x1, y1] = nokta(a1);
+    const [x2, y2] = nokta(a2);
+    return `M${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2}`;
+  };
+  const dilimler = [...SINIFLAR].reverse(); // 0-20, 20-40 …
+  const ibreAci = (Math.min(100, Math.max(0, gosterilen)) / 100) * 180;
+  return (
+    <div className="relative w-full max-w-[340px]">
+      <svg viewBox="0 0 300 172" className="w-full" role="img" aria-label={`Toprak kalite indeksi ${yuzde} / 100, ${sinif}`}>
+        {dilimler.map((d, i) => (
+          <path
+            key={d.ad}
+            d={yay(i * 36 + (i ? bosluk : 0), (i + 1) * 36 - (i < 4 ? bosluk : 0))}
+            fill="none"
+            stroke={d.renk}
+            strokeWidth={kalinlik}
+            opacity={yuzde >= d.min && (i === 4 || yuzde < dilimler[i + 1].min) ? 1 : 0.35}
+          />
+        ))}
+        {[0, 20, 40, 60, 80, 100].map((t) => {
+          const [x, y] = nokta(t * 1.8, r - kalinlik / 2 - 12);
+          return (
+            <text key={t} x={x} y={y + 3} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,.45)">
+              {t}
+            </text>
+          );
+        })}
+        <g style={{ transform: `rotate(${ibreAci - 90}deg)`, transformOrigin: `${cx}px ${cy}px`, transition: 'transform 1.4s cubic-bezier(.2,.8,.2,1)' }}>
+          <path d={`M${cx - 5} ${cy} L${cx} ${cy - r + 8} L${cx + 5} ${cy} Z`} fill="#f5f0e6" />
+        </g>
+        <circle cx={cx} cy={cy} r="11" fill="#f5f0e6" />
+        <circle cx={cx} cy={cy} r="5" fill="#121410" />
+      </svg>
+      <div className="-mt-1 text-center">
+        <div className="font-display text-6xl font-medium leading-none tracking-[-0.03em] tabular-nums sm:text-7xl">
+          {yuzde}
+          <span className="ml-1 font-sans text-lg font-normal text-white/50">/100</span>
+        </div>
+        <span className="mt-3 inline-block rounded-full px-4 py-1 text-sm font-bold text-white" style={{ background: renk }}>
+          {sinif}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function RaporKapagi({
   report,
-  results,
   tarla,
   tarih,
   indeks,
-  issues,
+  sorunlu = [],
 }: {
   report: SoilReport;
-  results: ParamResult[];
   tarla: SonucTarla;
   tarih?: string;
   indeks?: IndeksSonucu | null;
-  issues: number;
+  /** Laboratuvar sınıflandırmasında dikkat/sorun çıkan anahtarlar: güçlü yan olarak gösterilmez */
+  sorunlu?: string[];
 }) {
-  const ozet = OZET_ANAHTARLAR.map(({ k, ad }) => {
-    const r = results.find((x) => x.key === k) ?? (k === 'ec' ? results.find((x) => x.key === 'tuz') : undefined);
-    return r?.classification ? { k, ad, tone: r.classification.tone, etiket: r.classification.label, deger: r.value, birim: PARAMS[r.key].unit } : null;
-  }).filter(Boolean) as { k: ParamKey; ad: string; tone: Tone; etiket: string; deger: number; birim: string }[];
   const bilgiler = [tarih, report.raporNo && `Rapor ${report.raporNo}`, tarla.konum, tarla.bitki, SULAMA_YONTEMLERI[tarla.sulama]?.ad].filter(Boolean);
+  const sirali = indeks ? [...indeks.satirlar].sort((a, b) => b.puan - a.puan) : [];
+  const guclu = sirali.filter((x) => x.puan >= 4 && !sorunlu.includes(x.key)).slice(0, 3);
+  const zayif = [...sirali].reverse().filter((x) => x.puan <= 2).slice(0, 3);
 
   return (
     <section className="relative overflow-hidden rounded-[32px] bg-[#121410] text-white shadow-[0_40px_80px_-30px_rgba(18,20,16,.6)] print:rounded-none print:shadow-none">
       <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-center" aria-hidden />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#121410]/85 via-[#121410]/55 to-[#121410]/95 md:bg-gradient-to-r md:from-[#121410]/95 md:via-[#121410]/60 md:to-[#121410]/30" aria-hidden />
-      {/* Kavisli çizgi: rapor kapağı dokunuşu */}
-      <svg className="absolute -right-10 -top-10 h-[130%] w-1/2 opacity-30" viewBox="0 0 200 400" fill="none" aria-hidden>
-        <path d="M150 0 C 40 80, 210 160, 90 240 S 120 360, 40 400" stroke="#f5f0e6" strokeWidth="3" />
-      </svg>
+      <div className="absolute inset-0 bg-gradient-to-b from-[#121410]/80 via-[#121410]/60 to-[#121410]/95" aria-hidden />
 
-      <div className="relative grid gap-8 p-6 sm:p-10 md:grid-cols-[1.4fr_1fr] md:items-center">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">Toprak sağlığı raporu</p>
-          <h1 className="mt-3 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">{tarla.ad}</h1>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
-            {bilgiler.map((b) => (
-              <span key={b as string} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
-                {b}
-              </span>
-            ))}
-          </div>
-          <p className="mt-6 max-w-md text-lg leading-7 text-white/80">
-            {issues === 0 ? 'Toprağınız genel olarak iyi durumda.' : `Toprağınızda ${issues} konu ilgi bekliyor. Aşağıda her biri için ne yapacağınız yazıyor.`}
-          </p>
-        </div>
-        {indeks && (
-          <div className="flex flex-col items-center rounded-[28px] border border-white/10 bg-white/5 p-5 backdrop-blur-md">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Toprak kalite indeksi</p>
-            <div className="mt-2 w-full max-w-[220px]">
-              <IndeksGostergesi yuzde={indeks.yuzde} renk={indeks.renk} koyu />
-            </div>
-            <span className="rounded-full px-4 py-1 text-sm font-bold text-white" style={{ background: indeks.renk }}>
-              {indeks.sinif}
+      <div className="relative p-6 sm:p-10">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">Toprak karnesi</p>
+        <h1 className="mt-3 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">{tarla.ad}</h1>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+          {bilgiler.map((b) => (
+            <span key={b as string} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
+              {b}
             </span>
+          ))}
+        </div>
+
+        {indeks ? (
+          <div className="mt-8 grid items-center gap-8 md:grid-cols-[1fr_1.1fr] md:gap-12">
+            <div className="flex flex-col items-center">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/55">Toprak kalite indeksi</p>
+              <KarneGostergesi yuzde={indeks.yuzde} sinif={indeks.sinif} renk={indeks.renk} />
+            </div>
+            <div>
+              <p className="font-display text-2xl leading-snug sm:text-3xl">{SINIF_ACIKLAMA[indeks.sinif] ?? ''}</p>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {guclu.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8fd18f]">Güçlü yanları</p>
+                    <ul className="mt-2 space-y-1.5">
+                      {guclu.map((x) => (
+                        <li key={x.key} className="flex items-center justify-between gap-3 text-sm">
+                          <span>{x.ad}</span>
+                          <PuanNoktalari puan={x.puan} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {zayif.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#f0a58f]">Geliştirilmesi gerekenler</p>
+                    <ul className="mt-2 space-y-1.5">
+                      {zayif.map((x) => (
+                        <li key={x.key} className="flex items-center justify-between gap-3 text-sm">
+                          <span>{x.ad}</span>
+                          <PuanNoktalari puan={x.puan} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+        ) : (
+          <p className="mt-6 max-w-md text-lg leading-7 text-white/80">Analiz değerleriniz aşağıda.</p>
         )}
       </div>
 
-      {ozet.length > 0 && (
-        <div className="relative border-t border-white/10 bg-[#121410]/60 px-6 py-6 backdrop-blur sm:px-10">
-          <ul className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-6">
-            {ozet.map((o) => (
-              <li key={o.k} className="flex flex-col items-center text-center">
-                <span className="relative flex h-14 w-14 items-center justify-center rounded-full" style={{ background: `${TON_RENK[o.tone]}22` }}>
-                  <span className="h-9 w-9 rounded-full shadow-[0_0_24px_rgba(0,0,0,.25)]" style={{ background: TON_RENK[o.tone] }} />
-                </span>
-                <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-white/60">{o.ad}</span>
-                <span className="text-sm font-semibold">{o.etiket}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-5 flex flex-wrap justify-center gap-4 text-[11px] text-white/60">
-            {(['iyi', 'dikkat', 'sorun'] as Tone[]).map((t) => (
-              <span key={t} className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: TON_RENK[t] }} /> {TONE_STYLE[t].label}
-              </span>
-            ))}
-          </div>
+      {indeks && (
+        <div className="relative grid grid-cols-3 border-t border-white/10 bg-[#121410]/70 backdrop-blur">
+          {indeks.gruplar.map((g) => (
+            <div key={g.grup} className="border-white/10 px-3 py-5 text-center [&:not(:first-child)]:border-l sm:px-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">{g.ad}</p>
+              {g.yuzde !== null ? (
+                <>
+                  <p className="mt-1 font-display text-3xl tabular-nums">{g.yuzde}</p>
+                  <div className="mx-auto mt-2 h-1.5 max-w-[120px] overflow-hidden rounded-full bg-white/15">
+                    <div className="h-full rounded-full bg-[#e2b65c]" style={{ width: `${g.yuzde}%` }} />
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-white/45">{g.adet} ölçüm</p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 font-display text-3xl text-white/30">–</p>
+                  <p className="mt-1.5 text-[11px] leading-4 text-white/45">Ölçülmedi</p>
+                </>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </section>
+  );
+}
+
+/** 0–5 puanı beş nokta olarak gösterir (koyu zemin) */
+function PuanNoktalari({ puan }: { puan: number }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1" aria-label={`${puan} / 5`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className="h-2 w-2 rounded-full" style={{ background: i <= puan ? PUAN_RENK[puan] : 'rgba(255,255,255,.18)' }} />
+      ))}
+      <span className="ml-1 w-7 text-right text-xs tabular-nums text-white/60">{puan}/5</span>
+    </span>
   );
 }
 
@@ -1068,26 +1220,49 @@ export function SonucEkrani({
   tarih?: string;
 }) {
   const results = classify(report);
-  const count = (t: Tone) => results.filter((r) => r.classification?.tone === t).length;
-  const issues = count('sorun') + count('dikkat');
+    const ilgi = results
+    .filter((r) => r.classification?.tone === 'sorun' || r.classification?.tone === 'dikkat')
+    .sort((a, b) => (a.classification?.tone === 'sorun' ? 0 : 1) - (b.classification?.tone === 'sorun' ? 0 : 1))
+    .map((r) => ({ key: r.key, ad: PARAMS[r.key].label.replace(/\s*\(.*\)/, ''), tone: r.classification!.tone, etiket: r.classification!.label }));
   const indeks = kaliteIndeksi(report);
   const omDusuk = report.values.organikMadde !== undefined && uygunFark('organikMadde', report.values.organikMadde).durum === 'eksik';
 
   return (
     <div className="mx-auto max-w-5xl">
       {baslikUstu && <div className="mb-4">{baslikUstu}</div>}
-      <RaporKapagi report={report} results={results} tarla={tarla} tarih={tarih} indeks={indeks} issues={issues} />
+      <RaporKapagi report={report} tarla={tarla} tarih={tarih} indeks={indeks} sorunlu={ilgi.map((x) => x.key)} />
 
+      {/* 1) Ne yapmalı? */}
+      <OncelikliIsler report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} ilgi={ilgi} />
+
+      {/* 2) Dönem dönem program */}
+      <SulamaRecetesi tarla={tarla} />
+
+      {/* 3) Değerler: tek görünüm */}
       <Gostergeler report={report} results={results} />
 
-      {indeks && <KaliteIndeksi indeks={indeks} sade />}
+      {onceki && <Karsilastirma once={onceki.rapor} simdi={report} onceTarih={onceki.tarih} simdiTarih={onceki.simdiTarih} />}
 
-      <section className="mt-10" aria-labelledby="tablo">
-        <h2 id="tablo" className="mb-3 text-xl font-bold">Tüm analiz değerleri</h2>
-        <AnalysisTable report={report} results={results} />
-        <details className="mt-3 rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 text-sm">
-          <summary className="cursor-pointer font-semibold text-[#476456]">Bu değerler ne anlama geliyor?</summary>
-          <dl className="mt-3 space-y-2">
+      {/* 4) Diğer ürün önerileri */}
+      <SolutionPlan report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} omDusuk={omDusuk} />
+
+      <Videolar bitki={zkartBul(tarla.bitki ?? undefined)?.bitki} />
+
+      {/* 5) Teknik detaylar: varsayılan kapalı */}
+      <section className="mt-10 space-y-3" aria-labelledby="detaylar">
+        <h2 id="detaylar" className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7a877e]">
+          Detaylar
+        </h2>
+        <Detay baslik="Laboratuvar tablosu" alt="Tüm ölçümler, uygun aralıklar ve farklar">
+          <AnalysisTable report={report} results={results} />
+        </Detay>
+        {indeks && (
+          <Detay baslik="Kalite indeksi nasıl hesaplandı?" alt={`${indeks.satirlar.length} ölçümün 0–5 puan ortalaması → ${indeks.yuzde}/100`}>
+            <KaliteIndeksi indeks={indeks} sade />
+          </Detay>
+        )}
+        <Detay baslik="Bu değerler ne anlama geliyor?">
+          <dl className="space-y-3 px-2 text-sm">
             {results.map((r) => (
               <div key={r.key}>
                 <dt className="font-semibold">{PARAMS[r.key].label}</dt>
@@ -1095,16 +1270,8 @@ export function SonucEkrani({
               </div>
             ))}
           </dl>
-        </details>
+        </Detay>
       </section>
-
-      {onceki && <Karsilastirma once={onceki.rapor} simdi={report} onceTarih={onceki.tarih} simdiTarih={onceki.simdiTarih} />}
-
-      <SolutionPlan report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} omDusuk={omDusuk} />
-
-      <SulamaRecetesi tarla={tarla} />
-
-      <Videolar bitki={zkartBul(tarla.bitki ?? undefined)?.bitki} />
 
       {eylemler && <div className="mt-10 flex flex-col gap-3 sm:flex-row print:hidden">{eylemler}</div>}
     </div>
