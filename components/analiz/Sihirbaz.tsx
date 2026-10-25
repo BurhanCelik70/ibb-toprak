@@ -3,6 +3,7 @@
  * Rapor yükleme sihirbazı: yöntem seçimi → dosya / fotoğraf / elle giriş → kontrol.
  * Kontrol ekranında "Kaydet ve yorumla" denince onKaydet(report, kaynak) çağrılır.
  */
+import { adimGorseli } from '@/lib/bitkiGorsel';
 import { ILLER } from '@/lib/bolgeler';
 import { AlertTriangle, ArrowLeft, ArrowRight, Camera, ChevronRight, FileSpreadsheet, Loader2, Upload, UserRound, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -416,13 +417,13 @@ function ManualScreen({
 
   // Her adımda bitki biraz daha büyür: ilk adım tohum, son adım başak
   const ilerleme = (step + 1 - ilkAdim) / total;
-  const kare = String(Math.round(2 + ilerleme * 80)).padStart(3, '0');
+  const gorsel = adimGorseli(meta.bitki, ilerleme);
 
   return (
     <div className="mx-auto max-w-3xl overflow-hidden rounded-[32px] bg-white shadow-[0_30px_70px_-30px_rgba(18,20,16,.45)]">
       <div className="relative h-56 overflow-hidden bg-[#121410] sm:h-64">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/buyume/${kare}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500" />
+        <img src={gorsel} alt="" className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#121410] via-[#121410]/40 to-[#121410]/10" />
         <div className="relative flex h-full flex-col justify-between p-5 text-white sm:p-7">
           <div className="flex items-center justify-between gap-3">

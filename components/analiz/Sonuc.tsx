@@ -4,6 +4,7 @@
  */
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Info, Loader2, MapPin, Minus, ShieldCheck, Sprout } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { evreGorseli } from '@/lib/bitkiGorsel';
 import { ORGANIK_MADDE_PROTOKOLU, zkartBul } from '@/lib/igsas';
 import { kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
 import { karsilastir, ozetle } from '@/lib/karsilastir';
@@ -41,9 +42,6 @@ export type SonucTarla = {
   sulama_suresi_saat: number | null;
   konum?: string | null;
 };
-
-/** Büyüme videosundan kare (1–97): tohumdan hasada */
-export const kareYolu = (n: number) => `/buyume/${String(Math.min(97, Math.max(1, Math.round(n)))).padStart(3, '0')}.webp`;
 
 export const TONE_STYLE: Record<Tone, { dot: string; text: string; bar: string; label: string }> = {
   iyi: { dot: 'bg-[#2e9e5b]', text: 'text-[#1f7a45]', bar: 'bg-[#2e9e5b]', label: 'Uygun' },
@@ -597,15 +595,28 @@ export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
                   key={i}
                   className={`flex flex-col overflow-hidden rounded-[22px] border bg-white ${suAn ? 'border-[#2f8f57] ring-2 ring-[#cde9d4]' : 'border-[#dfe9df]'}`}
                 >
-                  <div className="relative aspect-[16/9] overflow-hidden bg-[#121410]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={kareYolu(zkart.evreler.length > 1 ? 4 + (i / (zkart.evreler.length - 1)) * 93 : 50)}
-                      alt=""
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#121410] via-[#121410]/30 to-transparent" />
+                  <div className="relative aspect-[4/3] overflow-hidden bg-[#0b0c09]">
+                    {(() => {
+                      const gorsel = evreGorseli(zkart.bitki, i, zkart.evreler.length);
+                      if (gorsel)
+                        // eslint-disable-next-line @next/next/no-img-element
+                        return <img src={gorsel} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />;
+                      // Bu bitkinin görseli yok: toprak + evreyle büyüyen filiz simgesi
+                      const oran = zkart.evreler.length > 1 ? i / (zkart.evreler.length - 1) : 0.5;
+                      return (
+                        <>
+                          <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-bottom opacity-90" />
+                          <div className="absolute inset-0 flex items-center justify-center pb-8">
+                            <Sprout
+                              strokeWidth={1.4}
+                              className="text-[#9bdd68] drop-shadow-[0_0_18px_rgba(155,221,104,.45)]"
+                              style={{ width: 28 + oran * 56, height: 28 + oran * 56, color: oran > 0.85 ? '#e2b65c' : undefined }}
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0b0c09] via-[#0b0c09]/70 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 p-4 text-white">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f5f0e6] font-display text-base font-semibold text-[#121410]">
                         {i + 1}
