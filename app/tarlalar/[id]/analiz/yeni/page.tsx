@@ -13,7 +13,7 @@ export default async function YeniAnalizSayfasi({ params }: { params: Promise<{ 
   const { data: tarla } = await supabase.from('tarlalar').select('id, ad, il, ilce, bitki').eq('id', id).maybeSingle();
   if (!tarla) notFound();
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#eef6eb] via-[#f7faf5] to-white">
+    <div className="flex min-h-screen flex-col bg-[#f5f0e6]">
       <AppHeader aktif="tarlalar" />
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 sm:px-8 sm:py-12">
         <Link href={`/tarlalar/${tarla.id}`} className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-[#476456]">

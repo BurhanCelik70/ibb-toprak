@@ -14,10 +14,10 @@ export default async function HesapSayfasi() {
   } = await supabase.auth.getUser();
   const { count } = await supabase.from('tarlalar').select('id', { count: 'exact', head: true });
   return (
-    <div className="flex min-h-screen flex-col bg-[#f7faf5]">
+    <div className="flex min-h-screen flex-col bg-[#f5f0e6]">
       <AppHeader aktif="hesap" />
       <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-10 sm:px-8">
-        <h1 className="text-3xl font-extrabold tracking-tight">Hesabım</h1>
+        <h1 className="font-display text-4xl font-medium tracking-[-0.02em] sm:text-5xl">Hesabım</h1>
         <dl className="mt-6 divide-y divide-[#edf2ee] rounded-[24px] border border-[#dfe9df] bg-white px-5">
           {[
             ['Ad soyad', profil?.ad_soyad ?? '—'],

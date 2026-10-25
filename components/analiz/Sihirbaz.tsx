@@ -5,7 +5,7 @@
  */
 import { ILLER } from '@/lib/bolgeler';
 import { AlertTriangle, ArrowLeft, ArrowRight, Camera, ChevronRight, FileSpreadsheet, Loader2, Upload, UserRound, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChoiceGrid, MethodCard, Panel, Row, Warning } from '@/components/ui';
 import { parseLabWorkbook } from '@/lib/excelRapor';
 import { ZKART_BITKILERI } from '@/lib/igsas';
@@ -223,15 +223,20 @@ export function Sihirbaz({
 function MethodScreen({ method, onSelect }: { method: Method | null; onSelect: (m: Method) => void }) {
   return (
     <div className="animate-[fadeIn_.4s_ease-out]">
-      <div className="text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl">Raporunuz elinizde mi?</h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#687b70] sm:text-lg">
-          En hızlısı laboratuvarın gönderdiği dosyayı yüklemek. Dosyanız yoksa kâğıt raporun fotoğrafını
-          çekebilir ya da değerleri tek tek girebilirsiniz.
-        </p>
+      <div className="relative overflow-hidden rounded-[32px] bg-[#121410] px-6 py-12 text-center text-white sm:px-10 sm:py-16">
+        <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-center opacity-80" aria-hidden />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#121410]/80 via-[#121410]/50 to-[#121410]/90" aria-hidden />
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">Yeni analiz</p>
+          <h1 className="mt-3 font-display text-4xl font-medium tracking-[-0.02em] sm:text-6xl">Raporunuz elinizde mi?</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-white/75 sm:text-lg">
+            En hızlısı laboratuvarın gönderdiği dosyayı yüklemek. Dosyanız yoksa kâğıt raporun fotoğrafını çekebilir ya da değerleri tek
+            tek girebilirsiniz.
+          </p>
+        </div>
       </div>
 
-      <div className="mt-12 grid gap-5 md:grid-cols-3">
+      <div className="relative z-10 -mt-8 grid gap-4 px-2 sm:px-6 md:grid-cols-3">
         <MethodCard
           icon={<FileSpreadsheet size={30} />}
           title="Dosya yükle"
@@ -404,27 +409,48 @@ function ManualScreen({
     section?.fields.includes('kil') &&
     textureSumWarning({ kum: parseNumber(draft.kum), silt: parseNumber(draft.silt), kil: parseNumber(draft.kil) });
 
+  // Yeni adımda sayfanın başına dön (uzun formlarda alt kısımda kalmasın)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
+  // Her adımda bitki biraz daha büyür: ilk adım tohum, son adım başak
+  const ilerleme = (step + 1 - ilkAdim) / total;
+  const kare = String(Math.round(2 + ilerleme * 80)).padStart(3, '0');
+
   return (
-    <div className="mx-auto max-w-3xl rounded-[32px] border border-[#dfe9df] bg-white p-5 shadow-[0_18px_50px_rgba(19,53,41,.08)] sm:p-8">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <button onClick={onBack} className="inline-flex items-center gap-2 rounded-full border border-[#dfe9df] bg-[#f4faf3] px-4 py-2 text-sm font-semibold text-[#476456] hover:bg-[#edf6eb]">
-          <ArrowLeft size={16} />
-          Geri
-        </button>
-        <div className="text-sm font-semibold text-[#32965e]">
-          Adım {step + 1 - ilkAdim} / {total}
+    <div className="mx-auto max-w-3xl overflow-hidden rounded-[32px] bg-white shadow-[0_30px_70px_-30px_rgba(18,20,16,.45)]">
+      <div className="relative h-56 overflow-hidden bg-[#121410] sm:h-64">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/buyume/${kare}.webp`} alt="" className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#121410] via-[#121410]/40 to-[#121410]/10" />
+        <div className="relative flex h-full flex-col justify-between p-5 text-white sm:p-7">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur hover:bg-white/20"
+            >
+              <ArrowLeft size={16} />
+              Geri
+            </button>
+            <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide backdrop-blur">
+              Adım {step + 1 - ilkAdim} / {total}
+            </div>
+          </div>
+          <div>
+            <h2 className="font-display text-3xl font-medium leading-tight tracking-[-0.01em] sm:text-4xl">{section ? section.title : 'Tarlanız hakkında'}</h2>
+            <p className="mt-2 max-w-lg text-sm text-white/75 sm:text-base">
+              {section ? section.description : 'Bu bilgiler önerileri size özel hale getirir.'}
+            </p>
+            <div className="mt-4 flex gap-1.5">
+              {Array.from({ length: total }, (_, i) => (
+                <span key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i < step + 1 - ilkAdim ? 'bg-[#e2b65c]' : 'bg-white/20'}`} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-      <div className="mb-8 h-2.5 overflow-hidden rounded-full bg-[#dfe9df]">
-        <div className="h-full rounded-full bg-gradient-to-r from-[#5fc33c] to-[#249b70] transition-all" style={{ width: `${((step + 1 - ilkAdim) / total) * 100}%` }} />
-      </div>
-
-      <div className="mb-8 text-center">
-        <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{section ? section.title : 'Tarlanız hakkında'}</h2>
-        <p className="mt-3 text-base text-[#64766c]">
-          {section ? section.description : 'Bu bilgiler önerileri size özel hale getirir.'}
-        </p>
-      </div>
+      <div className="p-5 sm:p-8">
 
       <div className="space-y-5">
         {step === 0 ? (
@@ -479,11 +505,12 @@ function ManualScreen({
 
       <button
         onClick={onNext}
-        className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#74cc3c] to-[#20a875] px-6 py-4 text-base font-extrabold text-white shadow-[0_18px_45px_rgba(32,168,117,0.28)] transition hover:-translate-y-1"
+        className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1d2a22] px-6 py-4 text-base font-semibold text-white transition hover:bg-[#2f7a4f]"
       >
         {step === MANUAL_STEPS.length ? 'Değerleri kontrol et' : 'Sonraki'}
         <ArrowRight size={18} />
       </button>
+      </div>
     </div>
   );
 }

@@ -40,35 +40,49 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
     .map((a) => ({ tarih: new Date(a.analiz_tarihi).toLocaleDateString('tr-TR', { month: 'short', year: 'numeric' }), indeks: a.indeks! }));
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f7faf5]">
+    <div className="flex min-h-screen flex-col bg-[#f5f0e6]">
       <AppHeader aktif="tarlalar" />
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10 sm:px-8">
         <Link href="/tarlalar" className="inline-flex items-center gap-1 text-sm font-semibold text-[#476456]">
           <ChevronLeft size={16} /> Tarlalarım
         </Link>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{tarla.ad}</h1>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
-              {tarla.bitki && <span className="rounded-full bg-[#e8f3e6] px-3 py-1 text-[#1f6f4a]">{tarla.bitki}</span>}
-              <span className="rounded-full bg-[#e3f0f6] px-3 py-1 text-[#2c5566]">
-                {SULAMA_YONTEMLERI[tarla.sulama].ad}
-                {tarla.sulama_suresi_saat ? ` · ${formatNumber(tarla.sulama_suresi_saat, 1)} saat` : ''}
-              </span>
-              {tarla.alan_dekar && <span className="rounded-full bg-[#f3efe6] px-3 py-1 text-[#6b5520]">{formatNumber(tarla.alan_dekar, 1)} dekar</span>}
-              {(tarla.il || tarla.ilce || tarla.konum) && (
-                <span className="rounded-full bg-white px-3 py-1 text-[#51675d] ring-1 ring-[#dfe9df]">{[tarla.konum, tarla.ilce, tarla.il].filter(Boolean).join(', ')}</span>
-              )}
+        <div className="relative mt-3 overflow-hidden rounded-[32px] bg-[#121410] text-white">
+          <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-center" aria-hidden />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#121410]/95 via-[#121410]/65 to-[#121410]/30" aria-hidden />
+          <div className="relative flex flex-wrap items-end justify-between gap-6 p-6 sm:p-10">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">Tarla</p>
+              <h1 className="mt-2 font-display text-4xl font-medium tracking-[-0.02em] sm:text-5xl">{tarla.ad}</h1>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+                {[
+                  tarla.bitki,
+                  `${SULAMA_YONTEMLERI[tarla.sulama].ad}${tarla.sulama_suresi_saat ? ` · ${formatNumber(tarla.sulama_suresi_saat, 1)} saat` : ''}`,
+                  tarla.alan_dekar ? `${formatNumber(tarla.alan_dekar, 1)} dekar` : null,
+                  [tarla.konum, tarla.ilce, tarla.il].filter(Boolean).join(', ') || null,
+                ]
+                  .filter(Boolean)
+                  .map((b) => (
+                    <span key={b as string} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
+                      {b}
+                    </span>
+                  ))}
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Link href={`/tarlalar/${tarla.id}/duzenle`} className="inline-flex items-center gap-2 rounded-full border border-[#dfe9df] bg-white px-4 py-2.5 text-sm font-semibold text-[#3e5248] hover:bg-[#f2f7f3]">
-              <Pencil size={16} /> Düzenle
-            </Link>
-            <Link href={`/tarlalar/${tarla.id}/analiz/yeni`} className="inline-flex items-center gap-2 rounded-full bg-[#238f61] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1d7d54]">
-              <FilePlus2 size={16} /> Analiz ekle
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href={`/tarlalar/${tarla.id}/duzenle`}
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold backdrop-blur hover:bg-white/20"
+              >
+                <Pencil size={16} /> Düzenle
+              </Link>
+              <Link
+                href={`/tarlalar/${tarla.id}/analiz/yeni`}
+                className="inline-flex items-center gap-2 rounded-full bg-[#f5f0e6] px-5 py-2.5 text-sm font-bold text-[#121410] hover:bg-white"
+              >
+                <FilePlus2 size={16} /> Analiz ekle
+              </Link>
+            </div>
           </div>
         </div>
 

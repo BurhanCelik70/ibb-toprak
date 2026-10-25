@@ -33,7 +33,17 @@ import {
 import type { CozumPlani, UrunOnerisi } from '@/lib/veri';
 import { VIDEOLAR, youtubeId } from '@/lib/videolar';
 
-export type SonucTarla = { ad: string; bitki: string | null; sulama: SulamaYontemi; alan_dekar: number | null; sulama_suresi_saat: number | null };
+export type SonucTarla = {
+  ad: string;
+  bitki: string | null;
+  sulama: SulamaYontemi;
+  alan_dekar: number | null;
+  sulama_suresi_saat: number | null;
+  konum?: string | null;
+};
+
+/** Büyüme videosundan kare (1–97): tohumdan hasada */
+export const kareYolu = (n: number) => `/buyume/${String(Math.min(97, Math.max(1, Math.round(n)))).padStart(3, '0')}.webp`;
 
 export const TONE_STYLE: Record<Tone, { dot: string; text: string; bar: string; label: string }> = {
   iyi: { dot: 'bg-[#2e9e5b]', text: 'text-[#1f7a45]', bar: 'bg-[#2e9e5b]', label: 'Uygun' },
@@ -194,12 +204,12 @@ function PuanCubugu({ puan }: { puan: number }) {
 }
 
 /** Yarım daire gösterge (0–100). */
-export function IndeksGostergesi({ yuzde, renk }: { yuzde: number; renk: string }) {
+export function IndeksGostergesi({ yuzde, renk, koyu = false }: { yuzde: number; renk: string; koyu?: boolean }) {
   const r = 80;
   const c = Math.PI * r;
   return (
     <svg viewBox="0 0 200 116" className="w-full max-w-[240px]" role="img" aria-label={`Kalite indeksi ${yuzde} / 100`}>
-      <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#e4ebe5" strokeWidth="16" strokeLinecap="round" />
+      <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke={koyu ? 'rgba(255,255,255,.18)' : '#e4ebe5'} strokeWidth="16" strokeLinecap="round" />
       <path
         d="M20 100 A80 80 0 0 1 180 100"
         fill="none"
@@ -208,18 +218,47 @@ export function IndeksGostergesi({ yuzde, renk }: { yuzde: number; renk: string 
         strokeLinecap="round"
         strokeDasharray={`${(c * yuzde) / 100} ${c}`}
       />
-      <text x="100" y="88" textAnchor="middle" fontSize="40" fontWeight="800" fill="#17352a">
+      <text x="100" y="88" textAnchor="middle" fontSize="40" fontWeight="800" fill={koyu ? '#ffffff' : '#17352a'}>
         {yuzde}
       </text>
-      <text x="100" y="108" textAnchor="middle" fontSize="12" fill="#6b7d72">
+      <text x="100" y="108" textAnchor="middle" fontSize="12" fill={koyu ? 'rgba(255,255,255,.6)' : '#6b7d72'}>
         / 100
       </text>
     </svg>
   );
 }
 
-export function KaliteIndeksi({ indeks }: { indeks: IndeksSonucu }) {
+export function KaliteIndeksi({ indeks, sade = false }: { indeks: IndeksSonucu; sade?: boolean }) {
   const sirali = [...indeks.satirlar].sort((a, b) => a.puan - b.puan);
+  if (sade)
+    return (
+      <section className="mt-4 rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6" aria-labelledby="tki">
+        <h3 id="tki" className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[#6d786f]">
+          <Gauge size={16} className="text-[#2f7a4f]" /> Kalite indeksi neye göre hesaplandı?
+        </h3>
+        <p className="mt-1 text-xs text-[#8a968d]">
+          {indeks.satirlar.length} parametrenin 0–5 puan ortalaması: {formatNumber(indeks.ortalama, 1)} / 5 → {indeks.yuzde} / 100
+        </p>
+        <ul className="mt-3 grid gap-x-10 md:grid-cols-2">
+          {sirali.map((x) => (
+            <li key={x.key} className="flex items-center justify-between gap-3 border-b border-[#1d2a22]/6 py-2.5">
+              <span className="min-w-0 text-sm">
+                <span className="font-semibold">{x.ad}</span>
+                <span className="ml-2 tabular-nums text-xs text-[#8a968d]">
+                  {formatNumber(x.deger, 3)} {x.birim}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-3">
+                <PuanCubugu puan={x.puan} />
+                <span className="w-8 text-right text-sm font-bold tabular-nums" style={{ color: PUAN_RENK[x.puan] }}>
+                  {x.puan}/5
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
   return (
     <section className="mt-8 overflow-hidden rounded-[28px] border border-[#dfe9df] bg-white" aria-labelledby="tki">
       <div className="grid gap-6 p-5 sm:p-8 md:grid-cols-[260px_1fr] md:gap-10">
@@ -308,9 +347,10 @@ export function SolutionPlan({
   omDusuk: boolean;
 }) {
   return (
-    <section className="mt-10 rounded-[28px] border border-[#dfe9df] bg-[#fbfdfb] p-5 sm:p-8" aria-labelledby="cozum">
-      <h2 id="cozum" className="flex items-center gap-2 text-xl font-bold">
-        <ClipboardList size={22} className="text-[#238f61]" />
+    <section className="mt-10 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8" aria-labelledby="cozum">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Bir bilenden tavsiyeler</p>
+      <h2 id="cozum" className="mt-2 flex items-center gap-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
+        <ClipboardList size={26} className="text-[#2f7a4f]" />
         Çözüm planı
       </h2>
 
@@ -522,9 +562,10 @@ export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
 
   return (
     <section className="mt-10" aria-labelledby="recete">
-      <h2 id="recete" className="flex items-center gap-2 text-xl font-bold">
-        <CalendarDays size={22} className="text-[#238f61]" />
-        Uygulama reçetesi
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Tohumdan hasada</p>
+      <h2 id="recete" className="mt-2 flex items-center gap-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
+        <CalendarDays size={26} className="text-[#2f7a4f]" />
+        Dönem dönem uygulama reçetesi
       </h2>
       <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
         <span className="rounded-full bg-[#e8f3e6] px-3 py-1 text-[#1f6f4a]">{tarla.bitki ?? 'Bitki seçilmedi'}</span>
@@ -547,7 +588,7 @@ export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
         )}
 
         {zkart && (
-          <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <ol className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {zkart.evreler.map((e, i) => {
               const gruplar = evreUygulamalari(e, tarla.sulama);
               const suAn = simdi.includes(i);
@@ -556,12 +597,24 @@ export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
                   key={i}
                   className={`flex flex-col overflow-hidden rounded-[22px] border bg-white ${suAn ? 'border-[#2f8f57] ring-2 ring-[#cde9d4]' : 'border-[#dfe9df]'}`}
                 >
-                  <div className="flex items-center gap-3 bg-[#1e4a37] px-4 py-3 text-white">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm font-extrabold text-[#1e4a37]">
-                      {i + 1}
-                    </span>
-                    <span className="flex-1 text-sm font-bold leading-5">{e.evre}</span>
-                    {suAn && <span className="rounded-full bg-[#9bdd68] px-2 py-0.5 text-[11px] font-bold text-[#17352a]">Bu ay</span>}
+                  <div className="relative aspect-[16/9] overflow-hidden bg-[#121410]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={kareYolu(zkart.evreler.length > 1 ? 4 + (i / (zkart.evreler.length - 1)) * 93 : 50)}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#121410] via-[#121410]/30 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 p-4 text-white">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f5f0e6] font-display text-base font-semibold text-[#121410]">
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 font-display text-lg font-medium leading-6">{e.evre}</span>
+                    </div>
+                    {suAn && (
+                      <span className="absolute right-3 top-3 rounded-full bg-[#e2b65c] px-2.5 py-1 text-[11px] font-bold text-[#121410] shadow">Şu an bu dönem</span>
+                    )}
                   </div>
                   <div className="flex-1 px-4 py-3">
                     <div className="text-xs text-[#7b8c82]">{[e.bbch && `BBCH ${e.bbch}`, e.donem].filter(Boolean).join(' · ')}</div>
@@ -751,6 +804,233 @@ export function IndeksSeyri({ noktalar }: { noktalar: { tarih: string; indeks: n
   );
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Rapor kapağı ve görsel göstergeler                                           */
+/* -------------------------------------------------------------------------- */
+
+const TON_RENK: Record<Tone, string> = { iyi: '#5fbf6a', dikkat: '#e2b65c', sorun: '#e0674f', bilgi: '#8fb8cc' };
+
+/** Kapaktaki özet halkaları: en önemli 6 parametre, renkli daireyle */
+const OZET_ANAHTARLAR: { k: ParamKey; ad: string }[] = [
+  { k: 'ph', ad: 'Asitlik (pH)' },
+  { k: 'ec', ad: 'Tuzluluk' },
+  { k: 'kirec', ad: 'Kireç' },
+  { k: 'organikMadde', ad: 'Organik madde' },
+  { k: 'fosfor', ad: 'Fosfor' },
+  { k: 'potasyum', ad: 'Potasyum' },
+];
+
+function RaporKapagi({
+  report,
+  results,
+  tarla,
+  tarih,
+  indeks,
+  issues,
+}: {
+  report: SoilReport;
+  results: ParamResult[];
+  tarla: SonucTarla;
+  tarih?: string;
+  indeks?: IndeksSonucu | null;
+  issues: number;
+}) {
+  const ozet = OZET_ANAHTARLAR.map(({ k, ad }) => {
+    const r = results.find((x) => x.key === k) ?? (k === 'ec' ? results.find((x) => x.key === 'tuz') : undefined);
+    return r?.classification ? { k, ad, tone: r.classification.tone, etiket: r.classification.label, deger: r.value, birim: PARAMS[r.key].unit } : null;
+  }).filter(Boolean) as { k: ParamKey; ad: string; tone: Tone; etiket: string; deger: number; birim: string }[];
+  const bilgiler = [tarih, report.raporNo && `Rapor ${report.raporNo}`, tarla.konum, tarla.bitki, SULAMA_YONTEMLERI[tarla.sulama]?.ad].filter(Boolean);
+
+  return (
+    <section className="relative overflow-hidden rounded-[32px] bg-[#121410] text-white shadow-[0_40px_80px_-30px_rgba(18,20,16,.6)] print:rounded-none print:shadow-none">
+      <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-center" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#121410]/85 via-[#121410]/55 to-[#121410]/95 md:bg-gradient-to-r md:from-[#121410]/95 md:via-[#121410]/60 md:to-[#121410]/30" aria-hidden />
+      {/* Kavisli çizgi: rapor kapağı dokunuşu */}
+      <svg className="absolute -right-10 -top-10 h-[130%] w-1/2 opacity-30" viewBox="0 0 200 400" fill="none" aria-hidden>
+        <path d="M150 0 C 40 80, 210 160, 90 240 S 120 360, 40 400" stroke="#f5f0e6" strokeWidth="3" />
+      </svg>
+
+      <div className="relative grid gap-8 p-6 sm:p-10 md:grid-cols-[1.4fr_1fr] md:items-center">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">Toprak sağlığı raporu</p>
+          <h1 className="mt-3 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">{tarla.ad}</h1>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+            {bilgiler.map((b) => (
+              <span key={b as string} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
+                {b}
+              </span>
+            ))}
+          </div>
+          <p className="mt-6 max-w-md text-lg leading-7 text-white/80">
+            {issues === 0 ? 'Toprağınız genel olarak iyi durumda.' : `Toprağınızda ${issues} konu ilgi bekliyor. Aşağıda her biri için ne yapacağınız yazıyor.`}
+          </p>
+        </div>
+        {indeks && (
+          <div className="flex flex-col items-center rounded-[28px] border border-white/10 bg-white/5 p-5 backdrop-blur-md">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Toprak kalite indeksi</p>
+            <div className="mt-2 w-full max-w-[220px]">
+              <IndeksGostergesi yuzde={indeks.yuzde} renk={indeks.renk} koyu />
+            </div>
+            <span className="rounded-full px-4 py-1 text-sm font-bold text-white" style={{ background: indeks.renk }}>
+              {indeks.sinif}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {ozet.length > 0 && (
+        <div className="relative border-t border-white/10 bg-[#121410]/60 px-6 py-6 backdrop-blur sm:px-10">
+          <ul className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-6">
+            {ozet.map((o) => (
+              <li key={o.k} className="flex flex-col items-center text-center">
+                <span className="relative flex h-14 w-14 items-center justify-center rounded-full" style={{ background: `${TON_RENK[o.tone]}22` }}>
+                  <span className="h-9 w-9 rounded-full shadow-[0_0_24px_rgba(0,0,0,.25)]" style={{ background: TON_RENK[o.tone] }} />
+                </span>
+                <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-white/60">{o.ad}</span>
+                <span className="text-sm font-semibold">{o.etiket}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-5 flex flex-wrap justify-center gap-4 text-[11px] text-white/60">
+            {(['iyi', 'dikkat', 'sorun'] as Tone[]).map((t) => (
+              <span key={t} className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: TON_RENK[t] }} /> {TONE_STYLE[t].label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** 0–14 pH skalası, değerin üstünde işaret */
+function PhSkalasi({ deger, etiket }: { deger: number; etiket: string }) {
+  const renkler = ['#d7301f', '#ef6548', '#fc8d59', '#fdbb84', '#f6d55c', '#c2d65a', '#7fc45a', '#3fae6a', '#2a9d8f', '#2b8cbe', '#3f6fb5', '#5b54a8', '#7a3f9d', '#8e2c86', '#6e1f6b'];
+  const pct = Math.min(100, Math.max(0, (deger / 14) * 100));
+  return (
+    <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8">
+      <div className="flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">Asitlik (pH)</h3>
+        <span className="font-display text-3xl">{formatNumber(deger, 2)}</span>
+      </div>
+      <div className="relative mt-6">
+        <div className="absolute -top-4 -translate-x-1/2" style={{ left: `${pct}%` }}>
+          <div className="h-0 w-0 border-x-[7px] border-t-[9px] border-x-transparent border-t-[#1d2a22]" />
+        </div>
+        <div className="flex h-4 overflow-hidden rounded-full">
+          {renkler.map((r, i) => (
+            <span key={i} className="flex-1" style={{ background: r }} />
+          ))}
+        </div>
+        <div className="mt-1 flex justify-between text-[10px] tabular-nums text-[#8a968d]">
+          <span>0 asidik</span>
+          <span>7 nötr</span>
+          <span>14 bazik</span>
+        </div>
+      </div>
+      <p className="mt-3 text-sm font-semibold text-[#1d2a22]">{etiket}</p>
+      <p className="text-xs text-[#6d786f]">Uygun: {uygunAralikMetni('ph')}</p>
+    </div>
+  );
+}
+
+/** Kum / silt / kil yığılmış çubuk */
+function BunyeCubugu({ kum, silt, kil, sinif }: { kum?: number; silt?: number; kil?: number; sinif?: string }) {
+  const parcalar = [
+    { ad: 'Kum', v: kum, renk: '#d9b98c' },
+    { ad: 'Silt', v: silt, renk: '#a77f55' },
+    { ad: 'Kil', v: kil, renk: '#6b4a2f' },
+  ].filter((p) => p.v !== undefined) as { ad: string; v: number; renk: string }[];
+  const toplam = parcalar.reduce((t, p) => t + p.v, 0) || 1;
+  return (
+    <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">Toprağın yapısı (bünye)</h3>
+      <p className="mt-1 font-display text-2xl leading-tight">{sinif ?? 'Bünye'}</p>
+      <div className="mt-4 flex h-10 overflow-hidden rounded-xl">
+        {parcalar.map((p) => (
+          <span
+            key={p.ad}
+            className="flex items-center justify-center text-[11px] font-bold text-white"
+            style={{ width: `${(p.v / toplam) * 100}%`, background: p.renk }}
+          >
+            {p.v / toplam > 0.12 && `%${formatNumber(p.v, 0)}`}
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-3 text-xs text-[#5e6a60]">
+        {parcalar.map((p) => (
+          <span key={p.ad} className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: p.renk }} /> {p.ad} %{formatNumber(p.v, 1)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Uygun aralığı gösteren yatay çubuk (kalın) */
+function DegerCubugu({ r }: { r: ParamResult }) {
+  const def = PARAMS[r.key];
+  const u = def.uygun;
+  const tone = r.classification?.tone ?? 'bilgi';
+  const ref = u?.max ?? (u?.min ?? r.value) * 2;
+  const hi = Math.max(r.value, ref) * 1.2 || 1;
+  const pct = (x: number) => Math.min(100, Math.max(0, (x / hi) * 100));
+  return (
+    <li>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-semibold uppercase tracking-wide text-[#3f4a42]">{def.label}</span>
+        <span className="text-sm tabular-nums">
+          <span className="font-bold">{formatNumber(r.value, 3)}</span> <span className="text-xs text-[#8a968d]">{def.unit}</span>
+        </span>
+      </div>
+      <div className="relative mt-1.5 h-3.5 overflow-hidden rounded-full bg-[#ece6da]">
+        {u && <div className="absolute inset-y-0 bg-[#cfe6c6]" style={{ left: `${pct(u.min ?? 0)}%`, width: `${pct(u.max ?? hi) - pct(u.min ?? 0)}%` }} />}
+        <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${pct(r.value)}%`, background: TON_RENK[tone] }} />
+      </div>
+      <div className="mt-1 flex justify-between text-[11px] text-[#8a968d]">
+        <span style={{ color: tone === 'iyi' ? '#2f7a4f' : tone === 'sorun' ? '#b4432f' : tone === 'dikkat' ? '#9a6b12' : undefined }} className="font-semibold">
+          {r.classification?.label}
+        </span>
+        {u && <span>Uygun: {uygunAralikMetni(r.key)}</span>}
+      </div>
+    </li>
+  );
+}
+
+function Gostergeler({ report, results }: { report: SoilReport; results: ParamResult[] }) {
+  const ph = results.find((r) => r.key === 'ph');
+  const v = report.values;
+  const bunyeVar = v.kum !== undefined || v.silt !== undefined || v.kil !== undefined;
+  const cubuklar = results.filter((r) => !['ph', 'kum', 'silt', 'kil', 'doygunluk'].includes(r.key) && r.classification);
+  if (!ph && !bunyeVar && cubuklar.length === 0) return null;
+  return (
+    <section className="mt-10" aria-labelledby="gostergeler">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Bir bakışta</p>
+      <h2 id="gostergeler" className="mt-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">Toprağınızın durumu</h2>
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {ph?.classification && <PhSkalasi deger={ph.value} etiket={ph.classification.label} />}
+        {bunyeVar && <BunyeCubugu kum={v.kum} silt={v.silt} kil={v.kil} sinif={report.bunyeSinifi} />}
+      </div>
+      {cubuklar.length > 0 && (
+        <div className="mt-4 rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">Besin ve kimyasal durum</h3>
+          <ul className="mt-4 grid gap-x-10 gap-y-5 md:grid-cols-2">
+            {cubuklar.map((r) => (
+              <DegerCubugu key={r.key} r={r} />
+            ))}
+          </ul>
+          <p className="mt-4 flex items-center gap-2 text-[11px] text-[#8a968d]">
+            <span className="h-2.5 w-5 rounded-full bg-[#cfe6c6]" /> Açık yeşil alan: uygun aralık
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Sonuç ekranı                                                                */
 /* -------------------------------------------------------------------------- */
@@ -764,6 +1044,7 @@ export function SonucEkrani({
   onceki,
   baslikUstu,
   eylemler,
+  tarih,
 }: {
   report: SoilReport;
   ai: CozumPlani | null;
@@ -773,6 +1054,7 @@ export function SonucEkrani({
   onceki?: { rapor: SoilReport; tarih: string; simdiTarih: string } | null;
   baslikUstu?: ReactNode;
   eylemler?: ReactNode;
+  tarih?: string;
 }) {
   const results = classify(report);
   const count = (t: Tone) => results.filter((r) => r.classification?.tone === t).length;
@@ -782,25 +1064,15 @@ export function SonucEkrani({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="text-center">
-        {baslikUstu}
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-          {issues === 0 ? 'Toprağınız genel olarak iyi durumda' : `Toprağınızda ${issues} konu ilgi bekliyor`}
-        </h1>
-        <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-semibold">
-          {(['iyi', 'dikkat', 'sorun'] as Tone[]).map((t) => (
-            <span key={t} className="inline-flex items-center gap-2 rounded-full border border-[#dfe9df] bg-white px-3 py-1.5">
-              <span className={`h-2.5 w-2.5 rounded-full ${TONE_STYLE[t].dot}`} />
-              {count(t)} {TONE_STYLE[t].label.toLocaleLowerCase('tr-TR')}
-            </span>
-          ))}
-        </div>
-      </div>
+      {baslikUstu && <div className="mb-4">{baslikUstu}</div>}
+      <RaporKapagi report={report} results={results} tarla={tarla} tarih={tarih} indeks={indeks} issues={issues} />
 
-      {indeks && <KaliteIndeksi indeks={indeks} />}
+      <Gostergeler report={report} results={results} />
+
+      {indeks && <KaliteIndeksi indeks={indeks} sade />}
 
       <section className="mt-10" aria-labelledby="tablo">
-        <h2 id="tablo" className="mb-3 text-xl font-bold">Analiz sonuçları</h2>
+        <h2 id="tablo" className="mb-3 text-xl font-bold">Tüm analiz değerleri</h2>
         <AnalysisTable report={report} results={results} />
         <details className="mt-3 rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 text-sm">
           <summary className="cursor-pointer font-semibold text-[#476456]">Bu değerler ne anlama geliyor?</summary>

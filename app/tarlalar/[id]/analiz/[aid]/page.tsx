@@ -28,13 +28,20 @@ export default async function AnalizSayfasi({ params }: { params: Promise<{ id: 
     .maybeSingle<Pick<Analiz, 'rapor' | 'analiz_tarihi'>>();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#eef6eb] via-[#f7faf5] to-white">
+    <div className="flex min-h-screen flex-col bg-[#f5f0e6]">
       <AppHeader aktif="tarlalar" />
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 sm:px-8 sm:py-12">
         <AnalizSonucu
           tarlaId={tarla.id}
           analizId={analiz.id}
-          tarla={{ ad: tarla.ad, bitki: tarla.bitki, sulama: tarla.sulama, alan_dekar: tarla.alan_dekar, sulama_suresi_saat: tarla.sulama_suresi_saat }}
+          tarla={{
+            ad: tarla.ad,
+            bitki: tarla.bitki,
+            sulama: tarla.sulama,
+            alan_dekar: tarla.alan_dekar,
+            sulama_suresi_saat: tarla.sulama_suresi_saat,
+            konum: [tarla.ilce, tarla.il].filter(Boolean).join(', ') || null,
+          }}
           rapor={{ ...analiz.rapor, bitki: tarla.bitki ?? analiz.rapor.bitki }}
           tarih={tarihYaz(analiz.analiz_tarihi)}
           cozum={analiz.cozum}

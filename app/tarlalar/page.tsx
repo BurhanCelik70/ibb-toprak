@@ -23,13 +23,13 @@ export default async function TarlalarSayfasi() {
   const tarlalar = (data ?? []) as Satir[];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f7faf5]">
+    <div className="flex min-h-screen flex-col bg-[#f5f0e6]">
       <AppHeader aktif="tarlalar" />
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-[#2f8f57]">{profil?.ad_soyad ? `Merhaba ${profil.ad_soyad.split(' ')[0]}` : 'Hoş geldiniz'}</p>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">Tarlalarım</h1>
+            <h1 className="mt-1 font-display text-4xl font-medium tracking-[-0.02em] sm:text-5xl">Tarlalarım</h1>
           </div>
           <Link href="/tarlalar/yeni" className="inline-flex items-center gap-2 rounded-full bg-[#238f61] px-5 py-3 font-bold text-white hover:bg-[#1d7d54]">
             <Plus size={20} /> Tarla ekle

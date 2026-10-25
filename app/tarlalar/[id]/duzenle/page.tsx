@@ -14,13 +14,13 @@ export default async function TarlaDuzenle({ params }: { params: Promise<{ id: s
   const { data: tarla } = await supabase.from('tarlalar').select('*').eq('id', id).maybeSingle<Tarla>();
   if (!tarla) notFound();
   return (
-    <div className="flex min-h-screen flex-col bg-[#f7faf5]">
+    <div className="flex min-h-screen flex-col bg-[#f5f0e6]">
       <AppHeader aktif="tarlalar" />
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-10 sm:px-8">
         <Link href={`/tarlalar/${tarla.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-[#476456]">
           <ChevronLeft size={16} /> {tarla.ad}
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Tarlayı düzenle</h1>
+        <h1 className="mt-3 font-display text-4xl font-medium tracking-[-0.02em]">Tarlayı düzenle</h1>
         <div className="mt-6">
           <TarlaFormu tarla={tarla} />
         </div>

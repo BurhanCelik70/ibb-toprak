@@ -76,15 +76,11 @@ export function AnalizSonucu({
       onRetryAi={() => getir()}
       tarla={tarla}
       onceki={onceki ? { ...onceki, simdiTarih: tarih } : null}
+      tarih={tarih}
       baslikUstu={
-        <div className="flex flex-col items-center gap-2">
-          <Link href={`/tarlalar/${tarlaId}`} className="inline-flex items-center gap-1 text-sm font-semibold text-[#476456] print:hidden">
-            <ChevronLeft size={16} /> {tarla.ad}
-          </Link>
-          <div className="text-sm font-semibold text-[#32965e]">
-            {[rapor.raporNo, tarih, tarla.bitki].filter(Boolean).join(' / ')}
-          </div>
-        </div>
+        <Link href={`/tarlalar/${tarlaId}`} className="inline-flex items-center gap-1 text-sm font-semibold text-[#476456] print:hidden">
+          <ChevronLeft size={16} /> {tarla.ad}
+        </Link>
       }
       eylemler={
         <>

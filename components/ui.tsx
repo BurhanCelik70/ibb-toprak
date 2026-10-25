@@ -87,12 +87,12 @@ export function MethodCard({
   return (
     <button
       onClick={onClick}
-      className={`group relative rounded-[28px] border bg-white p-7 text-left transition-all ${
-        selected ? 'border-[#38a66d] ring-2 ring-[#d9f1d0]' : 'border-[#dfe9df] shadow-sm hover:-translate-y-1 hover:border-[#9aca89] hover:shadow-xl'
+      className={`group relative rounded-[28px] border bg-white p-7 text-left shadow-[0_20px_50px_-25px_rgba(18,20,16,.45)] transition-all ${
+        selected ? 'border-[#2f7a4f] ring-2 ring-[#2f7a4f]/20' : 'border-transparent hover:-translate-y-1 hover:shadow-[0_30px_60px_-25px_rgba(18,20,16,.55)]'
       }`}
     >
-      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${selected ? 'bg-[#238f61] text-white' : 'bg-[#eaf6e4] text-[#238f61]'}`}>{icon}</div>
-      <h3 className="mt-6 text-xl font-bold">{title}</h3>
+      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${selected ? 'bg-[#2f7a4f] text-white' : 'bg-[#2f7a4f]/10 text-[#2f7a4f]'}`}>{icon}</div>
+      <h3 className="mt-6 font-display text-2xl font-medium">{title}</h3>
       <p className="mt-2 text-sm font-medium text-[#53685c]">{description}</p>
       <p className="mt-4 text-xs leading-5 text-[#829087]">{detail}</p>
     </button>
