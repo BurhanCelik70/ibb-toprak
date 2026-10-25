@@ -2,22 +2,7 @@
 /**
  * Analiz sonucu: kalite indeksi, analiz tablosu, çözüm planı, karşılaştırma ve sulama reçetesi.
  */
-import {
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  CalendarDays,
-  CirclePlay,
-  ClipboardList,
-  Droplets,
-  FlaskConical,
-  Gauge,
-  Info,
-  Loader2,
-  Minus,
-  ShieldCheck,
-  Sprout,
-} from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Info, Loader2, MapPin, Minus, ShieldCheck, Sprout } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ORGANIK_MADDE_PROTOKOLU, zkartBul } from '@/lib/igsas';
 import { kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
@@ -352,6 +337,15 @@ export function SolutionPlan({
               <p className="rounded-2xl bg-[#eef8ea] p-4 text-sm leading-6">
                 <span className="font-bold">{report.bitki}: </span>
                 {ai.bitkiUygunlugu}
+              </p>
+            )}
+            {ai.bolgeNotu && (
+              <p className="flex gap-3 rounded-2xl bg-[#f6efe2] p-4 text-sm leading-6 text-[#4a3d22]">
+                <MapPin size={18} className="mt-0.5 shrink-0 text-[#a87a2a]" />
+                <span>
+                  <span className="font-bold">{report.ilce ? `${report.ilce}: ` : 'Bölgeniz: '}</span>
+                  {ai.bolgeNotu}
+                </span>
               </p>
             )}
           </div>

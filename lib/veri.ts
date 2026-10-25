@@ -6,6 +6,7 @@ export type Tarla = {
   id: string;
   kullanici_id: string;
   ad: string;
+  il: string | null;
   ilce: string | null;
   konum: string | null;
   alan_dekar: number | null;
@@ -25,6 +26,7 @@ export type CozumPlani = {
   iklimKoruma: UrunOnerisi[];
   gubreleme: UrunOnerisi[];
   sulamaNotlari?: string[];
+  bolgeNotu?: string | null;
   bitkiUygunlugu: string | null;
 };
 

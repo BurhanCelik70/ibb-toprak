@@ -9,7 +9,8 @@
     <p style="margin:0 0 24px;font-size:13px;color:#6d786f">Yapay zekâ destekli toprak analizi</p>
     <p style="margin:0 0 12px;font-size:15px">Giriş kodunuz:</p>
     <p style="margin:0 0 24px;font-size:36px;font-weight:bold;letter-spacing:8px;color:#1d2a22">{{ .Token }}</p>
-    <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#5e6a60">Bu kodu uygulamadaki kutuya yazın. Kod 1 saat geçerlidir ve yalnızca bir kez kullanılabilir.</p>
+    <p style="margin:0 0 20px;font-size:13px;line-height:20px;color:#5e6a60">Bu kodu uygulamadaki kutuya yazın ya da aşağıdaki düğmeye dokunun. Kod 1 saat geçerlidir ve yalnızca bir kez kullanılabilir.</p>
+    <p style="margin:0 0 24px"><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email" style="display:inline-block;background:#1d2a22;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;padding:14px 28px;border-radius:999px">Giriş yap</a></p>
     <p style="margin:0;font-size:13px;line-height:20px;color:#5e6a60">Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
   </div>
 </div>

@@ -1,7 +1,7 @@
 'use client';
 /**
- * E-postayla şifresiz giriş: e-posta → 6 haneli kod → (ilk girişte) ad soyad.
- * Hesap yoksa ilk kodla otomatik açılır. Supabase e-posta şablonlarında {{ .Token }} kullanılmalı (KURULUM.md).
+ * Giriş: önce "Google ile devam et" (tek dokunuş), yedek olarak e-postaya kod.
+ * Hesap yoksa otomatik açılır. Google adı otomatik alınır; e-postada ilk girişte ad soyad sorulur.
  */
 import { ArrowLeft, ArrowRight, KeyRound, Loader2, Mail, UserRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -23,15 +23,15 @@ const HATALAR: Record<string, string> = {
 };
 const hataMetni = (m: string) => Object.entries(HATALAR).find(([k]) => m.toLowerCase().includes(k.toLowerCase()))?.[1] ?? m;
 
-export function GirisFormu({ sonra }: { sonra: string }) {
+export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonra: string; ilkAdim?: Adim; ilkHata?: string | null }) {
   const router = useRouter();
   const supabase = createClient();
-  const [adim, setAdim] = useState<Adim>('eposta');
+  const [adim, setAdim] = useState<Adim>(ilkAdim);
   const [eposta, setEposta] = useState('');
   const [kod, setKod] = useState('');
   const [ad, setAd] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
-  const [hata, setHata] = useState<string | null>(null);
+  const [hata, setHata] = useState<string | null>(ilkHata);
   const [bekle, setBekle] = useState(0);
   const kodRef = useRef<HTMLInputElement>(null);
 
@@ -41,13 +41,30 @@ export function GirisFormu({ sonra }: { sonra: string }) {
     return () => clearTimeout(t);
   }, [bekle]);
 
+  const googleIleGiris = async () => {
+    setHata(null);
+    setYukleniyor(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback?sonra=${encodeURIComponent(sonra)}` },
+    });
+    // Başarılıysa tarayıcı Google'a gider; buraya yalnızca hata olursa düşülür
+    if (error) {
+      setYukleniyor(false);
+      setHata(error.message.includes('provider is not enabled') ? 'Google ile giriş henüz açılmadı. Şimdilik e-postayla devam edin.' : hataMetni(error.message));
+    }
+  };
+
   const kodGonder = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setHata(null);
     const adres = eposta.trim().toLowerCase();
     if (!epostaGecerli(adres)) return setHata('Geçerli bir e-posta adresi yazın (ör. ad@gmail.com).');
     setYukleniyor(true);
-    const { error } = await supabase.auth.signInWithOtp({ email: adres, options: { shouldCreateUser: true } });
+    const { error } = await supabase.auth.signInWithOtp({
+      email: adres,
+      options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/auth/callback?sonra=${encodeURIComponent(sonra)}` },
+    });
     setYukleniyor(false);
     if (error) return setHata(hataMetni(error.message));
     setEposta(adres);
@@ -98,14 +115,23 @@ export function GirisFormu({ sonra }: { sonra: string }) {
     <div className="w-full rounded-[28px] bg-[#fbf8f2] p-6 shadow-[0_40px_80px_-24px_rgba(0,0,0,.6)] sm:p-8">
       {adim === 'eposta' && (
         <form onSubmit={kodGonder} noValidate>
-          <div className={ikon}>
-            <Mail size={24} />
+          <h1 className="font-display text-3xl font-medium tracking-[-0.01em]">Giriş yap</h1>
+          <p className="mt-2 text-sm leading-6 text-[#64766c]">Şifre gerekmez. Hesabınız yoksa otomatik açılır.</p>
+
+          <button
+            type="button"
+            onClick={googleIleGiris}
+            disabled={yukleniyor}
+            className="mt-6 flex w-full items-center justify-center gap-3 rounded-full bg-[#1d2a22] px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#2f3d34] disabled:opacity-60"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white"><GoogleLogo /></span> Google ile devam et
+          </button>
+
+          <div className="my-6 flex items-center gap-3 text-xs font-medium text-[#8a968d]">
+            <span className="h-px flex-1 bg-[#1d2a22]/10" /> ya da e-postanıza kod gönderelim <span className="h-px flex-1 bg-[#1d2a22]/10" />
           </div>
-          <h1 className={baslik}>E-postayla giriş</h1>
-          <p className="mt-2 text-sm leading-6 text-[#64766c]">
-            E-postanıza tek kullanımlık bir kod göndereceğiz. Şifre gerekmez; hesabınız yoksa otomatik açılır.
-          </p>
-          <label htmlFor="eposta" className="mt-6 block text-sm font-semibold text-[#3e5248]">
+
+          <label htmlFor="eposta" className="block text-sm font-semibold text-[#3e5248]">
             E-posta adresi
           </label>
           <input
@@ -121,8 +147,12 @@ export function GirisFormu({ sonra }: { sonra: string }) {
             className={`mt-2 ${kutu}`}
           />
           {hata && <p className="mt-3 text-sm text-[#a83422]">{hata}</p>}
-          <button type="submit" disabled={yukleniyor} className={dugme}>
-            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : <>Kod gönder <ArrowRight size={18} /></>}
+          <button
+            type="submit"
+            disabled={yukleniyor}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#1d2a22]/20 px-6 py-3.5 text-base font-semibold text-[#1d2a22] transition hover:bg-[#1d2a22]/5 disabled:opacity-60"
+          >
+            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : <><Mail size={18} /> Kod gönder <ArrowRight size={18} /></>}
           </button>
         </form>
       )}
@@ -137,8 +167,8 @@ export function GirisFormu({ sonra }: { sonra: string }) {
           </div>
           <h1 className={baslik}>Kodu girin</h1>
           <p className="mt-2 text-sm leading-6 text-[#64766c]">
-            <strong className="break-all">{eposta}</strong> adresine bir kod gönderdik. Gelen kutusunda yoksa{' '}
-            <strong>Spam / Gereksiz</strong> klasörüne bakın.
+            <strong className="break-all">{eposta}</strong> adresine bir e-posta gönderdik. İçindeki kodu aşağıya yazın ya da e-postadaki
+            bağlantıya dokunun. Gelen kutusunda yoksa <strong>Spam / Gereksiz</strong> klasörüne bakın.
           </p>
           <input
             ref={kodRef}
@@ -189,5 +219,17 @@ export function GirisFormu({ sonra }: { sonra: string }) {
         </form>
       )}
     </div>
+  );
+}
+
+/** Google'ın "G" işareti (Google giriş düğmesi kurallarına uygun, renkli) */
+function GoogleLogo() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
   );
 }

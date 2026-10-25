@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ZKART_BITKILERI } from '@/lib/igsas';
 import { SULAMA_YONTEMLERI, type SulamaYontemi } from '@/lib/sulama';
 import { createClient } from '@/lib/supabase/client';
+import { ILLER } from '@/lib/bolgeler';
 import { ISTANBUL_ILCELERI, parseNumber } from '@/lib/toprak';
 import type { Tarla } from '@/lib/veri';
 
@@ -14,6 +15,7 @@ const BITKILER = ZKART_BITKILERI;
 export function TarlaFormu({ tarla }: { tarla?: Tarla }) {
   const router = useRouter();
   const [ad, setAd] = useState(tarla?.ad ?? '');
+  const [il, setIl] = useState(tarla?.il ?? '');
   const [ilce, setIlce] = useState(tarla?.ilce ?? '');
   const [konum, setKonum] = useState(tarla?.konum ?? '');
   const [alan, setAlan] = useState(tarla?.alan_dekar ? String(tarla.alan_dekar).replace('.', ',') : '');
@@ -38,7 +40,8 @@ export function TarlaFormu({ tarla }: { tarla?: Tarla }) {
     setKaydediliyor(true);
     const kayit = {
       ad: ad.trim(),
-      ilce: ilce || null,
+      il: il || null,
+      ilce: ilce.trim() || null,
       konum: konum.trim() || null,
       alan_dekar: alanSayi,
       bitki: bitki.trim() || null,
@@ -83,14 +86,27 @@ export function TarlaFormu({ tarla }: { tarla?: Tarla }) {
           <p className="mt-1 text-xs text-[#75867a]">Tarlanıza düşen toplam gübre miktarını hesaplamak için.</p>
         </div>
         <div>
-          <label htmlFor="ilce" className={etiket}>İlçe</label>
-          <input id="ilce" list="ilceler" value={ilce} onChange={(e) => setIlce(e.target.value)} placeholder="ör. Silivri" className={kutu} />
+          <label htmlFor="il" className={etiket}>İl</label>
+          <select id="il" value={il} onChange={(e) => setIl(e.target.value)} className={kutu}>
+            <option value="">Seçin</option>
+            {ILLER.map((i) => (
+              <option key={i}>{i}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-[#75867a]">Öneriler bölgenizin toprak ve iklimine göre yapılır.</p>
+        </div>
+      </div>
+
+      <div className="max-w-md">
+        <label htmlFor="ilce" className={etiket}>İlçe (isteğe bağlı)</label>
+        <input id="ilce" list="ilceler" value={ilce} onChange={(e) => setIlce(e.target.value)} placeholder={il === 'Konya' ? 'ör. Çumra' : 'ör. Merkez'} maxLength={60} className={kutu} />
+        {il === 'İstanbul' && (
           <datalist id="ilceler">
             {ISTANBUL_ILCELERI.map((i) => (
               <option key={i} value={i} />
             ))}
           </datalist>
-        </div>
+        )}
       </div>
 
       <div>

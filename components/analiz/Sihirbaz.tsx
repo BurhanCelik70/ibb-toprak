@@ -3,6 +3,7 @@
  * Rapor yükleme sihirbazı: yöntem seçimi → dosya / fotoğraf / elle giriş → kontrol.
  * Kontrol ekranında "Kaydet ve yorumla" denince onKaydet(report, kaynak) çağrılır.
  */
+import { ILLER } from '@/lib/bolgeler';
 import { AlertTriangle, ArrowLeft, ArrowRight, Camera, ChevronRight, FileSpreadsheet, Loader2, Upload, UserRound, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ChoiceGrid, MethodCard, Panel, Row, Warning } from '@/components/ui';
@@ -428,14 +429,14 @@ function ManualScreen({
       <div className="space-y-5">
         {step === 0 ? (
           <>
-            <Panel title="İlçe" helper="Toprağın alındığı ilçe.">
+            <Panel title="İl" helper="Toprağın alındığı il.">
               <select
                 value={meta.ilce}
                 onChange={(e) => onMeta('ilce', e.target.value)}
                 className="mt-4 w-full rounded-2xl border border-[#dfe9df] bg-white px-4 py-3 text-lg font-semibold outline-none focus:border-[#38a66d]"
               >
                 <option value="">Seçin</option>
-                {ISTANBUL_ILCELERI.map((i) => (
+                {ILLER.map((i) => (
                   <option key={i}>{i}</option>
                 ))}
               </select>
@@ -571,7 +572,7 @@ function ReviewScreen({
 
       <dl className="mt-8 divide-y divide-[#edf2ee] rounded-[24px] border border-[#dfe9df] bg-[#f8fbf7] px-5">
         <Row label="Rapor / numune" value={[report.raporNo, report.numuneAdi].filter(Boolean).join(' – ') || 'Belirtilmedi'} />
-        <Row label="İlçe" value={report.ilce ?? 'Belirtilmedi'} />
+        <Row label="Konum" value={report.ilce ?? 'Belirtilmedi'} />
         <Row label="Planlanan bitki" value={report.bitki ?? 'Belirtilmedi'} />
         {(Object.keys(PARAMS) as ParamKey[])
           .filter((k) => !PARAMS[k].ek || report.values[k] !== undefined)

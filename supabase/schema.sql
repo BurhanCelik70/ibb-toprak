@@ -17,6 +17,7 @@ create table if not exists public.tarlalar (
   id uuid primary key default gen_random_uuid(),
   kullanici_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   ad text not null check (char_length(ad) between 1 and 80),
+  il text,
   ilce text,
   konum text,
   alan_dekar numeric(10, 2) check (alan_dekar is null or alan_dekar > 0),
@@ -28,6 +29,8 @@ create table if not exists public.tarlalar (
   guncelleme timestamptz not null default now()
 );
 create index if not exists tarlalar_kullanici_idx on public.tarlalar (kullanici_id);
+-- Türkiye geneli: il sütunu (eski kurulumlarda sonradan eklenir)
+alter table public.tarlalar add column if not exists il text;
 
 -- Analizler (her tarlanın birden çok analizi olabilir)
 create table if not exists public.analizler (

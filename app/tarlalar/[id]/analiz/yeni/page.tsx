@@ -10,7 +10,7 @@ export const metadata = { title: 'Yeni analiz' };
 export default async function YeniAnalizSayfasi({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase } = await oturumKullanici();
-  const { data: tarla } = await supabase.from('tarlalar').select('id, ad, ilce, bitki').eq('id', id).maybeSingle();
+  const { data: tarla } = await supabase.from('tarlalar').select('id, ad, il, ilce, bitki').eq('id', id).maybeSingle();
   if (!tarla) notFound();
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#eef6eb] via-[#f7faf5] to-white">
@@ -19,7 +19,7 @@ export default async function YeniAnalizSayfasi({ params }: { params: Promise<{ 
         <Link href={`/tarlalar/${tarla.id}`} className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-[#476456]">
           <ChevronLeft size={16} /> {tarla.ad}
         </Link>
-        <YeniAnaliz tarlaId={tarla.id} tarla={{ ad: tarla.ad, ilce: tarla.ilce, bitki: tarla.bitki }} />
+        <YeniAnaliz tarlaId={tarla.id} tarla={{ ad: tarla.ad, ilce: [tarla.ilce, tarla.il].filter(Boolean).join(', ') || null, bitki: tarla.bitki }} />
       </main>
       <SiteFooter />
     </div>

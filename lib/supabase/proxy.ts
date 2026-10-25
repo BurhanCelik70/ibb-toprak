@@ -36,7 +36,8 @@ export async function updateSession(request: NextRequest) {
   };
 
   if (!girisli && KORUMALI.some((p) => yol === p || yol.startsWith(`${p}/`))) return yonlendir('/giris', yol);
-  if (girisli && yol === '/giris') return yonlendir('/tarlalar');
+  // Ad adımı (e-posta bağlantısıyla ilk giriş) dışında, girişli kullanıcı giriş sayfasını görmez
+  if (girisli && yol === '/giris' && request.nextUrl.searchParams.get('adim') !== 'ad') return yonlendir('/tarlalar');
 
   return supabaseResponse;
 }

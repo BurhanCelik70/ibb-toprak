@@ -4,8 +4,8 @@ import { GirisFormu } from './GirisFormu';
 
 export const metadata = { title: 'Giriş' };
 
-export default async function GirisSayfasi({ searchParams }: { searchParams: Promise<{ sonra?: string }> }) {
-  const { sonra } = await searchParams;
+export default async function GirisSayfasi({ searchParams }: { searchParams: Promise<{ sonra?: string; adim?: string; hata?: string }> }) {
+  const { sonra, adim, hata } = await searchParams;
   // Yalnızca site içi yollara dön (açık yönlendirme açığını önler)
   const hedef = sonra && sonra.startsWith('/') && !sonra.startsWith('//') ? sonra : '/tarlalar';
   return (
@@ -34,9 +34,10 @@ export default async function GirisSayfasi({ searchParams }: { searchParams: Pro
           </div>
 
           <div className="w-full max-w-md">
-            <GirisFormu sonra={hedef} />
+            <GirisFormu sonra={hedef} ilkAdim={adim === 'ad' ? 'ad' : 'eposta'} ilkHata={hata === 'baglanti' ? 'Bağlantının süresi dolmuş ya da daha önce kullanılmış. Yeni kod isteyin.' : null} />
             <p className="mt-5 text-center text-xs leading-5 text-white/55">
-              Giriş yaparak tarla ve analiz bilgilerinizin hesabınızda saklanmasını kabul etmiş olursunuz.
+              Giriş yaparak tarla ve analiz bilgilerinizin hesabınızda saklanmasını kabul etmiş olursunuz.{' '}
+              <Link href="/gizlilik" className="underline hover:text-white">Gizlilik ve KVKK</Link>
             </p>
           </div>
         </div>

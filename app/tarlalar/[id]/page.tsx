@@ -57,8 +57,8 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
                 {tarla.sulama_suresi_saat ? ` · ${formatNumber(tarla.sulama_suresi_saat, 1)} saat` : ''}
               </span>
               {tarla.alan_dekar && <span className="rounded-full bg-[#f3efe6] px-3 py-1 text-[#6b5520]">{formatNumber(tarla.alan_dekar, 1)} dekar</span>}
-              {(tarla.ilce || tarla.konum) && (
-                <span className="rounded-full bg-white px-3 py-1 text-[#51675d] ring-1 ring-[#dfe9df]">{[tarla.konum, tarla.ilce].filter(Boolean).join(', ')}</span>
+              {(tarla.il || tarla.ilce || tarla.konum) && (
+                <span className="rounded-full bg-white px-3 py-1 text-[#51675d] ring-1 ring-[#dfe9df]">{[tarla.konum, tarla.ilce, tarla.il].filter(Boolean).join(', ')}</span>
               )}
             </div>
           </div>

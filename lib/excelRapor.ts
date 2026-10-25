@@ -4,6 +4,7 @@
  * Tarayıcıda çalışır, dosya sunucuya gönderilmez (KVKK açısından avantaj).
  */
 import * as XLSX from 'xlsx';
+import { ilBul } from './bolgeler';
 import { ISTANBUL_ILCELERI, parseNumber, unitCompatible, type ParamKey, type SoilReport } from './toprak';
 
 type Row = (string | number)[];
@@ -35,7 +36,8 @@ function excelDate(v: string | number | undefined): string | undefined {
 function findIlce(text?: string): string | undefined {
   if (!text) return undefined;
   const t = text.toLocaleLowerCase('tr-TR');
-  return ISTANBUL_ILCELERI.find((i) => t.includes(i.toLocaleLowerCase('tr-TR')));
+  const ist = ISTANBUL_ILCELERI.find((i) => t.includes(i.toLocaleLowerCase('tr-TR')));
+  return ist ? `${ist}, İstanbul` : ilBul(text);
 }
 
 /** Rapordaki parametre satır etiketi -> bizim anahtar (sıra önemli) */

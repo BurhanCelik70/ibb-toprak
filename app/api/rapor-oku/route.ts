@@ -1,9 +1,10 @@
 /**
  * POST /api/rapor-oku  (multipart/form-data, alan adı: "file")
- * PDF veya fotoğraftaki İBB toprak analiz raporunu okuyup SoilReport JSON'u döndürür.
+ * PDF veya fotoğraftaki toprak analiz raporunu okuyup SoilReport JSON'u döndürür.
  * Dönen değerler kullanıcıya ÖZET ekranında onaylatılmalıdır – OCR hata yapabilir.
  */
 import Anthropic from '@anthropic-ai/sdk';
+import { ilBul } from '@/lib/bolgeler';
 import { NextResponse } from 'next/server';
 import {
   ISTANBUL_ILCELERI,
@@ -23,7 +24,7 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 const MAX_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
-const PROMPT = `Bu belge bir toprak analiz raporu (genelde İBB Çevre Laboratuvarı). Değerleri OKU, hesaplama yapma.
+const PROMPT = `Bu belge Türkiye'deki bir laboratuvarın toprak analiz raporu (İBB, il tarım müdürlüğü, üniversite, ziraat odası, özel laboratuvar vb.). Değerleri OKU, hesaplama yapma.
 Belgede birden fazla rapor/numune varsa hepsini dizi olarak ver. Okuyamadığın değeri dahil etme, tahmin etme.
 Sayıları nokta ondalık ayırıcı ile ver (7,12 -> 7.12). Her değeri raporda yazan birimle ver ve birimi "birimler" içine yaz.
 
@@ -37,7 +38,7 @@ sodyum, kükürt, nitrat) "ekDegerler" içine yaz. Hiçbir satırı atlama.
 
 Sadece şu JSON dizisini döndür, başka metin ekleme:
 [{
-  "raporNo": "...", "raporTarihi": "...", "adres": "...", "numuneAdi": "...", "bitki": "...",
+  "raporNo": "...", "raporTarihi": "...", "adres": "...", "ilce": "ilçe ve il, ör. Çumra, Konya", "numuneAdi": "...", "bitki": "...",
   "bunyeSinifi": "CL (Killi Tın Bünyeli)",
   "values": {"ph": 7.12, "ec": 658},
   "birimler": {"ph": "-", "ec": "µS/cm"},
@@ -89,7 +90,8 @@ function cleanReport(r: RawReport): SoilReport {
     bunyeSinifi: str(r.bunyeSinifi),
     ilce:
       str(r.ilce) ??
-      ISTANBUL_ILCELERI.find((i) => adres?.toLocaleLowerCase('tr-TR').includes(i.toLocaleLowerCase('tr-TR'))),
+      ISTANBUL_ILCELERI.find((i) => adres?.toLocaleLowerCase('tr-TR').includes(i.toLocaleLowerCase('tr-TR'))) ??
+      ilBul(adres),
     values,
     labDegerlendirme,
     ekDegerler,

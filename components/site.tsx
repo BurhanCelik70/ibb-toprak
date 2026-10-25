@@ -105,6 +105,7 @@ export function SiteFooter() {
             <a href={`tel:${MARKA.telefon.replace(/\s/g, '')}`} className="block hover:text-white">{MARKA.telefon}</a>
           )}
           <Link href="/tarlalar" className="block hover:text-white">Tarlalarım</Link>
+          <Link href="/gizlilik" className="block hover:text-white">Gizlilik ve KVKK</Link>
         </div>
       </div>
       <div className="border-t border-white/10">

@@ -8,6 +8,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import { bolgeBilgisi, ilBul } from '@/lib/bolgeler';
 import { ORGANIK_MADDE_PROTOKOLU, URUNLER, zkartBul } from '@/lib/igsas';
 import { kaliteIndeksi } from '@/lib/indeks';
 import { KURALLAR, SULAMA_YONTEMLERI, ZAMANLAMA, zamanCizelgesi, type SulamaYontemi } from '@/lib/sulama';
@@ -20,8 +21,8 @@ export const maxDuration = 60;
 const client = new Anthropic();
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 
-const SYSTEM = `Sen İGSAŞ ve KIANA ürünlerini çok iyi bilen deneyimli bir ziraat mühendisisin. İstanbul Büyükşehir Belediyesi
-"Toprak Rehberi" için, laboratuvar toprak analizine göre çiftçiye NET, UYGULANABİLİR ve ÜRÜN ODAKLI bir çözüm planı yazıyorsun.
+const SYSTEM = `Sen İGSAŞ ve KIANA ürünlerini çok iyi bilen, Türkiye'nin tüm bölgelerinde çalışmış deneyimli bir ziraat mühendisisin.
+"Tarım 4.0" uygulaması için, laboratuvar toprak analizine göre çiftçiye NET, UYGULANABİLİR ve ÜRÜN ODAKLI bir çözüm planı yazıyorsun.
 
 Sana verilenler: parametre değerleri ve sınıfları, uygun aralığa göre farklar, Toprak Kalite İndeksi, ürün kataloğu,
 organik madde protokolü ve (varsa) bitkinin İGSAŞ Z-kartı (dönem dönem ürün ve doz programı).
@@ -47,6 +48,14 @@ KESİN KURALLAR
 - Z-kart varsa "gubreleme" içinde Z-kart programına göre BU TOPRAĞA ÖZEL düzeltmeleri yaz
   (ör. "Fosfor çok az: ekimde NPK 12-40-12 dozunu üst sınırdan, 4 kg/da uygulayın"). Z-kartı baştan sona tekrar etme; o ayrıca gösteriliyor.
 - Z-kart yoksa "gubreleme" içinde katalogdan genel bir program öner.
+
+BÖLGE (İL / İLÇE)
+- "bolge" alanında tarlanın ili, coğrafi bölgesi ve o bölgenin GENEL toprak-iklim eğilimleri verilir (ör. Konya: kireçli-alkali,
+  organik madde düşük, kurak, çinko eksikliği yaygın; Şanlıurfa Harran: ağır killi, aşırı sulamada tuzlanma; Doğu Karadeniz: asidik).
+- Önce ANALİZ DEĞERLERİNE bak; bölge bilgisi yalnızca yorumu zenginleştirir. Analiz bölgeyle çelişiyorsa analizi esas al ve bunu
+  belirt (ör. "Konya topraklarında pH genellikle yüksektir, sizin toprağınızda ise 7,1 ile nötr; bu bir avantaj").
+- Bölgenin iklim riskine göre "iklimKoruma" zamanlamasını ayarla (ör. İç Anadolu'da ilkbahar geç donu, Güneydoğu'da yaz sıcağı).
+- "bolgeNotu": bölgeye özgü 1-2 cümlelik, bu analize bağlanan somut bir yorum yaz. Bölge verilmemişse null.
 
 SULAMA YÖNTEMİ
 - Tarlanın sulama yöntemi ve süresi verilir. "sulamaNotlari" içine bu yönteme göre 2-4 somut uygulama notu yaz
@@ -104,9 +113,10 @@ const TOOL: Anthropic.Tool = {
       iklimKoruma: { type: 'array', maxItems: 4, items: urunItem, description: 'Don, sıcak ve kuraklık stresine karşı koruma.' },
       gubreleme: { type: 'array', maxItems: 6, items: urunItem, description: 'Z-karta göre bu toprağa özel gübreleme düzeltmeleri.' },
       sulamaNotlari: { type: 'array', maxItems: 4, items: { type: 'string' }, description: 'Sulama yöntemine göre somut uygulama notları.' },
+      bolgeNotu: { type: ['string', 'null'], description: 'İl/bölgenin toprak-iklim özelliklerini bu analize bağlayan 1-2 cümle; bölge yoksa null.' },
       bitkiUygunlugu: { type: ['string', 'null'], description: 'Planlanan bitki için 1-2 cümle; bitki yoksa null.' },
     },
-    required: ['ozet', 'sorunlar', 'kokGelisimi', 'iklimKoruma', 'gubreleme', 'sulamaNotlari', 'bitkiUygunlugu'],
+    required: ['ozet', 'sorunlar', 'kokGelisimi', 'iklimKoruma', 'gubreleme', 'sulamaNotlari', 'bolgeNotu', 'bitkiUygunlugu'],
   },
 };
 
@@ -146,7 +156,10 @@ export async function POST(req: Request) {
     const { data: tarla } = await supabase.from('tarlalar').select('*').eq('id', analiz.tarla_id).single<Tarla>();
     if (!tarla) return NextResponse.json({ error: 'Tarla bulunamadı.' }, { status: 404 });
 
-    const report: SoilReport = { ...analiz.rapor, bitki: tarla.bitki ?? analiz.rapor.bitki, ilce: tarla.ilce ?? analiz.rapor.ilce };
+    const konum = [tarla.ilce, tarla.il].filter(Boolean).join(', ');
+    const report: SoilReport = { ...analiz.rapor, bitki: tarla.bitki ?? analiz.rapor.bitki, ilce: konum || analiz.rapor.ilce };
+    // İl tarlada yoksa rapordaki adres/konumdan bulmayı dene
+    const il = tarla.il ?? ilBul(analiz.rapor.ilce) ?? ilBul(analiz.rapor.adres);
     const hasData = Object.keys(report?.values ?? {}).length > 0 || (report?.ekDegerler?.length ?? 0) > 0;
     if (!hasData) {
       return NextResponse.json({ error: 'Yorum için en az bir ölçüm değeri gerekli.' }, { status: 400 });
@@ -157,7 +170,8 @@ export async function POST(req: Request) {
     const zkart = zkartBul(report.bitki);
     const indeks = kaliteIndeksi(report);
     const input = {
-      tarla: { alanDekar: tarla.alan_dekar, ilce: tarla.ilce },
+      tarla: { alanDekar: tarla.alan_dekar, il, ilce: tarla.ilce },
+      bolge: bolgeBilgisi(il, tarla.ilce) ?? 'Tarlanın ili belirtilmemiş; bölgesel yorum yapma.',
       sulama: {
         yontem: SULAMA_YONTEMLERI[yontem].ad,
         sureSaat: sure,
@@ -214,6 +228,7 @@ export async function POST(req: Request) {
       iklimKoruma: temizle(out.iklimKoruma),
       gubreleme: temizle(out.gubreleme),
       sulamaNotlari: (Array.isArray(out.sulamaNotlari) ? out.sulamaNotlari : []).filter((x): x is string => typeof x === 'string'),
+      bolgeNotu: typeof out.bolgeNotu === 'string' && out.bolgeNotu.trim() ? out.bolgeNotu : null,
       bitkiUygunlugu: typeof out.bitkiUygunlugu === 'string' ? out.bitkiUygunlugu : null,
     };
 
