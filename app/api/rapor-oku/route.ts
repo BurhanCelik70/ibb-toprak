@@ -17,7 +17,7 @@ import {
 } from '@/lib/toprak';
 import { oturumKullanici } from '@/lib/supabase/server';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const client = new Anthropic();
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';

@@ -16,7 +16,8 @@ import { oturumKullanici } from '@/lib/supabase/server';
 import { buildAiPayload, type SoilReport } from '@/lib/toprak';
 import type { Analiz, Tarla } from '@/lib/veri';
 
-export const maxDuration = 60;
+// Uzun çözüm planları 60 sn'yi aşabiliyor (Vercel Runtime Timeout); Fluid Compute ile 300 sn'ye kadar izin var.
+export const maxDuration = 300;
 
 const client = new Anthropic();
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
@@ -202,14 +203,28 @@ export async function POST(req: Request) {
         : `Bu bitki (${report.bitki ?? 'belirtilmedi'}) için Z-kart yok; katalogdan genel program öner.`,
     };
 
-    const msg = await client.messages.create({
+    // Yeni modeller zorunlu araç seçimini (tool_choice: tool/any) desteklemiyor; aracı 'auto' ile sunup
+    // talimatla kullanmasını istiyoruz. Araç kullanmadan cevap verirse bir kez daha hatırlatıyoruz.
+    const sistem = `${SYSTEM}\n\nCEVAP BİÇİMİ: Cevabını YALNIZCA "${TOOL.name}" aracını çağırarak ver; düz metin yazma.`;
+    const ilkMesaj = { role: 'user' as const, content: JSON.stringify(input) };
+    let msg = await client.messages.create({
       model: MODEL,
       max_tokens: 8000,
-      system: SYSTEM,
+      system: sistem,
       tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL.name },
-      messages: [{ role: 'user', content: JSON.stringify(input) }],
+      tool_choice: { type: 'auto' },
+      messages: [ilkMesaj],
     });
+    if (!msg.content.some((b) => b.type === 'tool_use') && msg.stop_reason !== 'max_tokens') {
+      msg = await client.messages.create({
+        model: MODEL,
+        max_tokens: 8000,
+        system: sistem,
+        tools: [TOOL],
+        tool_choice: { type: 'auto' },
+        messages: [ilkMesaj, { role: 'assistant', content: msg.content }, { role: 'user', content: `Lütfen planı "${TOOL.name}" aracını çağırarak ver.` }],
+      });
+    }
 
     if (msg.stop_reason === 'max_tokens') {
       throw new Error('Cevap uzunluk sınırına takıldı (max_tokens). Sınırı artırın.');
