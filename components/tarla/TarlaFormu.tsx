@@ -122,19 +122,28 @@ export function TarlaFormu({ tarla }: { tarla?: Tarla }) {
 
       <fieldset>
         <legend className={etiket}>Sulama yöntemi</legend>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {(Object.keys(SULAMA_YONTEMLERI) as SulamaYontemi[]).map((k) => {
             const s = SULAMA_YONTEMLERI[k];
             const secili = sulama === k;
             return (
               <label
                 key={k}
-                className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${secili ? 'border-[#38a66d] bg-[#eefaf0]' : 'border-[#dfe9df] hover:border-[#9aca89]'}`}
+                className={`group cursor-pointer overflow-hidden rounded-2xl border bg-white transition ${secili ? 'border-[#38a66d] ring-2 ring-[#38a66d]/30' : 'border-[#dfe9df] hover:border-[#9aca89]'}`}
               >
-                <input type="radio" name="sulama" checked={secili} onChange={() => setSulama(k)} className="mt-1 h-4 w-4 accent-[#238f61]" />
-                <span>
-                  <span className="block font-semibold">{s.ad}</span>
-                  <span className="block text-xs text-[#6b7d72]">{s.aciklama}</span>
+                <span className="relative block aspect-video overflow-hidden bg-[#1d2a22]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.gorsel} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  {secili && (
+                    <span className="absolute right-2 top-2 rounded-full bg-[#38a66d] px-2.5 py-0.5 text-xs font-bold text-white">Seçili</span>
+                  )}
+                </span>
+                <span className="flex items-start gap-3 px-4 py-3">
+                  <input type="radio" name="sulama" checked={secili} onChange={() => setSulama(k)} className="mt-1 h-4 w-4 accent-[#238f61]" />
+                  <span>
+                    <span className="block font-semibold">{s.ad}</span>
+                    <span className="block text-xs text-[#6b7d72]">{s.aciklama}</span>
+                  </span>
                 </span>
               </label>
             );

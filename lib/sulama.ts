@@ -12,12 +12,56 @@ import type { ZEvre, ZKart, ZUygulama } from './zkartlar';
 
 export type SulamaYontemi = 'damla' | 'yagmurlama' | 'pivot' | 'salma' | 'kuru';
 
-export const SULAMA_YONTEMLERI: Record<SulamaYontemi, { ad: string; kisa: string; aciklama: string; sureEtiketi?: string; varsayilanSure?: number }> = {
-  damla: { ad: 'Damla sulama', kisa: 'Damla', aciklama: 'Gübre sulama suyuyla (fertigasyon) verilir.', sureEtiketi: 'Bir sulamanın süresi (saat)', varsayilanSure: 6 },
-  yagmurlama: { ad: 'Yağmurlama (spring)', kisa: 'Yağmurlama', aciklama: 'Gübre yağmurlama hattına enjekte edilir.', sureEtiketi: 'Bir sulamanın süresi (saat)', varsayilanSure: 6 },
-  pivot: { ad: 'Pivot / lineer', kisa: 'Pivot', aciklama: 'Gübre bir tur boyunca sabit oranda enjekte edilir.', sureEtiketi: 'Bir tur süresi (saat)', varsayilanSure: 12 },
-  salma: { ad: 'Salma (karık / tava)', kisa: 'Salma', aciklama: 'Gübre toprağa serpilir, ardından sulanır.' },
-  kuru: { ad: 'Kuru tarım (susuz)', kisa: 'Kuru tarım', aciklama: 'Baş gübre yağıştan hemen önce verilir.' },
+export const SULAMA_YONTEMLERI: Record<
+  SulamaYontemi,
+  { ad: string; kisa: string; aciklama: string; tarif: string; gorsel: string; sureEtiketi?: string; varsayilanSure?: number }
+> = {
+  damla: {
+    ad: 'Damla sulama',
+    kisa: 'Damla',
+    aciklama: 'Gübre sulama suyuyla (fertigasyon) verilir.',
+    tarif:
+      'Gübre sulama suyuna karıştırılır ve damlatıcılarla doğrudan kök bölgesine gider. Sulamanın ilk çeyreğinde yalnızca su verin ki toprak ıslansın; ortadaki yarıda gübreyi enjekte edin; son çeyrekte temiz suyla hatları ve damlatıcıları yıkayın.',
+    gorsel: '/sulama/damla.webp',
+    sureEtiketi: 'Bir sulamanın süresi (saat)',
+    varsayilanSure: 6,
+  },
+  yagmurlama: {
+    ad: 'Yağmurlama (spring)',
+    kisa: 'Yağmurlama',
+    aciklama: 'Gübre yağmurlama hattına enjekte edilir.',
+    tarif:
+      'Gübre ana hatta enjekte edilir ve suyla birlikte bitkinin üzerine yağar. İlk saatte yalnızca su, ikinci saatte gübre verin; kalan sürede temiz su yaprakları yıkar ve gübreyi toprağa indirir.',
+    gorsel: '/sulama/yagmurlama.webp',
+    sureEtiketi: 'Bir sulamanın süresi (saat)',
+    varsayilanSure: 6,
+  },
+  pivot: {
+    ad: 'Pivot / lineer',
+    kisa: 'Pivot',
+    aciklama: 'Gübre bir tur boyunca sabit oranda enjekte edilir.',
+    tarif:
+      'Gübre, pivot tarlayı bir tur dönerken sabit oranda enjekte edilir. Pivot yavaşladıkça tur uzar ve dekara düşen gübre artar; enjeksiyon oranını tur süresine göre ayarlayın.',
+    gorsel: '/sulama/pivot.webp',
+    sureEtiketi: 'Bir tur süresi (saat)',
+    varsayilanSure: 12,
+  },
+  salma: {
+    ad: 'Salma (karık / tava)',
+    kisa: 'Salma',
+    aciklama: 'Gübre toprağa serpilir, ardından sulanır.',
+    tarif:
+      'Su karıklardan ya da tavadan toprağa salınır; gübre suyla birlikte verilmez. Gübreyi karık diplerine veya tava yüzeyine serpin, ardından hemen sulayın; su gübreyi kök bölgesine taşır.',
+    gorsel: '/sulama/salma.webp',
+  },
+  kuru: {
+    ad: 'Kuru tarım (susuz)',
+    kisa: 'Kuru tarım',
+    aciklama: 'Baş gübre yağıştan hemen önce verilir.',
+    tarif:
+      'Tarla sulanmaz, bitki yalnızca yağışla beslenir. Taban gübresini ekimle birlikte verin; baş gübreyi yağıştan hemen önce serpin ki yağmur gübreyi toprağa işlesin.',
+    gorsel: '/sulama/kuru.webp',
+  },
 };
 
 /** Gübre penceresi oranları (sulama süresinin kesirleri). Danışman onayıyla değiştirilebilir. */

@@ -565,48 +565,221 @@ function Videolar({ bitki }: { bitki?: string }) {
 
 const DILIM_RENK = { su: '#bfdbe8', gubre: '#2f8f57', temiz: '#dbeef5' } as const;
 
-function ZamanCizelgesi({ yontem, sure }: { yontem: SulamaYontemi; sure: number }) {
-  const dilimler = zamanCizelgesi(yontem, sure);
-  if (!dilimler) return null;
-  const dk = (s: string) => {
-    const [h, m] = s.split(':').map(Number);
-    return h * 60 + m;
-  };
-  const toplam = dk(dilimler[dilimler.length - 1].bit) || 1;
+const BASLANGIC_SAATLERI = ['05:00', '06:00', '07:00', '17:00', '18:00', '19:00'];
+
+/** "06:00" + dakika → "07:30" (gece yarısını geçerse "+1" günü göstermeden saat döner) */
+function saatEkle(bas: string, dakika: number) {
+  const [h, m] = bas.split(':').map(Number);
+  const t = (((h * 60 + m + Math.round(dakika)) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+}
+const dkOku = (s: string) => {
+  const [h, m] = s.split(':').map(Number);
+  return h * 60 + m;
+};
+
+/** Küçük analog saat: pencerenin kadrandaki yayı + başlangıç saatini gösteren ibreler */
+function SaatKadrani({ bas, bit, renk }: { bas: string; bit: string; renk: string }) {
+  const c = 32, r = 26;
+  const aci = (t: string) => ((dkOku(t) % 720) / 720) * 360; // 12 saatlik kadran
+  const nokta = (deg: number, rr: number) => [c + rr * Math.sin((deg * Math.PI) / 180), c - rr * Math.cos((deg * Math.PI) / 180)];
+  const sure = (((dkOku(bit) - dkOku(bas)) % 1440) + 1440) % 1440;
+  const a1 = aci(bas);
+  const a2 = a1 + Math.min(359.9, (sure / 720) * 360);
+  const [x1, y1] = nokta(a1, r - 4);
+  const [x2, y2] = nokta(a2, r - 4);
+  const buyuk = a2 - a1 > 180 ? 1 : 0;
+  const [hx, hy] = nokta(a1, 12);
+  const [mx, my] = nokta(((dkOku(bas) % 60) / 60) * 360, 19);
   return (
-    <div className="rounded-2xl border border-[#dbe7ee] bg-[#f6fafc] p-4 sm:p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="font-bold text-[#17352a]">
-          {yontem === 'pivot' ? `Bir tur (${formatNumber(sure, 1)} saat)` : `${formatNumber(sure, 1)} saatlik bir sulama`}
-        </h4>
-        <span className="text-xs text-[#6b7d72]">Gübre yalnızca yeşil pencerede verilir</span>
+    <svg viewBox="0 0 64 64" className="h-16 w-16 shrink-0" aria-hidden>
+      <circle cx={c} cy={c} r={r + 3} fill="#fff" stroke="#d9e4dc" strokeWidth="1.5" />
+      <path d={`M${c} ${c} L${x1} ${y1} A${r - 4} ${r - 4} 0 ${buyuk} 1 ${x2} ${y2} Z`} fill={renk} opacity="0.85" />
+      {Array.from({ length: 12 }, (_, i) => {
+        const [ax, ay] = nokta(i * 30, r);
+        const [bx, by] = nokta(i * 30, r - (i % 3 === 0 ? 4 : 2));
+        return <line key={i} x1={ax} y1={ay} x2={bx} y2={by} stroke="#9aa89f" strokeWidth={i % 3 === 0 ? 1.6 : 1} />;
+      })}
+      <line x1={c} y1={c} x2={hx} y2={hy} stroke="#17352a" strokeWidth="2.6" strokeLinecap="round" />
+      <line x1={c} y1={c} x2={mx} y2={my} stroke="#17352a" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx={c} cy={c} r="2.2" fill="#17352a" />
+    </svg>
+  );
+}
+
+type ProgramAdimi = { bas?: string; bit?: string; tur: 'su' | 'gubre' | 'temiz'; baslik: string; aciklama: string; urunler?: boolean };
+
+/** Bir sulamada adım adım ne yapılacağı: gerçek saatlerle, kadranlarla ve bu dönemin ürünleriyle */
+function SulamaProgrami({
+  yontem,
+  sure,
+  zkart,
+  alan,
+}: {
+  yontem: SulamaYontemi;
+  sure?: number;
+  zkart?: ReturnType<typeof zkartBul>;
+  alan?: number | null;
+}) {
+  const fertigasyon = (g: string) => g === 'Damla sulama' || g === 'Yağmurlama';
+  const evreler = zkart?.evreler ?? [];
+  const simdi = zkart ? simdikiEvreler(zkart) : [];
+  const ilkUygun = (() => {
+    const s = simdi.find((i) => evreUygulamalari(evreler[i], yontem).some((g) => g.yontem !== 'Yapraktan'));
+    if (s !== undefined) return s;
+    const j = evreler.findIndex((e) => evreUygulamalari(e, yontem).some((g) => g.yontem !== 'Yapraktan'));
+    return j >= 0 ? j : 0;
+  })();
+  const [evreNo, setEvreNo] = useState(ilkUygun);
+  const [baslangic, setBaslangic] = useState('06:00');
+
+  const evre = evreler[evreNo];
+  const gruplar = evre ? evreUygulamalari(evre, yontem).filter((g) => g.yontem !== 'Yapraktan') : [];
+  const yapraktan = evre ? evreUygulamalari(evre, yontem).filter((g) => g.yontem === 'Yapraktan') : [];
+  const suyla = yontem === 'damla' || yontem === 'yagmurlama' || yontem === 'pivot';
+  const urunler = gruplar
+    .filter((g) => (suyla ? fertigasyon(g.yontem) : true))
+    .flatMap((g) => g.urunler.map((u) => ({ ...u, grup: g.yontem })));
+
+  let adimlar: ProgramAdimi[] = [];
+  const dilimler = sure ? zamanCizelgesi(yontem, sure) : undefined;
+  if (dilimler && yontem !== 'pivot') {
+    adimlar = dilimler.map((d) => ({
+      bas: saatEkle(baslangic, dkOku(d.bas)),
+      bit: saatEkle(baslangic, dkOku(d.bit)),
+      tur: d.tur,
+      baslik: d.tur === 'su' ? 'Sadece su verin' : d.tur === 'gubre' ? 'Gübreyi enjekte edin' : 'Temiz suyla bitirin',
+      aciklama: d.aciklama,
+      urunler: d.tur === 'gubre',
+    }));
+  } else if (yontem === 'pivot' && sure) {
+    adimlar = [
+      { bas: baslangic, bit: saatEkle(baslangic, 15), tur: 'su', baslik: 'Pivotu çalıştırın', aciklama: 'Hat dolsun ve tüm nozullardan su gelsin; tur hızını ayarlayın.' },
+      {
+        bas: saatEkle(baslangic, 15),
+        bit: saatEkle(baslangic, sure * 60),
+        tur: 'gubre',
+        baslik: 'Tur boyunca sabit enjeksiyon',
+        aciklama: 'Gübreyi tur boyunca aynı hızla enjekte edin; böylece tarlanın her yerine eşit düşer.',
+        urunler: true,
+      },
+      { tur: 'temiz', baslik: 'Hattı yıkayın', aciklama: 'Tur bitince enjektörü kapatın, birkaç dakika temiz su vererek hattı yıkayın.' },
+    ];
+  } else if (yontem === 'salma') {
+    adimlar = [
+      { tur: 'gubre', baslik: 'Gübreyi serpin', aciklama: 'Taban gübresini ekimde toprağa karıştırın; baş gübreyi karık diplerine ya da tava yüzeyine eşit serpin.', urunler: true },
+      { tur: 'su', baslik: 'Hemen sulayın', aciklama: 'Gübreyi serptikten sonra aynı gün suyu salın; su gübreyi kök bölgesine taşır.' },
+      { tur: 'temiz', baslik: 'Su göllenmesin', aciklama: 'Karık sonunda biriken suyu açın; uzun süre göllenen su gübreyi derine yıkar.' },
+    ];
+  } else if (yontem === 'kuru') {
+    adimlar = [
+      { tur: 'su', baslik: 'Hava tahminine bakın', aciklama: 'Önümüzdeki 1–2 gün içinde yağış beklenen bir zaman seçin.' },
+      { tur: 'gubre', baslik: 'Gübreyi doğru zamanda verin', aciklama: 'Taban gübresini ekimle birlikte toprağa verin; baş gübreyi yağmurdan hemen önce serpin ki yağış toprağa işlesin.', urunler: true },
+      { tur: 'temiz', baslik: 'Kuru toprağa vermeyin', aciklama: 'Yağış gelmezse gübre toprak yüzeyinde kalır ve azot kaybolur.' },
+    ];
+  }
+  if (adimlar.length === 0) return null;
+
+  return (
+    <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Adım adım sulama programı</p>
+          <h4 className="mt-1 font-display text-2xl font-medium">
+            {yontem === 'pivot' && sure ? `Bir tur · ${formatNumber(sure, 1)} saat` : sure && dilimler ? `Bir sulama · ${formatNumber(sure, 1)} saat` : 'Bir uygulama'}
+          </h4>
+        </div>
+        {adimlar.some((x) => x.bas) && (
+          <label className="flex items-center gap-2 text-sm text-[#4b5f55]">
+            Sulamaya başlama saati
+            <select
+              value={baslangic}
+              onChange={(e) => setBaslangic(e.target.value)}
+              className="rounded-xl border border-[#d6e2d9] bg-[#f8faf7] px-3 py-1.5 font-semibold text-[#17352a] print:hidden"
+            >
+              {BASLANGIC_SAATLERI.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
-      <div className="mt-3 flex h-9 overflow-hidden rounded-xl" role="img" aria-label="Sulama zaman çizelgesi">
-        {dilimler.map((d, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-center text-xs font-bold"
-            style={{
-              width: `${((dk(d.bit) - dk(d.bas)) / toplam) * 100}%`,
-              background: DILIM_RENK[d.tur],
-              color: d.tur === 'gubre' ? '#fff' : '#2c5566',
-            }}
-          >
-            {d.bas}–{d.bit}
-          </div>
-        ))}
-      </div>
-      <ol className="mt-3 grid gap-2 sm:grid-cols-3">
-        {dilimler.map((d, i) => (
-          <li key={i} className="text-sm leading-5">
-            <span className="flex items-center gap-2 font-semibold text-[#17352a]">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: DILIM_RENK[d.tur] }} />
-              {d.bas}–{d.bit} · {d.baslik}
-            </span>
-            <span className="text-xs text-[#5b6f65]">{d.aciklama}</span>
+
+      {evreler.length > 1 && (
+        <div className="mt-4 flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Dönem">
+          {evreler.map((e, i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={i === evreNo}
+              onClick={() => setEvreNo(i)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${i === evreNo ? 'bg-[#1d2a22] text-white' : 'bg-[#f1efe8] text-[#476456] hover:bg-[#e7e3d8]'}`}
+            >
+              {i + 1}. {e.evre}
+              {simdi.includes(i) ? ' · şu an' : ''}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <ol className="relative mt-5 space-y-3">
+        {adimlar.map((x, i) => (
+          <li key={i} className="flex gap-4 rounded-2xl p-3 sm:p-4" style={{ background: x.tur === 'gubre' ? '#eef7ef' : x.tur === 'su' ? '#f1f7fa' : '#f7f6f1' }}>
+            {x.bas && x.bit ? (
+              <SaatKadrani bas={x.bas} bit={x.bit} renk={DILIM_RENK[x.tur]} />
+            ) : (
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white font-display text-2xl text-[#17352a] ring-1 ring-[#d9e4dc]">
+                {i + 1}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6b7d72]">{i + 1}. adım</p>
+              <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 font-semibold text-[#17352a]">
+                {x.bas && x.bit && <span className="font-display text-xl tabular-nums">{x.bas} – {x.bit}</span>}
+                <span>{x.baslik}</span>
+              </p>
+              <p className="mt-1 text-sm leading-6 text-[#4b5f55]">{x.aciklama}</p>
+              {x.urunler && (
+                <div className="mt-3">
+                  {urunler.length > 0 ? (
+                    <ul className="flex flex-wrap gap-2">
+                      {urunler.map((u, j) => {
+                        const top = toplamMiktar(u.doz, alan);
+                        const hiz = yontem === 'pivot' ? pivotEnjeksiyon(u.doz, alan, sure) : undefined;
+                        return (
+                          <li key={j} className="rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-[#1d2a22]/8">
+                            {!fertigasyon(u.grup) && <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#a87a2a]">{u.grup}</span>}
+                            <span className="font-semibold text-[#17352a]">{u.urun}</span>
+                            <span className="ml-2 font-bold text-[#1f7a45]">{u.doz}</span>
+                            {(top || hiz) && (
+                              <span className="block text-xs text-[#6b7d72]">
+                                {top && `Tarlanız için ${top}`}
+                                {top && hiz ? ' · ' : ''}
+                                {hiz && `enjeksiyon ${hiz}`}
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-[#6b7d72]">{evre ? `${evre.evre} döneminde bu sulamayla verilecek gübre yok.` : 'Bitki seçilmediği için ürün listesi yok.'}</p>
+                  )}
+                  {evre && <p className="mt-2 text-xs text-[#7a877e]">{evre.evre} · {evre.donem}</p>}
+                </div>
+              )}
+            </div>
           </li>
         ))}
       </ol>
+
+      {yapraktan.length > 0 && (
+        <p className="mt-4 rounded-2xl bg-[#f7f4ec] p-3 text-sm text-[#4b5f55]">
+          <span className="font-semibold text-[#17352a]">Ayrıca yapraktan: </span>
+          {yapraktan.flatMap((g) => g.urunler).map((u) => `${u.urun} (${u.doz})`).join(', ')}. Sulamadan ayrı, serin saatte püskürtün.
+        </p>
+      )}
     </div>
   );
 }
@@ -634,9 +807,25 @@ export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
       </div>
 
       <div className="mt-5 space-y-5">
-        {sure && (tarla.sulama === 'damla' || tarla.sulama === 'yagmurlama' || tarla.sulama === 'pivot') && (
-          <ZamanCizelgesi yontem={tarla.sulama} sure={sure} />
-        )}
+        {/* Sulama sisteminiz: resim + gübrenin bu sistemde nasıl verileceği */}
+        <div className="grid overflow-hidden rounded-[24px] bg-white ring-1 ring-[#1d2a22]/8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+          <div className="relative aspect-video md:aspect-auto md:min-h-[220px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={y.gorsel} alt={y.ad} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          </div>
+          <div className="p-5 sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Sulama sisteminiz</p>
+            <h3 className="mt-1 font-display text-2xl font-medium">{y.ad}</h3>
+            <p className="mt-3 text-sm leading-6 text-[#3e5248]">{y.tarif}</p>
+            {sure && y.sureEtiketi && (
+              <p className="mt-3 text-xs text-[#6b7d72]">
+                {y.sureEtiketi}: <span className="font-semibold text-[#2a3d36]">{formatNumber(sure, 1)} saat</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} />
 
         {!zkart && (
           <p className="rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 text-sm text-[#4b5f55]">

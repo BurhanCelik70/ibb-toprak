@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: MARKA.ad,
     short_name: MARKA.ad,
     description: MARKA.aciklama,
-    start_url: '/tarlalar',
+    start_url: '/',
     display: 'standalone',
     background_color: '#f4f7f1',
     theme_color: '#1f6f4a',
