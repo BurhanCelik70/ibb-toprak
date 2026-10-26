@@ -39,6 +39,14 @@ export default async function GirisSayfasi({ searchParams }: { searchParams: Pro
               Giriş yaparak tarla ve analiz bilgilerinizin hesabınızda saklanmasını kabul etmiş olursunuz.{' '}
               <Link href="/gizlilik" className="underline hover:text-white">Gizlilik ve KVKK</Link>
             </p>
+            <div className="mt-6 flex flex-col items-center gap-2 text-sm sm:flex-row sm:justify-center sm:gap-5">
+              <Link href="/ornek" className="font-semibold text-[#e2b65c] hover:text-white">
+                Hesap açmadan örnek raporu inceleyin →
+              </Link>
+              <Link href="/" className="text-white/70 hover:text-white">
+                ← Ana sayfaya dön
+              </Link>
+            </div>
           </div>
         </div>
       </div>
