@@ -5,13 +5,15 @@
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Info, Loader2, MapPin, Minus, ShieldCheck, Sprout } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { evreGorseli } from '@/lib/bitkiGorsel';
-import { ORGANIK_MADDE_PROTOKOLU, zkartBul } from '@/lib/igsas';
+import { ORGANIK_MADDE_PROTOKOLU, URUNLER, zkartBul } from '@/lib/igsas';
 import { SINIFLAR, kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
+import { bolunmusMu, sezonTakvimi, sezonTanimi, suBasinaDoz, tarihKisa } from '@/lib/sulamaTakvimi';
 import { karsilastir, ozetle } from '@/lib/karsilastir';
 import {
   KURALLAR,
   SULAMA_YONTEMLERI,
   evreUygulamalari,
+  pencereHizi,
   pivotEnjeksiyon,
   simdikiEvreler,
   toplamMiktar,
@@ -607,77 +609,317 @@ function SaatKadrani({ bas, bit, renk }: { bas: string; bit: string; renk: strin
   );
 }
 
-type ProgramAdimi = { bas?: string; bit?: string; tur: 'su' | 'gubre' | 'temiz'; baslik: string; aciklama: string; urunler?: boolean };
+type ProgramUrunu = { urun: string; doz: string; grup: string };
+type ProgramAdimi = {
+  bas?: string;
+  bit?: string;
+  zamanNotu?: string;
+  tur: 'su' | 'gubre' | 'temiz';
+  baslik: string;
+  aciklama: string;
+  liste?: ProgramUrunu[];
+  pencereSaat?: number;
+  bosMesaj?: string;
+};
 
-/** Bir sulamada adım adım ne yapılacağı: gerçek saatlerle, kadranlarla ve bu dönemin ürünleriyle */
+/** Ürünün markası ve kısa görevi (katalogdan). KIANA ile başlayanlar KIANA, katalogdaki diğerleri İGSAŞ. */
+function urunBilgisi(ad: string) {
+  const k = URUNLER.find((u) => u.ad.toLocaleLowerCase('tr-TR') === ad.toLocaleLowerCase('tr-TR'));
+  const marka = /^kiana/i.test(ad) ? 'KIANA' : k ? 'İGSAŞ' : null;
+  return { marka, rol: k?.rol };
+}
+
+function ProgramUrunKarti({ u, alan, pencereSaat, pivotSure }: { u: ProgramUrunu; alan?: number | null; pencereSaat?: number; pivotSure?: number }) {
+  const { marka, rol } = urunBilgisi(u.urun);
+  const top = toplamMiktar(u.doz, alan);
+  const hiz = pivotSure ? pivotEnjeksiyon(u.doz, alan, pivotSure) : pencereSaat ? pencereHizi(u.doz, alan, pencereSaat) : undefined;
+  return (
+    <li className="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-[#1d2a22]/8">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {marka && (
+          <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${marka === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#e4eef5] text-[#2c5566]'}`}>{marka}</span>
+        )}
+        <span className="font-semibold text-[#17352a]">{u.urun}</span>
+        <span className="font-bold text-[#1f7a45]">{u.doz}</span>
+      </div>
+      {rol && <p className="mt-0.5 text-xs text-[#6b7d72]">{rol}</p>}
+      {(top || hiz) && (
+        <p className="mt-1 text-xs font-medium text-[#3e5248]">
+          {top && <>Tarlanız için <span className="font-semibold">{top}</span></>}
+          {top && hiz ? ' · ' : ''}
+          {hiz && <>enjeksiyon <span className="font-semibold">{hiz}</span></>}
+        </p>
+      )}
+    </li>
+  );
+}
+
+/** Sezon boyu sulama takvimi: kaçıncı su, yaklaşık tarih, gübreli/boş ve gübreli sularda ne verileceği */
+function SezonTakvimiKarti({ yontem, zkart, alan }: { yontem: SulamaYontemi; zkart?: ReturnType<typeof zkartBul>; alan?: number | null }) {
+  if (!zkart || yontem === 'kuru') return null;
+  const fertigasyon = (g: string) => g === 'Damla sulama' || g === 'Yağmurlama';
+  const suylaMi = yontem !== 'salma';
+  const evreUrunleri = (ei: number) =>
+    evreUygulamalari(zkart.evreler[ei], yontem)
+      .filter((g) => (suylaMi ? fertigasyon(g.yontem) : g.yontem !== 'Yapraktan'))
+      .flatMap((g) => g.urunler);
+  const tk = sezonTakvimi(
+    zkart,
+    yontem,
+    (ei) => evreUrunleri(ei).length > 0,
+    (ei) => evreUrunleri(ei).some((u) => bolunmusMu(u.doz)),
+  );
+  if (!tk) return null;
+  const tanim = sezonTanimi(zkart.bitki);
+
+  if (tk.goller)
+    return (
+      <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Sezon boyu sulama</p>
+        <h4 className="mt-1 font-display text-2xl font-medium">Sürekli göllendirme</h4>
+        <p className="mt-2 text-sm leading-6 text-[#4b5f55]">{tk.not}</p>
+      </div>
+    );
+
+  const toplam = tk.sular.length;
+  const gubreli = tk.sular.filter((x) => x.gubreli).length;
+  const tur = yontem === 'pivot' ? 'yagmurlama' : yontem;
+  const aralik = tanim?.aralik[tur as 'damla' | 'yagmurlama' | 'salma'];
+
+  return (
+    <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Sezon boyu sulama takvimi</p>
+      <h4 className="mt-1 font-display text-2xl font-medium">
+        Yaklaşık {toplam} su · <span className="text-[#1f7a45]">{gubreli} gübreli</span>, {toplam - gubreli} boş
+      </h4>
+      <p className="mt-1 text-sm text-[#5b6f65]">
+        {tanim?.kritikEvreler && yontem !== 'damla'
+          ? 'Tahılda su, kritik dönemlerde verilir.'
+          : aralik
+            ? `Sıcak aylarda yaklaşık ${aralik} günde bir, serin aylarda daha seyrek.`
+            : ''}{' '}
+        Toprağınız ağır (killi) ise aralık biraz uzar, hafif (kumlu) ise kısalır; yağış olursa o su atlanır.
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-[#5b6f65]">
+        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#2f8f57]" /> Gübreli su</span>
+        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border-2 border-[#8fb8cc] bg-white" /> Boş su (yalnızca su)</span>
+      </div>
+
+      <ol className="mt-4 space-y-4">
+        {tk.evreler.map((ev) => {
+          const urunler = evreUrunleri(ev.evre);
+          if (ev.sular.length === 0 && urunler.length === 0) return null;
+          return (
+            <li key={ev.evre} className="rounded-2xl bg-[#f8f7f2] p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="font-semibold text-[#17352a]">
+                  {ev.evre + 1}. {ev.ad}
+                  <span className="ml-2 text-xs font-normal text-[#7a877e]">{zkart.evreler[ev.evre].donem}</span>
+                </p>
+                <p className="text-xs text-[#6b7d72]">
+                  {ev.sular.length ? `${ev.sular.length} su · ${ev.gubreliSayisi} gübreli` : 'Bu dönemde sulama yok'}
+                </p>
+              </div>
+              {ev.sular.length > 0 && (
+                <ul className="mt-3 flex flex-wrap gap-1.5">
+                  {ev.sular.map((x) => (
+                    <li
+                      key={x.no}
+                      title={x.gubreli ? 'Gübreli su' : 'Boş su'}
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${x.gubreli ? 'bg-[#2f8f57] text-white' : 'border border-[#bcd6e2] bg-white text-[#2c5566]'}`}
+                    >
+                      {x.no}. su · {tarihKisa(x.tarih)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {urunler.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-[#3e5248]">
+                    {ev.sular.length === 0
+                      ? ev.evre === 0
+                        ? suylaMi
+                          ? 'Bu dönemde genelde yağış yeterli; gübreler ekimle ya da çıkış suyuyla verilir:'
+                          : 'Bu dönemin gübreleri ekimle verilir:'
+                        : 'Bu dönemde genelde yağış yeterli; sulama gerekirse bu gübreleri o suyla, gerekmezse sezonun ilk suyuyla verin:'
+                      : suylaMi
+                        ? `Gübreli sularda (${ev.gubreliSayisi} su) verilecekler:`
+                        : 'Dönemin ilk suyundan hemen önce serpilecekler:'}
+                  </p>
+                  <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {urunler.map((u, j) => {
+                      const { marka } = urunBilgisi(u.urun);
+                      const bas = ev.gubreliSayisi > 1 ? suBasinaDoz(u.doz, ev.gubreliSayisi) : undefined;
+                      const top = toplamMiktar(u.doz, alan);
+                      return (
+                        <li key={j} className="rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-[#1d2a22]/8">
+                          <div className="flex flex-wrap items-center gap-x-2">
+                            {marka && (
+                              <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${marka === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#e4eef5] text-[#2c5566]'}`}>{marka}</span>
+                            )}
+                            <span className="font-semibold text-[#17352a]">{u.urun}</span>
+                          </div>
+                          <p className="mt-0.5 text-xs text-[#3e5248]">
+                            Dönem dozu <span className="font-semibold">{u.doz}</span>
+                            {bas && (
+                              <>
+                                {' '}→ her gübreli suda <span className="font-semibold text-[#1f7a45]">≈ {bas}</span>
+                              </>
+                            )}
+                          </p>
+                          {top && <p className="text-xs text-[#6b7d72]">Tarlanız için dönemde toplam {top}</p>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+
+      <p className="mt-4 text-xs leading-5 text-[#7a877e]">
+        {tk.not ? `${tk.not} ` : ''}Tarihler ve su sayısı yaklaşıktır; her sulamayı toprak nemine bakarak verin (kök bölgesinde toprak avuçta top olmuyorsa sulama zamanı gelmiştir). Dönem dozu o dönemin gübreli sularına bölünerek gösterilmiştir.
+      </p>
+    </div>
+  );
+}
+
+/** Bir sulamada adım adım ne yapılacağı: gerçek saatlerle, kadranlarla, markalı ürünlerle ve yapraktan uygulamayla */
 function SulamaProgrami({
   yontem,
   sure,
   zkart,
   alan,
+  ai,
 }: {
   yontem: SulamaYontemi;
   sure?: number;
   zkart?: ReturnType<typeof zkartBul>;
   alan?: number | null;
+  ai?: CozumPlani | null;
 }) {
   const fertigasyon = (g: string) => g === 'Damla sulama' || g === 'Yağmurlama';
   const evreler = zkart?.evreler ?? [];
   const simdi = zkart ? simdikiEvreler(zkart) : [];
   const ilkUygun = (() => {
-    const s = simdi.find((i) => evreUygulamalari(evreler[i], yontem).some((g) => g.yontem !== 'Yapraktan'));
+    const s = simdi.find((i) => evreUygulamalari(evreler[i], yontem).length > 0);
     if (s !== undefined) return s;
-    const j = evreler.findIndex((e) => evreUygulamalari(e, yontem).some((g) => g.yontem !== 'Yapraktan'));
+    const j = evreler.findIndex((e) => evreUygulamalari(e, yontem).length > 0);
     return j >= 0 ? j : 0;
   })();
   const [evreNo, setEvreNo] = useState(ilkUygun);
   const [baslangic, setBaslangic] = useState('06:00');
 
   const evre = evreler[evreNo];
-  const gruplar = evre ? evreUygulamalari(evre, yontem).filter((g) => g.yontem !== 'Yapraktan') : [];
-  const yapraktan = evre ? evreUygulamalari(evre, yontem).filter((g) => g.yontem === 'Yapraktan') : [];
+  const tum = evre ? evreUygulamalari(evre, yontem) : [];
+  const duz = (gs: typeof tum) => gs.flatMap((g) => g.urunler.map((u) => ({ ...u, grup: g.yontem })));
   const suyla = yontem === 'damla' || yontem === 'yagmurlama' || yontem === 'pivot';
-  const urunler = gruplar
-    .filter((g) => (suyla ? fertigasyon(g.yontem) : true))
-    .flatMap((g) => g.urunler.map((u) => ({ ...u, grup: g.yontem })));
+  const suUrunleri = duz(tum.filter((g) => fertigasyon(g.yontem)));
+  const topragaUrunler = duz(tum.filter((g) => !fertigasyon(g.yontem) && g.yontem !== 'Yapraktan'));
+  const yaprakUrunleri = duz(tum.filter((g) => g.yontem === 'Yapraktan'));
 
   let adimlar: ProgramAdimi[] = [];
   const dilimler = sure ? zamanCizelgesi(yontem, sure) : undefined;
+  const bitis = sure ? saatEkle(baslangic, sure * 60) : baslangic;
+
+  if (suyla && topragaUrunler.length > 0) {
+    adimlar.push({
+      bas: saatEkle(baslangic, -30),
+      bit: baslangic,
+      tur: 'gubre',
+      baslik: 'Sulamadan önce serpin',
+      aciklama: 'Bu gübreler suyla verilmez. Sulamadan hemen önce toprağa serpin; ardından gelen su gübreyi kök bölgesine indirir.',
+      liste: topragaUrunler,
+    });
+  }
+
   if (dilimler && yontem !== 'pivot') {
-    adimlar = dilimler.map((d) => ({
-      bas: saatEkle(baslangic, dkOku(d.bas)),
-      bit: saatEkle(baslangic, dkOku(d.bit)),
-      tur: d.tur,
-      baslik: d.tur === 'su' ? 'Sadece su verin' : d.tur === 'gubre' ? 'Gübreyi enjekte edin' : 'Temiz suyla bitirin',
-      aciklama: d.aciklama,
-      urunler: d.tur === 'gubre',
-    }));
+    adimlar.push(
+      ...dilimler.map((d) => {
+        const bas = saatEkle(baslangic, dkOku(d.bas));
+        const bit = saatEkle(baslangic, dkOku(d.bit));
+        const pencere = (dkOku(d.bit) - dkOku(d.bas)) / 60;
+        return {
+          bas,
+          bit,
+          tur: d.tur,
+          baslik: d.tur === 'su' ? 'Sadece su verin' : d.tur === 'gubre' ? 'Gübreyi enjekte edin' : 'Temiz suyla bitirin',
+          aciklama:
+            d.tur === 'gubre'
+              ? `Aşağıdaki gübreleri tanka hazırlayın ve ${bas}–${bit} arasında, ${formatNumber(pencere, 1)} saatte eşit hızla enjekte edin. Kalsiyumlu gübreleri sülfatlı ve fosfatlı olanlarla aynı tanka koymayın.`
+              : d.aciklama,
+          liste: d.tur === 'gubre' ? suUrunleri : undefined,
+          pencereSaat: d.tur === 'gubre' ? pencere : undefined,
+          bosMesaj: d.tur === 'gubre' ? 'Bu dönemde suyla verilecek gübre yok; sadece sulama yapın.' : undefined,
+        } as ProgramAdimi;
+      }),
+    );
   } else if (yontem === 'pivot' && sure) {
-    adimlar = [
+    adimlar.push(
       { bas: baslangic, bit: saatEkle(baslangic, 15), tur: 'su', baslik: 'Pivotu çalıştırın', aciklama: 'Hat dolsun ve tüm nozullardan su gelsin; tur hızını ayarlayın.' },
       {
         bas: saatEkle(baslangic, 15),
-        bit: saatEkle(baslangic, sure * 60),
+        bit: bitis,
         tur: 'gubre',
         baslik: 'Tur boyunca sabit enjeksiyon',
         aciklama: 'Gübreyi tur boyunca aynı hızla enjekte edin; böylece tarlanın her yerine eşit düşer.',
-        urunler: true,
+        liste: suUrunleri,
+        bosMesaj: 'Bu dönemde suyla verilecek gübre yok; sadece sulama yapın.',
       },
       { tur: 'temiz', baslik: 'Hattı yıkayın', aciklama: 'Tur bitince enjektörü kapatın, birkaç dakika temiz su vererek hattı yıkayın.' },
-    ];
+    );
   } else if (yontem === 'salma') {
-    adimlar = [
-      { tur: 'gubre', baslik: 'Gübreyi serpin', aciklama: 'Taban gübresini ekimde toprağa karıştırın; baş gübreyi karık diplerine ya da tava yüzeyine eşit serpin.', urunler: true },
+    adimlar.push(
+      {
+        tur: 'gubre',
+        baslik: 'Gübreyi serpin',
+        aciklama: 'Taban gübresini ekimde toprağa karıştırın; baş gübreyi karık diplerine ya da tava yüzeyine eşit serpin.',
+        liste: topragaUrunler,
+        bosMesaj: 'Bu dönemde toprağa verilecek gübre yok.',
+      },
       { tur: 'su', baslik: 'Hemen sulayın', aciklama: 'Gübreyi serptikten sonra aynı gün suyu salın; su gübreyi kök bölgesine taşır.' },
       { tur: 'temiz', baslik: 'Su göllenmesin', aciklama: 'Karık sonunda biriken suyu açın; uzun süre göllenen su gübreyi derine yıkar.' },
-    ];
+    );
   } else if (yontem === 'kuru') {
-    adimlar = [
+    adimlar.push(
       { tur: 'su', baslik: 'Hava tahminine bakın', aciklama: 'Önümüzdeki 1–2 gün içinde yağış beklenen bir zaman seçin.' },
-      { tur: 'gubre', baslik: 'Gübreyi doğru zamanda verin', aciklama: 'Taban gübresini ekimle birlikte toprağa verin; baş gübreyi yağmurdan hemen önce serpin ki yağış toprağa işlesin.', urunler: true },
+      {
+        tur: 'gubre',
+        baslik: 'Gübreyi doğru zamanda verin',
+        aciklama: 'Taban gübresini ekimle birlikte toprağa verin; baş gübreyi yağmurdan hemen önce serpin ki yağış toprağa işlesin.',
+        liste: topragaUrunler,
+        bosMesaj: 'Bu dönemde toprağa verilecek gübre yok.',
+      },
       { tur: 'temiz', baslik: 'Kuru toprağa vermeyin', aciklama: 'Yağış gelmezse gübre toprak yüzeyinde kalır ve azot kaybolur.' },
-    ];
+    );
   }
+
+  if (yaprakUrunleri.length > 0) {
+    const bitDk = dkOku(bitis);
+    const ayniGun = suyla && sure ? bitDk <= 16 * 60 && bitDk >= dkOku(baslangic) : true;
+    adimlar.push({
+      bas: ayniGun ? '18:00' : '07:00',
+      bit: ayniGun ? '20:00' : '09:00',
+      zamanNotu: suyla && sure ? (ayniGun ? 'aynı gün akşam' : 'ertesi sabah') : 'serin saat',
+      tur: 'temiz',
+      baslik: 'Yapraktan uygulama: pülverizatör ya da drone',
+      aciklama:
+        'Sulamadan sonra yapraklar kuruyunca, rüzgârsız ve serin bir saatte püskürtün. Drone ile uygulama da önerilir: daha az su kullanılır, geniş tarlada hızlı ve eşit dağılır; ürün dozu aynı kalır.',
+      liste: yaprakUrunleri,
+    });
+  }
+
+  // Analize göre ek öneriler (yapay zekâ planından; programda zaten geçenler çıkarılır)
+  const programdakiler = new Set(adimlar.flatMap((x) => x.liste ?? []).map((u) => u.urun.toLocaleLowerCase('tr-TR')));
+  const ekler = ai
+    ? [...(ai.kokGelisimi ?? []), ...(ai.iklimKoruma ?? []), ...(ai.gubreleme ?? [])].filter(
+        (u, i, arr) => !programdakiler.has(u.urun.toLocaleLowerCase('tr-TR')) && arr.findIndex((x) => x.urun === u.urun) === i,
+      )
+    : [];
+
   if (adimlar.length === 0) return null;
 
   return (
@@ -689,7 +931,7 @@ function SulamaProgrami({
             {yontem === 'pivot' && sure ? `Bir tur · ${formatNumber(sure, 1)} saat` : sure && dilimler ? `Bir sulama · ${formatNumber(sure, 1)} saat` : 'Bir uygulama'}
           </h4>
         </div>
-        {adimlar.some((x) => x.bas) && (
+        {suyla && sure && (
           <label className="flex items-center gap-2 text-sm text-[#4b5f55]">
             Sulamaya başlama saati
             <select
@@ -722,69 +964,83 @@ function SulamaProgrami({
           ))}
         </div>
       )}
+      {evre && (
+        <p className="mt-3 text-sm text-[#5b6f65]">
+          <span className="font-semibold text-[#17352a]">{evre.evre}</span> · {evre.donem}
+        </p>
+      )}
+      {suyla && (
+        <p className="mt-2 rounded-xl bg-[#f1f7fa] px-3 py-2 text-xs leading-5 text-[#2c5566]">
+          Bu program <span className="font-semibold">gübreli bir su</span> içindir. Takvimdeki boş sularda gübre adımında da yalnızca su verin.
+        </p>
+      )}
 
-      <ol className="relative mt-5 space-y-3">
+      <ol className="mt-4 space-y-3">
         {adimlar.map((x, i) => (
-          <li key={i} className="flex gap-4 rounded-2xl p-3 sm:p-4" style={{ background: x.tur === 'gubre' ? '#eef7ef' : x.tur === 'su' ? '#f1f7fa' : '#f7f6f1' }}>
+          <li
+            key={i}
+            className="flex gap-4 rounded-2xl p-3 sm:p-4"
+            style={{ background: x.liste && x.tur === 'gubre' ? '#eef7ef' : x.tur === 'su' ? '#f1f7fa' : x.liste ? '#f4f1fa' : '#f7f6f1' }}
+          >
             {x.bas && x.bit ? (
-              <SaatKadrani bas={x.bas} bit={x.bit} renk={DILIM_RENK[x.tur]} />
+              <SaatKadrani bas={x.bas} bit={x.bit} renk={x.liste && x.tur === 'temiz' ? '#9b87c9' : DILIM_RENK[x.tur]} />
             ) : (
               <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white font-display text-2xl text-[#17352a] ring-1 ring-[#d9e4dc]">
                 {i + 1}
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6b7d72]">{i + 1}. adım</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6b7d72]">
+                {i + 1}. adım{x.zamanNotu ? ` · ${x.zamanNotu}` : ''}
+              </p>
               <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 font-semibold text-[#17352a]">
                 {x.bas && x.bit && <span className="font-display text-xl tabular-nums">{x.bas} – {x.bit}</span>}
                 <span>{x.baslik}</span>
               </p>
               <p className="mt-1 text-sm leading-6 text-[#4b5f55]">{x.aciklama}</p>
-              {x.urunler && (
-                <div className="mt-3">
-                  {urunler.length > 0 ? (
-                    <ul className="flex flex-wrap gap-2">
-                      {urunler.map((u, j) => {
-                        const top = toplamMiktar(u.doz, alan);
-                        const hiz = yontem === 'pivot' ? pivotEnjeksiyon(u.doz, alan, sure) : undefined;
-                        return (
-                          <li key={j} className="rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-[#1d2a22]/8">
-                            {!fertigasyon(u.grup) && <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#a87a2a]">{u.grup}</span>}
-                            <span className="font-semibold text-[#17352a]">{u.urun}</span>
-                            <span className="ml-2 font-bold text-[#1f7a45]">{u.doz}</span>
-                            {(top || hiz) && (
-                              <span className="block text-xs text-[#6b7d72]">
-                                {top && `Tarlanız için ${top}`}
-                                {top && hiz ? ' · ' : ''}
-                                {hiz && `enjeksiyon ${hiz}`}
-                              </span>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-[#6b7d72]">{evre ? `${evre.evre} döneminde bu sulamayla verilecek gübre yok.` : 'Bitki seçilmediği için ürün listesi yok.'}</p>
-                  )}
-                  {evre && <p className="mt-2 text-xs text-[#7a877e]">{evre.evre} · {evre.donem}</p>}
-                </div>
-              )}
+              {x.liste &&
+                (x.liste.length > 0 ? (
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {x.liste.map((u, j) => (
+                      <ProgramUrunKarti key={j} u={u} alan={alan} pencereSaat={x.pencereSaat} pivotSure={yontem === 'pivot' && x.tur === 'gubre' ? sure : undefined} />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-[#6b7d72]">{x.bosMesaj ?? (evre ? '' : 'Bitki seçilmediği için ürün listesi yok.')}</p>
+                ))}
             </div>
           </li>
         ))}
       </ol>
 
-      {yapraktan.length > 0 && (
-        <p className="mt-4 rounded-2xl bg-[#f7f4ec] p-3 text-sm text-[#4b5f55]">
-          <span className="font-semibold text-[#17352a]">Ayrıca yapraktan: </span>
-          {yapraktan.flatMap((g) => g.urunler).map((u) => `${u.urun} (${u.doz})`).join(', ')}. Sulamadan ayrı, serin saatte püskürtün.
-        </p>
+      {ekler.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-[#e6dcc4] bg-[#fdf9ef] p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a87a2a]">Analizinize göre ek öneri</p>
+          <p className="mt-1 text-sm text-[#5b4a22]">Toprak analizinize göre bu programa eklenmesi önerilen ürünler:</p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {ekler.map((u, j) => {
+              const { marka } = urunBilgisi(u.urun);
+              return (
+                <li key={j} className="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-[#1d2a22]/8">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    {marka && (
+                      <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${marka === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#e4eef5] text-[#2c5566]'}`}>{marka}</span>
+                    )}
+                    <span className="font-semibold text-[#17352a]">{u.urun}</span>
+                    <span className="font-bold text-[#1f7a45]">{u.doz}</span>
+                  </div>
+                  {u.aciklama && <p className="mt-0.5 text-xs leading-5 text-[#6b7d72]">{u.aciklama}</p>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </div>
   );
 }
 
-export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
+export function SulamaRecetesi({ tarla, ai }: { tarla: SonucTarla; ai?: CozumPlani | null }) {
   const zkart = zkartBul(tarla.bitki ?? undefined);
   const y = SULAMA_YONTEMLERI[tarla.sulama];
   const sure = tarla.sulama_suresi_saat ?? y.varsayilanSure;
@@ -825,7 +1081,9 @@ export function SulamaRecetesi({ tarla }: { tarla: SonucTarla }) {
           </div>
         </div>
 
-        <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} />
+        <SezonTakvimiKarti yontem={tarla.sulama} zkart={zkart} alan={tarla.alan_dekar} />
+
+        <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} ai={ai} />
 
         {!zkart && (
           <p className="rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 text-sm text-[#4b5f55]">
@@ -1425,7 +1683,7 @@ export function SonucEkrani({
       <OncelikliIsler report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} ilgi={ilgi} />
 
       {/* 2) Dönem dönem program */}
-      <SulamaRecetesi tarla={tarla} />
+      <SulamaRecetesi tarla={tarla} ai={ai} />
 
       {/* 3) Değerler: tek görünüm */}
       <Gostergeler report={report} results={results} />

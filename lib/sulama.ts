@@ -178,6 +178,21 @@ export function dozOku(s: string): Doz | undefined {
 
 const fmt = (n: number) => n.toLocaleString('tr-TR', { maximumFractionDigits: n < 10 ? 1 : 0 });
 
+/** Belirli bir enjeksiyon penceresinde (saat) verilecek saatlik miktar: "900–1.260 L/saat". */
+export function pencereHizi(dozMetni: string, alanDekar?: number | null, pencereSaat?: number | null): string | undefined {
+  const d = dozOku(dozMetni);
+  if (!d || !alanDekar || alanDekar <= 0 || !pencereSaat || pencereSaat <= 0) return undefined;
+  let min = (d.min * alanDekar) / pencereSaat;
+  let max = (d.max * alanDekar) / pencereSaat;
+  let birim: string = d.birim;
+  if ((birim === 'g' || birim === 'cc') && min >= 1000) {
+    min /= 1000;
+    max /= 1000;
+    birim = birim === 'g' ? 'kg' : 'L';
+  }
+  return min === max ? `≈ ${fmt(min)} ${birim}/saat` : `≈ ${fmt(min)}–${fmt(max)} ${birim}/saat`;
+}
+
 /** Dekar başı dozu tarla alanıyla çarpıp okunur toplam verir: "144–192 L". */
 export function toplamMiktar(dozMetni: string, alanDekar?: number | null): string | undefined {
   const d = dozOku(dozMetni);
