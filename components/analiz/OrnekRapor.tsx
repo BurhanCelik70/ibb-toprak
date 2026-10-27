@@ -57,7 +57,7 @@ export function OrnekRapor() {
       ai={PLAN}
       aiState="idle"
       onRetryAi={() => {}}
-      tarla={{ ad: 'Örnek Tarla', bitki: 'Mısır (dane)', sulama: 'damla', alan_dekar: 25, sulama_suresi_saat: 6, konum: 'Konya / Karatay' }}
+      tarla={{ ad: 'Örnek Tarla', bitki: 'Mısır (dane)', sulama: 'damla', alan_dekar: 25, sulama_suresi_saat: 6, konum: 'Konya / Karatay', il: 'Konya' }}
       baslikUstu={
         <div className="flex flex-col gap-3 rounded-[24px] bg-[#1d2a22] p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>

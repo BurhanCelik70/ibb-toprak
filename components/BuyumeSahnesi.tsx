@@ -216,9 +216,9 @@ export function BuyumeSahnesi() {
                       Ücretsiz başla <ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" />
                     </Link>
                     {pn.ilk && (
-                      <a href="#tarla-defteri" className="rounded-full px-5 py-3.5 text-[15px] font-medium text-white/80 hover:text-white">
-                        Uygulamayı gör
-                      </a>
+                      <Link href="/ornek" className="rounded-full border border-white/25 px-5 py-3.5 text-[15px] font-medium text-white/90 backdrop-blur hover:bg-white/10 hover:text-white">
+                        Örnek raporu gör
+                      </Link>
                     )}
                   </div>
                 )}

@@ -7,7 +7,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { evreGorseli } from '@/lib/bitkiGorsel';
 import { ORGANIK_MADDE_PROTOKOLU, URUNLER, zkartBul } from '@/lib/igsas';
 import { SINIFLAR, kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
-import { bolunmusMu, sezonTakvimi, sezonTanimi, suBasinaDoz, tarihKisa } from '@/lib/sulamaTakvimi';
+import { BOLGE_DUZELTME, bolunmusMu, onerilenAralik, sezonTakvimi, sezonTanimi, suBasinaDoz, tarihKisa } from '@/lib/sulamaTakvimi';
 import { karsilastir, ozetle } from '@/lib/karsilastir';
 import {
   KURALLAR,
@@ -43,6 +43,7 @@ export type SonucTarla = {
   alan_dekar: number | null;
   sulama_suresi_saat: number | null;
   konum?: string | null;
+  il?: string | null;
 };
 
 export const TONE_STYLE: Record<Tone, { dot: string; text: string; bar: string; label: string }> = {
@@ -655,7 +656,10 @@ function ProgramUrunKarti({ u, alan, pencereSaat, pivotSure }: { u: ProgramUrunu
 }
 
 /** Sezon boyu sulama takvimi: kaçıncı su, yaklaşık tarih, gübreli/boş ve gübreli sularda ne verileceği */
-function SezonTakvimiKarti({ yontem, zkart, alan }: { yontem: SulamaYontemi; zkart?: ReturnType<typeof zkartBul>; alan?: number | null }) {
+function SezonTakvimiKarti({ yontem, zkart, alan, il }: { yontem: SulamaYontemi; zkart?: ReturnType<typeof zkartBul>; alan?: number | null; il?: string | null }) {
+  const tanim = sezonTanimi(zkart?.bitki);
+  const { gun: varsayilan, bolge } = onerilenAralik(zkart?.bitki, yontem, il);
+  const [aralikGun, setAralikGun] = useState(varsayilan);
   if (!zkart || yontem === 'kuru') return null;
   const fertigasyon = (g: string) => g === 'Damla sulama' || g === 'Yağmurlama';
   const suylaMi = yontem !== 'salma';
@@ -668,9 +672,11 @@ function SezonTakvimiKarti({ yontem, zkart, alan }: { yontem: SulamaYontemi; zka
     yontem,
     (ei) => evreUrunleri(ei).length > 0,
     (ei) => evreUrunleri(ei).some((u) => bolunmusMu(u.doz)),
+    undefined,
+    aralikGun,
+    bolge,
   );
   if (!tk) return null;
-  const tanim = sezonTanimi(zkart.bitki);
 
   if (tk.goller)
     return (
@@ -683,8 +689,7 @@ function SezonTakvimiKarti({ yontem, zkart, alan }: { yontem: SulamaYontemi; zka
 
   const toplam = tk.sular.length;
   const gubreli = tk.sular.filter((x) => x.gubreli).length;
-  const tur = yontem === 'pivot' ? 'yagmurlama' : yontem;
-  const aralik = tanim?.aralik[tur as 'damla' | 'yagmurlama' | 'salma'];
+  const kritik = !!tanim?.kritikEvreler && yontem !== 'damla';
 
   return (
     <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
@@ -692,14 +697,32 @@ function SezonTakvimiKarti({ yontem, zkart, alan }: { yontem: SulamaYontemi; zka
       <h4 className="mt-1 font-display text-2xl font-medium">
         Yaklaşık {toplam} su · <span className="text-[#1f7a45]">{gubreli} gübreli</span>, {toplam - gubreli} boş
       </h4>
-      <p className="mt-1 text-sm text-[#5b6f65]">
-        {tanim?.kritikEvreler && yontem !== 'damla'
-          ? 'Tahılda su, kritik dönemlerde verilir.'
-          : aralik
-            ? `Sıcak aylarda yaklaşık ${aralik} günde bir, serin aylarda daha seyrek.`
-            : ''}{' '}
-        Toprağınız ağır (killi) ise aralık biraz uzar, hafif (kumlu) ise kısalır; yağış olursa o su atlanır.
-      </p>
+      {kritik ? (
+        <p className="mt-1 text-sm text-[#5b6f65]">Tahılda su, kritik dönemlerde verilir.</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#4b5f55]">
+          <label htmlFor="aralik">Sıcak aylarda kaç günde bir sularsınız?</label>
+          <select
+            id="aralik"
+            value={aralikGun}
+            onChange={(e) => setAralikGun(Number(e.target.value))}
+            className="rounded-xl border border-[#d6e2d9] bg-[#f8faf7] px-3 py-1.5 font-semibold text-[#17352a] print:hidden"
+          >
+            {Array.from({ length: 19 }, (_, i) => i + 2).map((g) => (
+              <option key={g} value={g}>
+                {g} günde bir{g === varsayilan ? ' (önerilen)' : ''}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-[#7a877e]">Serin aylarda aralık kendiliğinden uzar.</span>
+        </div>
+      )}
+      {bolge && !kritik && (
+        <p className="mt-2 rounded-xl bg-[#f6efe2] px-3 py-2 text-xs leading-5 text-[#4a3d22]">
+          <span className="font-semibold">{il ? `${il} · ` : ''}{bolge}:</span> {BOLGE_DUZELTME[bolge].not}
+        </p>
+      )}
+      <p className="mt-1 text-xs text-[#7a877e]">Toprağınız ağır (killi) ise aralık biraz uzar, hafif (kumlu) ise kısalır; yağış olursa o su atlanır.</p>
 
       <div className="mt-3 flex flex-wrap gap-4 text-xs text-[#5b6f65]">
         <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#2f8f57]" /> Gübreli su</span>
@@ -1081,7 +1104,7 @@ export function SulamaRecetesi({ tarla, ai }: { tarla: SonucTarla; ai?: CozumPla
           </div>
         </div>
 
-        <SezonTakvimiKarti yontem={tarla.sulama} zkart={zkart} alan={tarla.alan_dekar} />
+        <SezonTakvimiKarti key={`tk-${tarla.sulama}-${zkart?.bitki ?? ""}-${tarla.il ?? ""}`} yontem={tarla.sulama} zkart={zkart} alan={tarla.alan_dekar} il={tarla.il} />
 
         <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} ai={ai} />
 

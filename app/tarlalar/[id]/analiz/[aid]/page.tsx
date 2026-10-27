@@ -41,6 +41,7 @@ export default async function AnalizSayfasi({ params }: { params: Promise<{ id: 
             alan_dekar: tarla.alan_dekar,
             sulama_suresi_saat: tarla.sulama_suresi_saat,
             konum: [tarla.ilce, tarla.il].filter(Boolean).join(', ') || null,
+            il: tarla.il ?? null,
           }}
           rapor={{ ...analiz.rapor, bitki: tarla.bitki ?? analiz.rapor.bitki }}
           tarih={tarihYaz(analiz.analiz_tarihi)}

@@ -64,6 +64,7 @@ export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' 
             </>
           ) : (
             <>
+              <Link href="/ornek" className={`rounded-full px-3 py-2 text-sm font-semibold ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek rapor</Link>
               <a href="/#ornek" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek alma</a>
               <a href="/#videolar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Videolar</a>
               <Link

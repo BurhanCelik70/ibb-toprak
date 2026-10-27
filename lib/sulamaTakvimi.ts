@@ -2,16 +2,19 @@
  * Sezon boyu sulama takvimi: kaçıncı su, yaklaşık tarih, gübreli mi boş mu.
  *
  * Değerler yaklaşıktır; toprak, yağış ve sıcaklığa göre değişir. Dayanak:
- *  - Mısır: karıkta 3–7 su (Eskişehir, Bolu, Tokat, Çukurova denemeleri; Biber ve Kara derlemesi),
- *    damlada kurak iklimde 3 günde bir (Hektaş).
- *  - Şeker pancarı: Konya-Çumra damla denemesinde 14 su, 5–7 gün aralık (Kaya ve Topak, Selçuk Tar. Bil. Der.);
+ *  - Mısır: karıkta 3–7 su (Eskişehir, Bolu, Tokat, Çukurova denemeleri; Biber ve Kara derlemesi);
+ *    Konya-Karaman çiftçi uygulamasında damlada 7–10 günde bir, sezonda ~10 su; Konya Kapalı Havzası
+ *    FAO/ÇŞB demonstrasyonlarında programlı damla sulamada sezonluk ~840 mm (Haziran–Ağustos).
+ *  - Şeker pancarı: Konya-Çumra damla denemesinde 15 Haziran–10 Eylül, 14 su, 5–7 gün aralık (Kaya ve Topak, Selçuk Tar. Bil. Der.);
  *    son su hasattan 10–15 gün önce (Hektaş).
- *  - Diğer bitkiler: yönteme göre genel aralıklar (damla 2–6, yağmurlama 4–12, karık 6–20 gün).
+ *  - Diğer bitkiler: yönteme göre genel aralıklar (damla 3–6, yağmurlama 4–12, karık 6–20 gün).
+ * Çiftçi kendi aralığını seçebilir (aralikGun); seçilen değer sıcak aylardaki aralıktır.
  * Sıcak aylarda (Haziran–Ağustos) aralık kısalır; diğer aylarda 1,5 katına çıkar.
  */
 import { dozOku } from './sulama';
 import type { SulamaYontemi } from './sulama';
 import type { ZKart } from './zkartlar';
+import { ilBolgesi, type Bolge } from './bolgeler';
 
 type Aralik = { damla: number; yagmurlama: number; salma: number };
 type SezonTanimi = {
@@ -26,30 +29,57 @@ type SezonTanimi = {
 };
 
 const S: Record<string, SezonTanimi> = {
-  'Mısır (dane)': { bas: '05-20', bit: '08-31', aralik: { damla: 3, yagmurlama: 7, salma: 11 } },
-  'Şeker pancarı': { bas: '06-01', bit: '09-15', aralik: { damla: 6, yagmurlama: 8, salma: 12 }, not: 'Son su hasattan 10–15 gün önce verilir.' },
-  Ayçiçeği: { bas: '06-01', bit: '08-15', aralik: { damla: 5, yagmurlama: 9, salma: 14 } },
-  Pamuk: { bas: '06-01', bit: '08-31', aralik: { damla: 5, yagmurlama: 9, salma: 14 } },
-  Patates: { bas: '05-25', bit: '08-25', aralik: { damla: 3, yagmurlama: 6, salma: 9 } },
-  Domates: { bas: '05-15', bit: '09-15', aralik: { damla: 2, yagmurlama: 5, salma: 7 } },
-  Salatalık: { bas: '05-15', bit: '09-01', aralik: { damla: 2, yagmurlama: 4, salma: 6 } },
-  Soğan: { bas: '04-20', bit: '07-31', aralik: { damla: 3, yagmurlama: 6, salma: 9 }, not: 'Hasattan 2–3 hafta önce su kesilir.' },
+  'Mısır (dane)': { bas: '06-01', bit: '08-31', aralik: { damla: 9, yagmurlama: 8, salma: 12 }, not: 'Konya-Karaman uygulamasında damlada genelde 7–10 günde bir, sezonda ortalama 10 su verilir; programlı damla sulamada sezonluk su yaklaşık 840 mm\'dir.' },
+  'Şeker pancarı': { bas: '06-15', bit: '09-10', aralik: { damla: 6, yagmurlama: 8, salma: 12 }, not: 'Konya-Çumra damla denemesinde 15 Haziran–10 Eylül arasında 14 su verilmiştir (5–7 gün arayla). Son su hasattan 10–15 gün önce verilir.' },
+  Ayçiçeği: { bas: '06-01', bit: '08-15', aralik: { damla: 6, yagmurlama: 9, salma: 14 } },
+  Pamuk: { bas: '06-01', bit: '08-31', aralik: { damla: 6, yagmurlama: 9, salma: 14 } },
+  Patates: { bas: '05-25', bit: '08-25', aralik: { damla: 4, yagmurlama: 6, salma: 9 } },
+  Domates: { bas: '05-15', bit: '09-15', aralik: { damla: 3, yagmurlama: 5, salma: 7 } },
+  Salatalık: { bas: '05-15', bit: '09-01', aralik: { damla: 3, yagmurlama: 4, salma: 6 } },
+  Soğan: { bas: '04-20', bit: '07-31', aralik: { damla: 4, yagmurlama: 6, salma: 9 }, not: 'Hasattan 2–3 hafta önce su kesilir.' },
   Susam: { bas: '06-10', bit: '08-20', aralik: { damla: 6, yagmurlama: 10, salma: 15 } },
-  Tütün: { bas: '06-01', bit: '08-15', aralik: { damla: 5, yagmurlama: 9, salma: 14 } },
-  Elma: { bas: '05-01', bit: '09-30', aralik: { damla: 3, yagmurlama: 8, salma: 15 } },
-  'Şeftali / nektarin': { bas: '05-01', bit: '09-15', aralik: { damla: 3, yagmurlama: 8, salma: 14 } },
-  Kayısı: { bas: '04-20', bit: '09-15', aralik: { damla: 4, yagmurlama: 9, salma: 15 }, not: 'Hasattan sonraki sular gelecek yılın çiçek gözleri için önemlidir.' },
-  Nar: { bas: '05-15', bit: '10-15', aralik: { damla: 4, yagmurlama: 10, salma: 15 } },
+  Tütün: { bas: '06-01', bit: '08-15', aralik: { damla: 6, yagmurlama: 9, salma: 14 } },
+  Elma: { bas: '05-01', bit: '09-30', aralik: { damla: 5, yagmurlama: 8, salma: 15 } },
+  'Şeftali / nektarin': { bas: '05-01', bit: '09-15', aralik: { damla: 5, yagmurlama: 8, salma: 14 } },
+  Kayısı: { bas: '04-20', bit: '09-15', aralik: { damla: 5, yagmurlama: 9, salma: 15 }, not: 'Hasattan sonraki sular gelecek yılın çiçek gözleri için önemlidir.' },
+  Nar: { bas: '05-15', bit: '10-15', aralik: { damla: 5, yagmurlama: 10, salma: 15 } },
   İncir: { bas: '05-15', bit: '09-15', aralik: { damla: 5, yagmurlama: 10, salma: 18 } },
   Zeytin: { bas: '05-15', bit: '10-15', aralik: { damla: 6, yagmurlama: 12, salma: 20 } },
   'Üzüm (bağ)': { bas: '05-01', bit: '09-01', aralik: { damla: 5, yagmurlama: 10, salma: 18 }, not: 'Ben düşmeden sonra su azaltılır, hasattan önce kesilir.' },
-  'Narenciye (mandalina)': { bas: '04-15', bit: '10-31', aralik: { damla: 3, yagmurlama: 8, salma: 14 } },
+  'Narenciye (mandalina)': { bas: '04-15', bit: '10-31', aralik: { damla: 4, yagmurlama: 8, salma: 14 } },
   Fındık: { bas: '07-01', bit: '08-31', aralik: { damla: 6, yagmurlama: 10, salma: 15 }, not: 'Yağışlı bölgede çoğu yıl sulama gerekmez; takvim kurak geçen yaz içindir.' },
   Çay: { bas: '07-01', bit: '08-31', aralik: { damla: 6, yagmurlama: 10, salma: 15 }, not: 'Yağışlı bölgede çoğu yıl sulama gerekmez; takvim kurak geçen yaz içindir.' },
   Buğday: { bas: '04-10', bit: '06-15', aralik: { damla: 7, yagmurlama: 10, salma: 15 }, kritikEvreler: [2, 3, 4], not: 'Kuru tarımda sulanmaz; sulanan buğdayda kritik dönemler sapa kalkma, başaklanma ve süt olumudur.' },
   Arpa: { bas: '04-05', bit: '06-05', aralik: { damla: 7, yagmurlama: 10, salma: 15 }, kritikEvreler: [2, 3, 4], not: 'Kuru tarımda sulanmaz; sulanan arpada kritik dönemler sapa kalkma, başaklanma ve süt olumudur.' },
   'Çeltik (pirinç)': { bas: '05-01', bit: '09-01', aralik: { damla: 0, yagmurlama: 0, salma: 0 }, goller: true, not: 'Çeltik tavada sürekli 5–10 cm su altında tutulur; hasattan 2–3 hafta önce su çekilir.' },
 };
+
+/**
+ * Bölge düzeltmesi. Taban: İç Anadolu (Konya-Karaman verileri).
+ * carpan: sulama aralığı çarpanı (küçük = daha sık) · kaydir: sezonun gün olarak kayması · kisalt: sezon sonundan kesilen gün.
+ * Dayanak (mısır): Şanlıurfa-Harran damla denemesinde 4 günde bir en verimli, 8 günde %27 verim kaybı (Şimşek ve Gerçek);
+ * Çukurova'da karıkla 6–7 su (Gençoğlan ve Yazar); Eskişehir, Ankara, Bolu'da karıkla 4 su; Tokat-Kazova'da 3–4 su (Biber ve Kara derlemesi).
+ */
+export const BOLGE_DUZELTME: Record<Bolge, { carpan: number; kaydir: number; kisalt: number; not: string }> = {
+  'İç Anadolu': { carpan: 1, kaydir: 0, kisalt: 0, not: 'İç Anadolu (Konya-Karaman) verileri esas alındı.' },
+  'Güneydoğu Anadolu': { carpan: 0.55, kaydir: -10, kisalt: 0, not: 'Harran gibi sıcak ovalarda buharlaşma çok yüksek; Şanlıurfa denemesinde mısır damlada 4 günde bir sulandığında en verimli sonucu vermiş, 8 günde bir sulandığında verim %27 düşmüştür.' },
+  Akdeniz: { carpan: 0.8, kaydir: -25, kisalt: 0, not: 'Yaz sıcak ve uzun; sezon erken başlar. Çukurova denemelerinde mısıra karıkla 6–7 su verilmiştir.' },
+  Ege: { carpan: 0.8, kaydir: -20, kisalt: 0, not: 'Yaz sıcak ve kurak; sulama İç Anadolu\'dan daha sık ve daha erken başlar.' },
+  Marmara: { carpan: 1.1, kaydir: -10, kisalt: 0, not: 'Yaz yağışı İç Anadolu\'dan biraz fazla; aralıklar biraz uzundur.' },
+  Karadeniz: { carpan: 1.5, kaydir: 0, kisalt: 0, not: 'Yağışlı bölge; Bolu ve Tokat denemelerinde mısıra 3–4 su yetmiştir. Yağışlı yazlarda su sayısı daha da azalır.' },
+  'Doğu Anadolu': { carpan: 1, kaydir: 15, kisalt: 30, not: 'Yaz kısa; sulama sezonu geç başlar ve erken biter.' },
+};
+
+/** Bitki + yöntem + il için önerilen sıcak ay aralığı (gün) ve bölge bilgisi */
+export function onerilenAralik(bitki: string | undefined, yontem: SulamaYontemi, il?: string | null) {
+  const t = bitki ? S[bitki] : undefined;
+  const bolge = ilBolgesi(il);
+  if (!t || yontem === 'kuru') return { gun: 0, bolge };
+  const tur = yontem === 'pivot' ? 'yagmurlama' : yontem;
+  const taban = t.aralik[tur as keyof Aralik];
+  const c = bolge ? BOLGE_DUZELTME[bolge].carpan : 1;
+  return { gun: taban ? Math.max(2, Math.round(taban * c)) : 0, bolge };
+}
 
 export type SezonSuyu = {
   no: number;
@@ -103,6 +133,8 @@ export function sezonTakvimi(
   gubreVar: (evre: number) => boolean,
   bolunmus: (evre: number) => boolean,
   yil = new Date().getFullYear(),
+  aralikGun?: number,
+  bolge?: Bolge,
 ): SezonTakvimi | undefined {
   const t = S[zkart.bitki];
   if (!t || yontem === 'kuru') return undefined;
@@ -119,10 +151,12 @@ export function sezonTakvimi(
     return k;
   };
 
-  const sezonBas = tarihYap(yil, t.bas);
-  const sezonBit = tarihYap(yil, t.bit);
+  const bd = bolge ? BOLGE_DUZELTME[bolge] : undefined;
+  const gun = 86400000;
+  const sezonBas = new Date(tarihYap(yil, t.bas).getTime() + (bd?.kaydir ?? 0) * gun);
+  const sezonBit = new Date(tarihYap(yil, t.bit).getTime() + ((bd?.kaydir ?? 0) - (bd?.kisalt ?? 0)) * gun);
   const tur = yontem === 'pivot' ? 'yagmurlama' : yontem;
-  const tepe = t.aralik[tur as keyof Aralik];
+  const tepe = aralikGun && aralikGun > 0 ? aralikGun : t.aralik[tur as keyof Aralik];
 
   let tarihler: Date[] = [];
   if (t.kritikEvreler && yontem !== 'damla') {
