@@ -18,7 +18,7 @@ export function Logo({ size = 40, yazi = true, acik = false }: { size?: number; 
     <span className="flex items-center gap-2.5">
       <LogoIsareti size={size} />
       {yazi && (
-        <span className={`font-display text-[1.4rem] font-medium leading-none tracking-[-0.01em] ${acik ? 'text-white' : 'text-[#17352a]'}`}>
+        <span className={`whitespace-nowrap font-display text-[1.25rem] sm:text-[1.4rem] font-medium leading-none tracking-[-0.01em] ${acik ? 'text-white' : 'text-[#17352a]'}`}>
           {ana} <span className={acik ? 'text-[#9bdd68]' : 'text-[#2f8f57]'}>{surum}</span>
         </span>
       )}
@@ -27,7 +27,7 @@ export function Logo({ size = 40, yazi = true, acik = false }: { size?: number; 
 }
 
 /** seffaf: ana sayfadaki koyu açılış görselinin üstünde, arka plansız ve beyaz yazılı. */
-export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' | 'hesap'; seffaf?: boolean }) {
+export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' | 'hesap' | 'noksanlik'; seffaf?: boolean }) {
   let girisli = false;
   try {
     girisli = !!(await oturumKullanici()).kullaniciId;
@@ -37,7 +37,7 @@ export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' 
   const link = (href: string, ad: string, on: boolean) => (
     <Link
       href={href}
-      className={`rounded-full px-3 py-2 text-sm font-semibold ${
+      className={`whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-semibold sm:px-3 sm:text-sm ${
         seffaf ? 'text-white/85 hover:bg-white/10 hover:text-white' : on ? 'bg-[#e8f3e6] text-[#17352a]' : 'text-[#3e5248] hover:bg-[#f0f5f1]'
       }`}
     >
@@ -56,20 +56,22 @@ export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' 
         <Link href="/" aria-label={`${MARKA.ad} ana sayfa`}>
           <Logo size={36} acik={seffaf} />
         </Link>
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-0.5 sm:gap-1">
           {girisli ? (
             <>
               {link('/tarlalar', 'Tarlalarım', aktif === 'tarlalar')}
+              {link('/noksanliklar', 'Noksanlıklar', aktif === 'noksanlik')}
               {link('/hesap', 'Hesabım', aktif === 'hesap')}
             </>
           ) : (
             <>
-              <Link href="/ornek" className={`rounded-full px-3 py-2 text-sm font-semibold ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek rapor</Link>
+              <Link href="/ornek" className={`whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] sm:px-3 sm:text-sm font-semibold ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek rapor</Link>
+              <Link href="/noksanliklar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold sm:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Noksanlıklar</Link>
               <a href="/#ornek" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek alma</a>
               <a href="/#videolar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Videolar</a>
               <Link
                 href="/giris"
-                className={`ml-1 rounded-full px-4 py-2 text-sm font-bold ${seffaf ? 'border border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20' : 'bg-[#238f61] text-white hover:bg-[#1d7d54]'}`}
+                className={`ml-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold ${seffaf ? 'border border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20' : 'bg-[#238f61] text-white hover:bg-[#1d7d54]'}`}
               >
                 Giriş yap
               </Link>
@@ -99,6 +101,7 @@ export function SiteFooter() {
             <a href={`tel:${MARKA.telefon.replace(/\s/g, '')}`} className="block hover:text-white">{MARKA.telefon}</a>
           )}
           <Link href="/tarlalar" className="block hover:text-white">Tarlalarım</Link>
+          <Link href="/noksanliklar" className="block hover:text-white">Besin noksanlıkları</Link>
           <Link href="/gizlilik" className="block hover:text-white">Gizlilik ve KVKK</Link>
         </div>
       </div>

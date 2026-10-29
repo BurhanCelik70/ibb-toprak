@@ -35,6 +35,7 @@ import {
 } from '@/lib/toprak';
 import type { CozumPlani, UrunOnerisi } from '@/lib/veri';
 import { VIDEOLAR, youtubeId } from '@/lib/videolar';
+import { RaporNoksanliklari } from '@/components/noksanlik/RaporNoksanlik';
 
 export type SonucTarla = {
   ad: string;
@@ -1707,6 +1708,9 @@ export function SonucEkrani({
 
       {/* 2) Dönem dönem program */}
       <SulamaRecetesi tarla={tarla} ai={ai} />
+
+      {/* Bitkide görülebilecek noksanlıklar (resimli) */}
+      <RaporNoksanliklari report={report} bitki={tarla.bitki} />
 
       {/* 3) Değerler: tek görünüm */}
       <Gostergeler report={report} results={results} />
