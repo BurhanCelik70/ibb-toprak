@@ -139,12 +139,17 @@ export function SuEkle({ tarlaId, tarlaAd }: { tarlaId: string; tarlaAd: string 
   if (ekran === 'yontem') {
     return (
       <div>
-        <div className="relative overflow-hidden rounded-[32px] p-6 text-white sm:p-10" style={{ background: 'linear-gradient(135deg,#0b3a52 0%,#0f5a73 50%,#1b7f86 100%)' }}>
+        <div className="relative overflow-hidden rounded-[32px] p-6 text-white sm:p-10" style={{ background: '#0b3a52' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/su/olcum.webp" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover object-right" />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg,rgba(8,42,60,.95) 0%,rgba(10,52,72,.85) 45%,rgba(12,70,90,.35) 100%)' }} aria-hidden />
+          <div className="relative">
           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[#9fe3f2]">{tarlaAd}</p>
           <h1 className="mt-2 font-display text-4xl font-medium tracking-[-0.02em] sm:text-5xl">Su analizi ekle</h1>
           <p className="mt-3 max-w-2xl text-[15px] leading-7 text-white/85">
             Sulama suyunuzun tuzluluğunu, sodyumunu ve bikarbonatını FAO ölçütleriyle değerlendirip size uygun sulama yöntemini ve yapılacakları söyleyelim.
           </p>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">

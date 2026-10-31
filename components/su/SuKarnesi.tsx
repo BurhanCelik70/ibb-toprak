@@ -278,7 +278,9 @@ export function SuKarnesi({
 
       {/* Kapak */}
       <section className="relative overflow-hidden rounded-[32px] text-white" style={{ background: 'linear-gradient(135deg,#0b3a52 0%,#0f5a73 45%,#1b7f86 100%)' }}>
-        <div className="absolute inset-0 opacity-25" style={{ background: 'radial-gradient(circle at 80% 20%,#7fd3f7 0,transparent 45%),radial-gradient(circle at 10% 90%,#2bb3a3 0,transparent 40%)' }} aria-hidden />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/su/kapak.webp" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover object-right" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg,rgba(8,42,60,.96) 0%,rgba(10,52,72,.88) 38%,rgba(12,70,90,.55) 70%,rgba(12,70,90,.25) 100%)' }} aria-hidden />
         <div className="relative grid items-center gap-6 p-6 sm:grid-cols-[auto_1fr] sm:p-10">
           <div className="mx-auto">
             <SuDamlasi ton={v.genel.ton} sinif={v.sinif} />
@@ -546,6 +548,8 @@ export function SuAnaliziRehberi() {
         <p className="mt-1">Toprak analizini yapan laboratuvarlar (Tarım ve Orman Bakanlığı araştırma enstitüleri, il ve ilçe laboratuvarları, ziraat fakülteleri, özel laboratuvarlar) su da analiz eder. “Standart sulama suyu analizi” isteyin.</p>
       </div>
       <div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/su/numune.webp" alt="Kuyu başında su örneği şişesi" loading="lazy" className="mb-3 aspect-[16/9] w-full rounded-xl object-cover" />
         <p className="flex items-center gap-2 font-bold text-[#17352a]">
           <Droplets size={16} className="text-[#1e88c7]" /> Örnek nasıl alınır?
         </p>

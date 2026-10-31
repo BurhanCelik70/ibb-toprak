@@ -190,7 +190,8 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
               href={`/tarlalar/${tarla.id}/su/yeni`}
               className="mt-4 flex flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-[#a9d6ea] bg-white px-6 py-10 text-center hover:border-[#1e88c7]"
             >
-              <Droplets size={32} className="text-[#1e88c7]" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/su/damla.webp" alt="" aria-hidden className="h-24 w-40 rounded-2xl object-cover" />
               <span className="mt-4 text-lg font-bold">Su analizinizi ekleyin</span>
               <span className="mt-1 max-w-md text-sm text-[#64766c]">
                 Tuzluluk, sodyum ve bikarbonatı FAO ölçütleriyle değerlendirelim; suyunuza en uygun sulama yöntemini söyleyelim.
@@ -201,8 +202,12 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
               <Link
                 href={`/tarlalar/${tarla.id}/su/${sonSu.id}`}
                 className="group relative overflow-hidden rounded-[26px] p-6 text-white"
-                style={{ background: 'linear-gradient(135deg,#0b3a52 0%,#0f5a73 50%,#1b7f86 100%)' }}
+                style={{ background: '#0b3a52' }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/su/damla.webp" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg,rgba(8,42,60,.94) 0%,rgba(10,52,72,.78) 55%,rgba(12,70,90,.35) 100%)' }} aria-hidden />
+                <div className="relative">
                 <div className="text-sm text-white/75">Son su analizi · {tarihYaz(sonSu.analiz_tarihi)}</div>
                 <div className="mt-3 flex items-end gap-3">
                   <span className="font-display text-5xl leading-none">{sonSuD.sinif ?? '—'}</span>
@@ -214,6 +219,7 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
                 <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#9fe3f2]">
                   Su karnesini aç <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </span>
+                </div>
               </Link>
               <ul className="divide-y divide-[#edf2ee] overflow-hidden rounded-[22px] border border-[#dfe9df] bg-white">
                 {suAnalizleri.map((a) => {
