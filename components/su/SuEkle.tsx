@@ -2,17 +2,19 @@
 /**
  * Sulama suyu analizi ekleme: rapor yükle (PDF / fotoğraf) ya da elle gir → kontrol → kaydet.
  */
+import { jsonOku, raporDosyasiHazirla } from '@/lib/dosya';
 import { ArrowLeft, Camera, Droplets, Loader2, PencilLine, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { SU_ALANLARI, cSinifi, sSinifi, sarHesapla, standartla, type EcBirim, type IyonBirim, type SuAlan, type SuRaporu } from '@/lib/su';
-import { parseNumber } from '@/lib/toprak';
+import { SU_ALANLARI, sayiCoz, cSinifi, sSinifi, sarHesapla, standartla, type EcBirim, type IyonBirim, type SuAlan, type SuRaporu } from '@/lib/su';
 import { SuAnaliziRehberi } from './SuKarnesi';
 
 type Taslak = Record<SuAlan, string>;
 const bos = (): Taslak => Object.fromEntries(SU_ALANLARI.map((a) => [a.key, ''])) as Taslak;
-const f = (n: number, d = 3) => n.toLocaleString('tr-TR', { maximumFractionDigits: d });
+// Binlik ayırıcı KULLANMA: "1.340" yazılırsa 1,34 diye okunur
+const f = (n: number, d = 3) => n.toLocaleString('tr-TR', { maximumFractionDigits: d, useGrouping: false });
+const sayi = (x: string) => sayiCoz(x.trim());
 
 /** "2/10/2026", "21.09.2026", "2026-09-21" → "2026-09-21" (okunamazsa bugün) */
 function tarihCoz(s?: string): string {
@@ -46,7 +48,7 @@ export function SuEkle({ tarlaId, tarlaAd }: { tarlaId: string; tarlaAd: string 
   const degerler = (): SuRaporu['degerler'] => {
     const out: SuRaporu['degerler'] = {};
     for (const a of SU_ALANLARI) {
-      const n = parseNumber(taslak[a.key]);
+      const n = sayi(taslak[a.key]);
       if (n !== undefined) out[a.key] = standartla(a.key, n, ecBirim, iyonBirim);
     }
     if (sarLab !== undefined) out.sarLab = sarLab;
@@ -62,9 +64,9 @@ export function SuEkle({ tarlaId, tarlaAd }: { tarlaId: string; tarlaAd: string 
     setYukleniyor(true);
     try {
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', await raporDosyasiHazirla(file));
       const res = await fetch('/api/su-oku', { method: 'POST', body: fd });
-      const json = await res.json();
+      const json = await jsonOku<{ error?: string; rapor: SuRaporu }>(res);
       if (!res.ok) throw new Error(json.error);
       const r = json.rapor as SuRaporu;
       const t = bos();
@@ -91,6 +93,10 @@ export function SuEkle({ tarlaId, tarlaAd }: { tarlaId: string; tarlaAd: string 
     setHata(null);
     if (d.ec === undefined) {
       setHata('En azından EC (tuzluluk) değerini girin; sınıflandırma onunla başlar.');
+      return;
+    }
+    if (d.ec < 20) {
+      setHata(`EC ${f(d.ec)} µS/cm olamayacak kadar düşük. Birimi kontrol edin: raporda dS/m (mmhos/cm) yazıyorsa EC biriminden onu seçin.`);
       return;
     }
     setKaydediliyor(true);
@@ -132,6 +138,11 @@ export function SuEkle({ tarlaId, tarlaAd }: { tarlaId: string; tarlaAd: string 
           className="mt-1 w-full rounded-xl border border-[#dcd4c2] bg-white px-3 py-2.5 text-[15px] outline-none focus:border-[#1e88c7] focus:ring-2 focus:ring-[#1e88c7]/20"
         />
         {a.ipucu && <span className="mt-1 block text-[11px] leading-4 text-[#8a948c]">{a.ipucu}</span>}
+        {a.key === 'ec' && d.ec !== undefined && d.ec < 50 && (
+          <span className="mt-1 block rounded-lg bg-[#fbf1dc] px-2 py-1 text-[11px] leading-4 text-[#7a5310]">
+            Bu değer µS/cm için çok düşük. Raporda dS/m ya da mmhos/cm yazıyorsa yukarıdan o birimi seçin.
+          </span>
+        )}
       </label>
     );
   };

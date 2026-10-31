@@ -15,6 +15,7 @@ npm run dev                    # http://localhost:3000
 
 1. https://supabase.com → **New project**. Bölge olarak **Frankfurt (eu-central-1)** seçin (Türkiye'ye en yakın).
 2. Sol menü **SQL Editor** → **New query** → `supabase/schema.sql` dosyasının tamamını yapıştırın → **Run**.
+   Daha önce kurulmuş bir veritabanına yalnızca yeni tabloları eklemek için `supabase/guncelleme-il.sql` ve `supabase/guncelleme-su.sql` (sulama suyu analizleri) dosyalarını aynı şekilde çalıştırın.
    - Tablolar (profiller, tarlalar, analizler) ve "herkes yalnızca kendi tarlasını görür" kuralları kurulur.
    - Dosyayı tekrar çalıştırmak zarar vermez.
 3. **Project Settings → API Keys**:

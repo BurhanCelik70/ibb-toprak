@@ -63,6 +63,20 @@ export const SU_ALANLARI: { key: SuAlan; ad: string; kisa: string; tip: 'ec' | '
 export type EcBirim = 'µS/cm' | 'dS/m';
 export type IyonBirim = 'me/l' | 'mg/l';
 
+/**
+ * Yazıyı sayıya çevirir. Türkçede ondalık virgüldür; "1.340" gibi binlik noktalı yazım 1340 sayılır,
+ * "1,34" ise 1,34. (Laboratuvar raporlarında EC sık sık "1.340" diye yazılır.)
+ */
+export function sayiCoz(x: unknown): number | undefined {
+  if (typeof x === 'number') return Number.isFinite(x) ? x : undefined;
+  if (typeof x !== 'string') return undefined;
+  const t = x.replace(/[^\d.,-]/g, '');
+  if (!t || t === '-') return undefined;
+  if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, ''));
+  const n = Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 /** Girilen değeri standart birime çevirir */
 export function standartla(key: SuAlan, deger: number, ecBirim: EcBirim, iyonBirim: IyonBirim): number {
   const a = SU_ALANLARI.find((x) => x.key === key)!;
@@ -77,8 +91,8 @@ export function birimdenStandart(key: SuAlan, deger: number, birim?: string): nu
   const a = SU_ALANLARI.find((x) => x.key === key)!;
   if (a.tip === 'ec') {
     if (/ds\/m|ms\/cm|mmho/.test(b)) return deger * 1000;
-    if (/µs|us\/cm|μs|mikro|micro|µmho|umho/.test(b)) return deger;
-    return deger < 20 ? deger * 1000 : deger; // birim yoksa: küçük sayı dS/m'dir
+    // Sulama suyunun EC'si pratikte 20 µS/cm'nin altında olmaz: bu kadar küçük sayı dS/m (mmhos/cm) yazılmış demektir
+    return deger < 20 ? deger * 1000 : deger;
   }
   if (a.tip === 'iyon') {
     if (/mg\/l|ppm|mg\/lt/.test(b) && a.esdeger) return deger / a.esdeger;
@@ -500,8 +514,9 @@ export function suDegerlendir(rapor: SuRaporu, opts: { bitki?: string | null; yo
   const tonlar = bulgular.filter((b) => b.id !== 'ph' && b.id !== 'nitrat').map((b) => b.ton);
   const g = enKotu(tonlar.length ? tonlar : ['bilgi']);
   const sinif = c && s ? `${c.sinif}${s.sinif}` : c?.sinif;
-  const genel =
-    g === 'iyi'
+  const genel = !tonlar.length
+    ? { ton: 'bilgi' as Ton, baslik: 'Değerlendirme için değer yok', cumle: 'En azından EC (tuzluluk) değeri girildiğinde suyunuzu değerlendirebiliriz.' }
+    : g === 'iyi'
       ? { ton: g, baslik: 'Suyunuz sulamaya uygun', cumle: 'Ölçülen değerlerde bitkiye ya da toprağa zarar verecek bir şey görünmüyor.' }
       : g === 'dikkat'
         ? { ton: g, baslik: 'Dikkatli kullanılabilir', cumle: 'Su kullanılabilir, ama aşağıdaki önlemleri alırsanız verim kaybı ve toprak bozulması olmaz.' }

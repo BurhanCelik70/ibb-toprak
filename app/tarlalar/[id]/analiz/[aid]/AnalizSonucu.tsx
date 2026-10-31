@@ -1,4 +1,5 @@
 'use client';
+import { jsonOku } from '@/lib/dosya';
 import { ChevronLeft, Printer, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -40,7 +41,7 @@ export function AnalizSonucu({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ analizId, yenile }),
         });
-        const json = await res.json();
+        const json = await jsonOku<CozumPlani & { error?: string }>(res);
         if (!res.ok) throw new Error(json.error);
         setAi(json);
         setAiState('idle');

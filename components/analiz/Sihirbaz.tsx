@@ -3,6 +3,7 @@
  * Rapor yükleme sihirbazı: yöntem seçimi → dosya / fotoğraf / elle giriş → kontrol.
  * Kontrol ekranında "Kaydet ve yorumla" denince onKaydet(report, kaynak) çağrılır.
  */
+import { jsonOku, raporDosyasiHazirla } from '@/lib/dosya';
 import { adimGorseli } from '@/lib/bitkiGorsel';
 import { ILLER } from '@/lib/bolgeler';
 import { AlertTriangle, ArrowLeft, ArrowRight, Camera, ChevronRight, FileSpreadsheet, Loader2, Upload, UserRound, X } from 'lucide-react';
@@ -12,7 +13,6 @@ import { parseLabWorkbook } from '@/lib/excelRapor';
 import { ZKART_BITKILERI } from '@/lib/igsas';
 import {
   BUNYE_SINIFLARI,
-  ISTANBUL_ILCELERI,
   MANUAL_STEPS,
   PARAMS,
   formatNumber,
@@ -130,9 +130,9 @@ export function Sihirbaz({
         reports = parseLabWorkbook(await file.arrayBuffer()); // Excel tarayıcıda okunur
       } else {
         const fd = new FormData();
-        fd.append('file', file);
+        fd.append('file', await raporDosyasiHazirla(file));
         const res = await fetch('/api/rapor-oku', { method: 'POST', body: fd });
-        const json = await res.json();
+        const json = await jsonOku<{ error?: string; reports: SoilReport[] }>(res);
         if (!res.ok) throw new Error(json.error);
         reports = json.reports;
       }

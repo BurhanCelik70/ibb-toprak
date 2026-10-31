@@ -2,7 +2,7 @@
 /**
  * Analiz sonucu: kalite indeksi, analiz tablosu, çözüm planı, karşılaştırma ve sulama reçetesi.
  */
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Info, Loader2, MapPin, Minus, ShieldCheck, Sprout } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Loader2, MapPin, Minus, ShieldCheck, Sprout } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { evreGorseli } from '@/lib/bitkiGorsel';
 import { ORGANIK_MADDE_PROTOKOLU, URUNLER, zkartBul } from '@/lib/igsas';
@@ -845,7 +845,7 @@ function SulamaProgrami({
   const topragaUrunler = duz(tum.filter((g) => !fertigasyon(g.yontem) && g.yontem !== 'Yapraktan'));
   const yaprakUrunleri = duz(tum.filter((g) => g.yontem === 'Yapraktan'));
 
-  let adimlar: ProgramAdimi[] = [];
+  const adimlar: ProgramAdimi[] = [];
   const dilimler = sure ? zamanCizelgesi(yontem, sure) : undefined;
   const bitis = sure ? saatEkle(baslangic, sure * 60) : baslangic;
 

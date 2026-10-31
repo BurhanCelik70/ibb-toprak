@@ -1,4 +1,5 @@
 'use client';
+import { jsonOku } from '@/lib/dosya';
 import { ChevronLeft, Printer, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -20,7 +21,7 @@ export function SuSonucu({ tarlaId, suId, tarla, rapor, tarih, yorum }: { tarlaI
       if (yenile) setAi(null);
       try {
         const res = await fetch('/api/su-yorum', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ suAnaliziId: suId, yenile }) });
-        const json = await res.json();
+        const json = await jsonOku<SuYorumu & { error?: string }>(res);
         if (!res.ok) throw new Error(json.error);
         setAi(json);
         setDurum('idle');

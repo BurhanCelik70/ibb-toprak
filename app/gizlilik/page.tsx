@@ -3,7 +3,7 @@ import { MARKA } from '@/lib/marka';
 
 export const metadata = { title: 'Gizlilik ve KVKK Aydınlatma Metni' };
 
-const GUNCELLEME = '25 Ekim 2026';
+const GUNCELLEME = '31 Ekim 2026';
 
 export default function GizlilikSayfasi() {
   const iletisim = MARKA.eposta || 'uygulamadaki iletişim adresi';
@@ -17,7 +17,7 @@ export default function GizlilikSayfasi() {
         <div className="mt-10 space-y-8 text-[15px] leading-7 text-[#3f4a42] [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-[#1d2a22] [&_li]:ml-5 [&_li]:list-disc">
           <section>
             <p>
-              {MARKA.ad} (“uygulama”), toprak analiz raporlarını yorumlayan ve gübreleme önerisi sunan bir web uygulamasıdır. Bu metin, 6698
+              {MARKA.ad} (“uygulama”), toprak ve sulama suyu analiz raporlarını yorumlayan, gübreleme ve sulama önerisi sunan bir web uygulamasıdır. Bu metin, 6698
               sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında hangi verileri neden işlediğimizi ve haklarınızı açıklar.
             </p>
           </section>
@@ -27,7 +27,8 @@ export default function GizlilikSayfasi() {
             <ul>
               <li><strong>Hesap bilgileri:</strong> adınız soyadınız ve e-posta adresiniz. Google ile girişte bu bilgiler ve profil resminiz Google hesabınızdan alınır; şifreniz bize hiçbir zaman ulaşmaz.</li>
               <li><strong>Tarla bilgileri:</strong> tarlaya verdiğiniz ad, il-ilçe, alan, bitki, sulama yöntemi ve notlarınız.</li>
-              <li><strong>Toprak analizleri:</strong> yüklediğiniz rapordaki ölçüm değerleri ve bunlara göre oluşturulan öneriler.</li>
+              <li><strong>Toprak ve su analizleri:</strong> yüklediğiniz rapordaki ölçüm değerleri ve bunlara göre oluşturulan öneriler. Rapor dosyasının kendisi saklanmaz; yalnızca okunan değerler kaydedilir.</li>
+              <li><strong>Yaprak fotoğrafları:</strong> yaprak teşhisi için yüklediğiniz fotoğraflar yalnızca o anki değerlendirme için kullanılır, saklanmaz.</li>
               <li><strong>Teknik kayıtlar:</strong> oturumun açık kalması için gerekli çerezler ve hizmetin güvenliği için tutulan sınırlı sunucu kayıtları.</li>
             </ul>
           </section>
@@ -46,9 +47,9 @@ export default function GizlilikSayfasi() {
             <h2>Hizmet sağlayıcılar ve yurt dışına aktarım</h2>
             <p>Uygulama aşağıdaki hizmet sağlayıcılarla çalışır; bu nedenle verileriniz yurt dışındaki sunucularda işlenir:</p>
             <ul>
-              <li><strong>Supabase</strong> (veritabanı ve giriş): veriler Avrupa Birliği’nde (İrlanda) saklanır.</li>
-              <li><strong>Vercel</strong> (barındırma): site Avrupa Birliği’ndeki (İrlanda) sunuculardan çalışır.</li>
-              <li><strong>Anthropic</strong> (yapay zekâ yorumu): yalnızca toprak ölçüm değerleri, il-bölge, bitki, alan ve sulama bilgisi gönderilir; adınız ve e-posta adresiniz gönderilmez.</li>
+              <li><strong>Supabase</strong> (veritabanı ve giriş): veriler Avrupa Birliği’ndeki sunucularda saklanır.</li>
+              <li><strong>Vercel</strong> (barındırma): site Avrupa Birliği’ndeki sunuculardan çalışır.</li>
+              <li><strong>Anthropic</strong> (yapay zekâ): yorum için ölçüm değerleri, il-bölge, bitki, alan ve sulama bilgisi; rapor okuma için yüklediğiniz rapor dosyası ya da fotoğrafı; yaprak teşhisi için yaprak fotoğrafları ve cevaplarınız gönderilir. Adınız ve e-posta adresiniz gönderilmez. Rapor üzerinde adınız yazıyorsa, yüklemeden önce kapatabilirsiniz.</li>
               <li><strong>Google</strong> (yalnızca “Google ile devam et” seçilirse): kimlik doğrulama.</li>
             </ul>
           </section>
@@ -65,7 +66,7 @@ export default function GizlilikSayfasi() {
 
           <section>
             <h2>Öneriler hakkında</h2>
-            <p>Uygulamadaki öneriler laboratuvar değerlerine ve genel tarımsal bilgilere dayanır; tarlanızın tüm koşullarını bilemez. Uygulamadan önce ürün etiketlerini okuyun.</p>
+            <p>Uygulamadaki öneriler laboratuvar değerlerine ve genel tarımsal bilgilere dayanır; tarlanızın tüm koşullarını bilemez. Fotoğraftan yapılan yaprak teşhisi bir ön değerlendirmedir ve yanılabilir; kesin sonuç için yaprak analizi yaptırın. Uygulamadan önce ürün etiketlerini okuyun.</p>
           </section>
         </div>
       </main>

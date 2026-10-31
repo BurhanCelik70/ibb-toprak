@@ -5,9 +5,8 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
-import { SU_ALANLARI, birimdenStandart, type SuAlan, type SuRaporu } from '@/lib/su';
+import { SU_ALANLARI, birimdenStandart, sayiCoz, type SuAlan, type SuRaporu } from '@/lib/su';
 import { oturumKullanici } from '@/lib/supabase/server';
-import { parseNumber } from '@/lib/toprak';
 
 export const maxDuration = 300;
 
@@ -72,14 +71,14 @@ export async function POST(req: Request) {
     const degerler: SuRaporu['degerler'] = {};
     const birim = (k: string) => (typeof raw.birimler?.[k] === 'string' ? (raw.birimler[k] as string) : undefined);
     for (const k of ANAHTARLAR) {
-      const v = parseNumber(raw.degerler?.[k]);
+      const v = sayiCoz(raw.degerler?.[k]);
       if (v === undefined) continue;
       degerler[k as SuAlan] = birimdenStandart(k as SuAlan, v, birim(k));
     }
     // NO3 verilmişse NO3-N'ye çevir (1 mg NO3 = 0,2259 mg N)
-    const no3 = parseNumber(raw.degerler?.no3);
+    const no3 = sayiCoz(raw.degerler?.no3);
     if (degerler.no3n === undefined && no3 !== undefined) degerler.no3n = no3 * 0.2259;
-    const sar = parseNumber(raw.degerler?.sar);
+    const sar = sayiCoz(raw.degerler?.sar);
     if (sar !== undefined) degerler.sarLab = sar;
 
     if (!Object.keys(degerler).length) {

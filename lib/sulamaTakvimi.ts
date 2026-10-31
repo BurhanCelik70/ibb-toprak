@@ -142,7 +142,7 @@ export function sezonTakvimi(
 
   // Evre başlangıçları (sıralı): her evre bir sonrakinin başına kadar sürer
   const basla = zkart.evreler.map((e) => ilkAy(e.donem));
-  const evreBas = basla.map((ay, i) => (ay === undefined ? undefined : new Date(yil, ay < (basla[0] ?? 0) ? ay + 12 : ay, 1)));
+  const evreBas = basla.map((ay) => (ay === undefined ? undefined : new Date(yil, ay < (basla[0] ?? 0) ? ay + 12 : ay, 1)));
   const evreBul = (d: Date) => {
     let k = 0;
     evreBas.forEach((b, i) => {

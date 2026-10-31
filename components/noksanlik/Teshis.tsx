@@ -2,6 +2,7 @@
 /**
  * Yaprak teşhisi: fotoğraf + kısa sorular → yapay zekadan olasılıklı teşhis → etken madde ve İGSAŞ/KIANA ürünleri.
  */
+import { jsonOku } from '@/lib/dosya';
 import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, ImagePlus, Leaf, Loader2, LogIn, Search, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState, type ReactNode } from 'react';
@@ -332,7 +333,7 @@ export function YaprakTeshisi({ girisli, tarlalar = [] }: { girisli: boolean; ta
     window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       const res = await fetch('/api/teshis', { method: 'POST', body: fd });
-      const json = await res.json();
+      const json = await jsonOku<TeshisSonucu & { error?: string }>(res);
       if (!res.ok) throw new Error(json.error);
       setSonuc(json);
       setDurum('sonuc');

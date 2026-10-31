@@ -9,6 +9,13 @@ const VIDEO_LISTESI = {
   url: 'https://www.youtube.com/playlist?list=PLKFaLkVfBg00uFvdD9r9bRpSDIznvIuUT',
 };
 
+const MODULLER = [
+  { href: '/ornek', resim: '/toprak.jpg', etiket: 'Toprak', baslik: 'Toprak karnesi', metin: 'Laboratuvar raporunuzu yükleyin; kalite indeksi, eksikler, gübre ve sulama programı tek sayfada.', link: 'Örnek raporu gör' },
+  { href: '/ornek/su', resim: '/su/kapak.webp', etiket: 'Su', baslik: 'Sulama suyu karnesi', metin: 'Tuzluluk, sodyum ve bikarbonat FAO ölçütleriyle; suyunuza uygun sulama yöntemi önerisiyle.', link: 'Örnek su karnesi' },
+  { href: '/noksanliklar', resim: '/noksanlik/misir-fe.webp', etiket: 'Katalog', baslik: 'Besin noksanlıkları', metin: '11 bitkide 53 noksanlık resimli: nasıl tanınır, neden olur, ne yapılır.', link: 'Kataloğa göz at' },
+  { href: '/noksanliklar/teshis', resim: '/noksanlik/uzum-fe.webp', etiket: 'Yapay zekâ', baslik: 'Yaprak teşhisi', metin: 'Yaprağın fotoğrafını yükleyin, birkaç soruyu cevaplayın; olası sorun yüzdesiyle ve çözümüyle gelsin.', link: 'Yaprağımı incele' },
+];
+
 const OZELLIKLER = [
   {
     i: MapPinned,
@@ -32,6 +39,34 @@ export default function AnaSayfa() {
     <div className="flex min-h-screen flex-col overflow-x-clip bg-[#f5f0e6] text-[#1d2a22]">
       <AppHeader seffaf />
       <BuyumeSahnesi />
+
+      {/* Modüller */}
+      <section className="px-5 pt-20 sm:px-8 lg:pt-28" aria-labelledby="moduller">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Neler yapabilirsiniz?</p>
+          <h2 id="moduller" className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
+            Toprak, su ve bitki tek uygulamada.
+          </h2>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {MODULLER.map((m) => (
+              <Link key={m.href} href={m.href} className="group flex flex-col overflow-hidden rounded-[26px] border border-[#e3dccb] bg-white transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-24px_rgba(18,20,16,.5)]">
+                <span className="relative block aspect-[4/3] overflow-hidden bg-[#e9e3d4]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={m.resim} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                  <span className="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{m.etiket}</span>
+                </span>
+                <span className="flex flex-1 flex-col p-5">
+                  <span className="font-display text-xl font-medium text-[#17352a]">{m.baslik}</span>
+                  <span className="mt-2 text-sm leading-6 text-[#5e6a60]">{m.metin}</span>
+                  <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-bold text-[#2f7a4f]">
+                    {m.link} <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Tarla defteri */}
       <section id="tarla-defteri" className="scroll-mt-10 px-5 py-20 sm:px-8 lg:py-28">
