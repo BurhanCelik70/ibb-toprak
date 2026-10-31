@@ -63,6 +63,7 @@ export function OrnekRapor() {
           <div>
             <p className="font-display text-xl">Bu bir örnek rapor.</p>
             <p className="mt-1 text-sm text-white/70">Kendi laboratuvar raporunuzu yükleyin, tarlanıza özel bu raporu birkaç saniyede alın.</p>
+            <Link href="/ornek/su" className="mt-2 inline-block text-sm font-semibold text-[#7fd3f7] hover:text-white">Örnek su karnesine de bakın →</Link>
           </div>
           <Link href={kayit} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#f5f0e6] px-5 py-3 font-semibold text-[#121410] hover:bg-white">
             Ücretsiz başla <ArrowRight size={18} />
@@ -70,9 +71,14 @@ export function OrnekRapor() {
         </div>
       }
       eylemler={
-        <Link href={kayit} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#238f61] px-6 py-3.5 font-semibold text-white hover:bg-[#1d7d54]">
-          Kendi raporumu oluştur <ArrowRight size={18} />
-        </Link>
+        <>
+          <Link href={kayit} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#238f61] px-6 py-3.5 font-semibold text-white hover:bg-[#1d7d54]">
+            Kendi raporumu oluştur <ArrowRight size={18} />
+          </Link>
+          <Link href="/ornek/su" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0f5a73] px-6 py-3.5 font-semibold text-white hover:bg-[#0b3a52]">
+            Örnek su karnesi <ArrowRight size={18} />
+          </Link>
+        </>
       }
     />
   );

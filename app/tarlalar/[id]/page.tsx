@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, FilePlus2, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Droplets, FilePlus2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { IndeksSeyri, Karsilastirma, SulamaRecetesi } from '@/components/analiz/Sonuc';
@@ -7,7 +7,8 @@ import { SINIFLAR, kaliteIndeksi } from '@/lib/indeks';
 import { SULAMA_YONTEMLERI } from '@/lib/sulama';
 import { oturumKullanici } from '@/lib/supabase/server';
 import { PARAMS, classify, formatNumber } from '@/lib/toprak';
-import { tarihYaz, type Analiz, type Tarla } from '@/lib/veri';
+import { SU_TON, suDegerlendir } from '@/lib/su';
+import { tarihYaz, type Analiz, type SuAnalizi, type Tarla } from '@/lib/veri';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function TarlaSayfasi({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase } = await oturumKullanici();
-  const [{ data: tarla }, { data: analizData }] = await Promise.all([
+  const [{ data: tarla }, { data: analizData }, { data: suData }] = await Promise.all([
     supabase.from('tarlalar').select('*').eq('id', id).maybeSingle<Tarla>(),
     supabase
       .from('analizler')
@@ -27,8 +28,18 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
       .eq('tarla_id', id)
       .order('analiz_tarihi', { ascending: false })
       .order('olusturma', { ascending: false }),
+    // Tablo henüz kurulmadıysa hata döner; o durumda su bölümü boş görünür
+    supabase
+      .from('su_analizleri')
+      .select('id, tarla_id, analiz_tarihi, rapor_no, kaynak, rapor, sinif, olusturma')
+      .eq('tarla_id', id)
+      .order('analiz_tarihi', { ascending: false })
+      .order('olusturma', { ascending: false }),
   ]);
   if (!tarla) notFound();
+  const suAnalizleri = (suData ?? []) as SuAnalizi[];
+  const sonSu = suAnalizleri[0];
+  const sonSuD = sonSu ? suDegerlendir(sonSu.rapor, { bitki: tarla.bitki, yontem: tarla.sulama }) : undefined;
   const analizler = (analizData ?? []) as Analiz[];
   const son = analizler[0];
   const onceki = analizler[1];
@@ -69,7 +80,7 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
                   ))}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Link
                 href={`/tarlalar/${tarla.id}/duzenle`}
                 className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold backdrop-blur hover:bg-white/20"
@@ -80,7 +91,13 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
                 href={`/tarlalar/${tarla.id}/analiz/yeni`}
                 className="inline-flex items-center gap-2 rounded-full bg-[#f5f0e6] px-5 py-2.5 text-sm font-bold text-[#121410] hover:bg-white"
               >
-                <FilePlus2 size={16} /> Analiz ekle
+                <FilePlus2 size={16} /> Toprak analizi ekle
+              </Link>
+              <Link
+                href={`/tarlalar/${tarla.id}/su/yeni`}
+                className="inline-flex items-center gap-2 rounded-full bg-[#7fd3f7] px-5 py-2.5 text-sm font-bold text-[#0b3a52] hover:bg-[#a6e2fa]"
+              >
+                <Droplets size={16} /> Su analizi ekle
               </Link>
             </div>
           </div>
@@ -162,6 +179,66 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
             </section>
           </>
         )}
+
+        {/* Sulama suyu */}
+        <section className="mt-10" aria-labelledby="su-baslik">
+          <h2 id="su-baslik" className="flex items-center gap-2 text-xl font-bold">
+            <Droplets size={20} className="text-[#1e88c7]" /> Sulama suyu
+          </h2>
+          {!sonSu || !sonSuD ? (
+            <Link
+              href={`/tarlalar/${tarla.id}/su/yeni`}
+              className="mt-4 flex flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-[#a9d6ea] bg-white px-6 py-10 text-center hover:border-[#1e88c7]"
+            >
+              <Droplets size={32} className="text-[#1e88c7]" />
+              <span className="mt-4 text-lg font-bold">Su analizinizi ekleyin</span>
+              <span className="mt-1 max-w-md text-sm text-[#64766c]">
+                Tuzluluk, sodyum ve bikarbonatı FAO ölçütleriyle değerlendirelim; suyunuza en uygun sulama yöntemini söyleyelim.
+              </span>
+            </Link>
+          ) : (
+            <div className="mt-4 grid gap-4 md:grid-cols-[1.2fr_1fr]">
+              <Link
+                href={`/tarlalar/${tarla.id}/su/${sonSu.id}`}
+                className="group relative overflow-hidden rounded-[26px] p-6 text-white"
+                style={{ background: 'linear-gradient(135deg,#0b3a52 0%,#0f5a73 50%,#1b7f86 100%)' }}
+              >
+                <div className="text-sm text-white/75">Son su analizi · {tarihYaz(sonSu.analiz_tarihi)}</div>
+                <div className="mt-3 flex items-end gap-3">
+                  <span className="font-display text-5xl leading-none">{sonSuD.sinif ?? '—'}</span>
+                  <span className="pb-1 text-sm text-white/80">{sonSuD.genel.baslik}</span>
+                </div>
+                <div className="mt-3 text-sm text-white/85">
+                  Önerilen yöntem: <b>{sonSuD.onerilen ? { damla: 'Damla', yagmurlama: 'Yağmurlama', pivot: 'Pivot', salma: 'Salma' }[sonSuD.onerilen] : '—'}</b>
+                </div>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[#9fe3f2]">
+                  Su karnesini aç <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+              <ul className="divide-y divide-[#edf2ee] overflow-hidden rounded-[22px] border border-[#dfe9df] bg-white">
+                {suAnalizleri.map((a) => {
+                  const g = suDegerlendir(a.rapor, { bitki: tarla.bitki, yontem: tarla.sulama }).genel;
+                  return (
+                    <li key={a.id}>
+                      <Link href={`/tarlalar/${tarla.id}/su/${a.id}`} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-[#f5fafc]">
+                        <span>
+                          <span className="block font-semibold">{tarihYaz(a.analiz_tarihi)}</span>
+                          <span className="block text-xs text-[#6b7d72]">{[a.rapor.kaynakAdi, a.kaynak === 'dosya' ? 'Dosyadan' : 'Elle girildi'].filter(Boolean).join(' · ')}</span>
+                        </span>
+                        <span className="flex items-center gap-3">
+                          <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: SU_TON[g.ton].acik, color: SU_TON[g.ton].yazi }}>
+                            {a.sinif ?? g.baslik}
+                          </span>
+                          <ChevronRight size={18} className="text-[#9aa7a0]" />
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </section>
 
         <SulamaRecetesi tarla={tarla} />
       </main>

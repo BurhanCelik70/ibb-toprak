@@ -5,7 +5,7 @@ import { MARKA } from '@/lib/marka';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: MARKA.ad,
-    short_name: MARKA.ad,
+    short_name: MARKA.kisa,
     description: MARKA.aciklama,
     start_url: '/',
     display: 'standalone',

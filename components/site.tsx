@@ -12,14 +12,17 @@ export function LogoIsareti({ size = 40 }: { size?: number }) {
   return <img src="/logo.png" width={size} height={size} alt="" aria-hidden className="shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,.25)]" />;
 }
 
-export function Logo({ size = 40, yazi = true, acik = false }: { size?: number; yazi?: boolean; acik?: boolean }) {
-  const [ana, surum] = MARKA.ad.split(' ');
+export function Logo({ size = 40, yazi = true, acik = false, mobildeGizle = false }: { size?: number; yazi?: boolean; acik?: boolean; mobildeGizle?: boolean }) {
+  const [ust, alt] = MARKA.logoSatirlari;
   return (
-    <span className="flex items-center gap-2.5">
+    <span className="flex items-center gap-2 sm:gap-2.5">
       <LogoIsareti size={size} />
       {yazi && (
-        <span className={`whitespace-nowrap font-display text-[1.25rem] sm:text-[1.4rem] font-medium leading-none tracking-[-0.01em] ${acik ? 'text-white' : 'text-[#17352a]'}`}>
-          {ana} <span className={acik ? 'text-[#9bdd68]' : 'text-[#2f8f57]'}>{surum}</span>
+        <span className={`${mobildeGizle ? 'hidden sm:block' : 'block'} font-display font-medium leading-[1.05] tracking-[-0.01em] ${acik ? 'text-white' : 'text-[#17352a]'}`}>
+          <span className="block whitespace-nowrap text-[0.8rem] sm:text-[1.05rem]">{ust}</span>
+          <span className="block whitespace-nowrap text-[0.8rem] sm:text-[1.05rem]">
+            {alt} <span className={`font-semibold ${acik ? 'text-[#9bdd68]' : 'text-[#2f8f57]'}`}>{MARKA.surum}</span>
+          </span>
         </span>
       )}
     </span>
@@ -54,7 +57,7 @@ export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' 
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
         <Link href="/" aria-label={`${MARKA.ad} ana sayfa`}>
-          <Logo size={36} acik={seffaf} />
+          <Logo size={36} acik={seffaf} mobildeGizle={girisli} />
         </Link>
         <nav className="flex items-center gap-0.5 sm:gap-1">
           {girisli ? (
@@ -89,24 +92,23 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-start sm:justify-between sm:px-8">
         <div className="max-w-sm">
           <span className="flex items-center gap-2.5 text-lg font-extrabold text-white">
-            <LogoIsareti size={32} /> {MARKA.ad}
+            <LogoIsareti size={32} /> <span className="leading-tight">{MARKA.ad}</span>
           </span>
           <p className="mt-3 text-sm leading-6">{MARKA.slogan}.</p>
         </div>
         <div className="text-sm leading-7">
-          {MARKA.eposta && (
-            <a href={`mailto:${MARKA.eposta}`} className="block hover:text-white">{MARKA.eposta}</a>
-          )}
-          {MARKA.telefon && (
-            <a href={`tel:${MARKA.telefon.replace(/\s/g, '')}`} className="block hover:text-white">{MARKA.telefon}</a>
-          )}
           <Link href="/tarlalar" className="block hover:text-white">Tarlalarım</Link>
           <Link href="/noksanliklar" className="block hover:text-white">Besin noksanlıkları</Link>
           <Link href="/gizlilik" className="block hover:text-white">Gizlilik ve KVKK</Link>
         </div>
       </div>
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-5 py-4 text-xs text-white/45 sm:px-8">© {new Date().getFullYear()} {MARKA.ad}</div>
+        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <span>
+            <span className="font-semibold text-white/80">{MARKA.kurum}</span> · {MARKA.ekip.join(' · ')}
+          </span>
+          <span className="text-white/40">© {new Date().getFullYear()} {MARKA.ad}</span>
+        </div>
       </div>
     </footer>
   );

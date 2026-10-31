@@ -1,5 +1,6 @@
 /** Veritabanı tablolarının tipleri (supabase/schema.sql ile aynı). */
 import type { SulamaYontemi } from './sulama';
+import type { SuRaporu } from './su';
 import type { SoilReport } from './toprak';
 
 export type Tarla = {
@@ -41,6 +42,21 @@ export type Analiz = {
   indeks: number | null;
   cozum: CozumPlani | null;
   cozum_tarihi: string | null;
+  olusturma: string;
+};
+
+export type SuYorumu = { ozet: string; yapilacaklar: string[]; yontemNotu: string; bitkiNotu: string | null };
+export type SuAnalizi = {
+  id: string;
+  tarla_id: string;
+  kullanici_id: string;
+  analiz_tarihi: string;
+  rapor_no: string | null;
+  kaynak: 'dosya' | 'manuel';
+  rapor: SuRaporu;
+  sinif: string | null;
+  yorum: SuYorumu | null;
+  yorum_tarihi: string | null;
   olusturma: string;
 };
 

@@ -2,7 +2,8 @@
 /**
  * Bitki besin noksanlıkları kataloğu: bitki seç → kartlar → kart detayı (büyük resim, belirtiler, neden, ne yapmalı).
  */
-import { ArrowDown, ArrowUp, Leaf, Search, ShieldAlert, Sprout, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, Camera, Leaf, Search, ShieldAlert, Sprout, X } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BESIN_RENK,
@@ -189,6 +190,25 @@ export function NoksanlikKatalogu({ baslangicBitki, baslangicId, tarlaBitkileri 
           </p>
         </div>
       </header>
+
+      {/* Yaprak teşhisi */}
+      <Link
+        href="/noksanliklar/teshis"
+        className="group mt-6 flex flex-col gap-4 rounded-[26px] border border-[#cfe5d3] bg-gradient-to-r from-[#eaf6e7] to-[#f6f2e6] p-5 transition hover:border-[#238f61] sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      >
+        <span className="flex items-center gap-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#238f61] text-white">
+            <Camera size={24} />
+          </span>
+          <span>
+            <span className="block font-display text-xl text-[#17352a]">Resimlerde bulamadınız mı?</span>
+            <span className="mt-0.5 block text-sm leading-6 text-[#4f6158]">Yaprağınızın fotoğrafını yükleyin, birkaç soruyu cevaplayın; yapay zekâ olası sorunu ve çözümünü söylesin.</span>
+          </span>
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-[#238f61] px-5 py-3 text-sm font-bold text-white group-hover:bg-[#1d7d54] sm:self-auto">
+          Yaprağımı incele <ArrowRight size={16} />
+        </span>
+      </Link>
 
       {/* Önce hangi yaprağa bakın */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2">

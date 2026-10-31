@@ -3,7 +3,7 @@ import { AppHeader, SiteFooter } from '@/components/site';
 
 export const metadata = {
   title: 'Örnek rapor',
-  description: 'Hesap açmadan Tarım 4.0 toprak raporunun nasıl göründüğüne bakın: toprak karnesi, öneriler ve adım adım sulama programı.',
+  description: 'Hesap açmadan Tarım Ticareti ve İşletmeciliği 4.0 toprak raporunun nasıl göründüğüne bakın: toprak karnesi, öneriler ve adım adım sulama programı.',
 };
 
 export default function OrnekSayfa() {

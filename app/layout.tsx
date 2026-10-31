@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: { default: `${MARKA.ad} · ${MARKA.slogan}`, template: `%s · ${MARKA.ad}` },
   description: MARKA.aciklama,
   applicationName: MARKA.ad,
-  appleWebApp: { capable: true, title: MARKA.ad, statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: MARKA.kisa, statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

@@ -23,7 +23,7 @@ const client = new Anthropic();
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 
 const SYSTEM = `Sen İGSAŞ ve KIANA ürünlerini çok iyi bilen, Türkiye'nin tüm bölgelerinde çalışmış deneyimli bir ziraat mühendisisin.
-"Tarım 4.0" uygulaması için, laboratuvar toprak analizine göre çiftçiye NET, UYGULANABİLİR ve ÜRÜN ODAKLI bir çözüm planı yazıyorsun.
+"Tarım Ticareti ve İşletmeciliği 4.0" uygulaması için, laboratuvar toprak analizine göre çiftçiye NET, UYGULANABİLİR ve ÜRÜN ODAKLI bir çözüm planı yazıyorsun.
 
 Sana verilenler: parametre değerleri ve sınıfları, uygun aralığa göre farklar, Toprak Kalite İndeksi, ürün kataloğu,
 organik madde protokolü ve (varsa) bitkinin İGSAŞ Z-kartı (dönem dönem ürün ve doz programı).

@@ -172,7 +172,7 @@ export function BuyumeSahnesi() {
   }, []);
 
   return (
-    <section ref={kapRef} className="relative h-[520svh] bg-[#121410]" aria-label="Tarım 4.0 nasıl çalışır">
+    <section ref={kapRef} className="relative h-[520svh] bg-[#121410]" aria-label="Tarım Ticareti ve İşletmeciliği 4.0 nasıl çalışır">
       <div className="sticky top-0 h-svh overflow-hidden">
         {/* Yüklenene kadar ilk kare arka planda */}
         <div className="absolute inset-0 bg-[url('/tohum.jpg')] bg-cover bg-center" aria-hidden />
