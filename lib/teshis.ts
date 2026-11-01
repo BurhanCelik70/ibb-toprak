@@ -73,14 +73,14 @@ export const TUR_DESTEK: Partial<Record<TeshisTuru, { etkenMadde: string; urunle
     not: 'Don, sıcak, kuraklık gibi stres beklentisinden 5–10 gün önce KIANA CLIMATE PLUS; stresten sonra toparlanma için amino asit.',
   },
   hastalik: {
-    etkenMadde: 'Hastalık için ruhsatlı bir bitki koruma ürünü gerekir (gübre hastalığı tedavi etmez)',
-    urunler: ['AMİNO ASİT'],
-    not: 'İGSAŞ ve KIANA ürünleri bitki besleme ürünüdür, hastalığı tedavi etmez. Fotoğrafı ilaç bayiinize ya da ziraat mühendisine gösterin, bitkinizde ruhsatlı ilacı etiketindeki dozla kullanın. İlaçlamadan sonra toparlanma için amino asit verilebilir.',
+    etkenMadde: 'Hastalık gübreyle düzelmez',
+    urunler: [],
+    not: 'Bu uygulama ilaç önermez. Fotoğrafı ve bu sonucu il/ilçe tarım müdürlüğünüze ya da ziraat mühendisinize gösterin; mücadele kararını onlarla verin.',
   },
   zararli: {
-    etkenMadde: 'Zararlı için ruhsatlı bir bitki koruma ürünü gerekir',
+    etkenMadde: 'Zararlı gübreyle uzaklaşmaz',
     urunler: [],
-    not: 'Gübre zararlıyı uzaklaştırmaz. Yaprağın altını büyüteçle kontrol edin; ilaç bayiinize örnek götürün ve ruhsatlı ilacı etiketine göre kullanın.',
+    not: 'Bu uygulama ilaç önermez. Yaprağın altını büyüteçle kontrol edin; örneği il/ilçe tarım müdürlüğünüze ya da ziraat mühendisinize gösterin.',
   },
 };
 

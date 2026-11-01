@@ -4,11 +4,11 @@ import { BITKI_SIRASI, katalogBitkisi } from '@/lib/noksanliklar';
 import { oturumKullanici } from '@/lib/supabase/server';
 
 export const metadata = {
-  title: 'Bitki besin noksanlıkları',
-  description: 'Mısır, buğday, şeker pancarı, ayçiçeği, pamuk ve diğer bitkilerde azot, fosfor, potasyum, çinko, demir, bor noksanlıklarının resimli kataloğu.',
+  title: 'Bitki besin noksanlıkları ve hastalıkları',
+  description: 'Mısır, buğday, şeker pancarı, ayçiçeği, pamuk ve diğer bitkilerde azot, fosfor, potasyum, çinko, demir, bor noksanlıklarının ve noksanlıkla karışan hastalıkların resimli kataloğu.',
 };
 
-export default async function NoksanlikSayfasi({ searchParams }: { searchParams: Promise<{ bitki?: string; n?: string }> }) {
+export default async function NoksanlikSayfasi({ searchParams }: { searchParams: Promise<{ bitki?: string; n?: string; h?: string }> }) {
   const sp = await searchParams;
   // Giriş yapan kullanıcının tarlalarındaki bitkiler öne alınır
   let tarlaBitkileri: string[] = [];
@@ -27,7 +27,7 @@ export default async function NoksanlikSayfasi({ searchParams }: { searchParams:
     <div className="flex min-h-screen flex-col bg-[#f5f0e6] text-[#1d2a22]">
       <AppHeader aktif="noksanlik" />
       <main className="flex-1 px-4 py-8 sm:px-6 sm:py-10">
-        <NoksanlikKatalogu baslangicBitki={bitki} baslangicId={sp.n} tarlaBitkileri={tarlaBitkileri} />
+        <NoksanlikKatalogu baslangicBitki={bitki} baslangicId={sp.n} baslangicHastalik={sp.h} tarlaBitkileri={tarlaBitkileri} />
       </main>
       <SiteFooter />
     </div>

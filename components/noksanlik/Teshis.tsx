@@ -22,6 +22,8 @@ import {
   type TeshisCevaplari,
   type TeshisSonucu,
 } from '@/lib/teshis';
+import { hastalikBul, hastalikGorseli, type Hastalik } from '@/lib/hastaliklar';
+import { HastalikDetayi } from './Hastalik';
 import { NoksanlikDetayi } from './Katalog';
 
 type TarlaSecenek = { id: string; ad: string; bitki: string | null };
@@ -93,8 +95,64 @@ function Soru({ no, baslik, alt, children }: { no: number; baslik: string; alt?:
 
 const marka = (ad: string) => (/^kiana/i.test(ad) ? 'KIANA' : 'İGSAŞ');
 
+/** Hastalık / zararlı sonucu: ilaç önerisi yok, yalnızca bilgilendirme ve katalog kartı */
+function HastalikBilgisi({ o, bitki }: { o: Olasilik; bitki: string }) {
+  const [detay, setDetay] = useState<Hastalik>();
+  const [nDetay, setNDetay] = useState<Noksanlik>();
+  const d = TUR_DESTEK[o.tur]!;
+  const kart = o.tur === 'hastalik' ? hastalikBul(katalogBitkisi(bitki), o.ad) : undefined;
+  return (
+    <section className="mt-6 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
+      <div className="rounded-[24px] border border-[#ecd9b0] bg-[#fbf4e4] p-5 sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8a5a2b]">Bilgilendirme</p>
+        <p className="mt-2 font-display text-xl text-[#3f3420]">{d.etkenMadde}</p>
+        <p className="mt-2 text-sm leading-6 text-[#5a4a2a]">{d.not}</p>
+        {kart && (
+          <>
+            <p className="mt-4 text-sm font-semibold text-[#3f3420]">Yayılmasını azaltmak için (ilaçsız)</p>
+            <ul className="mt-2 space-y-1.5">
+              {kart.onlemler.map((x) => (
+                <li key={x} className="flex gap-2 text-sm leading-6 text-[#4a3f2a]">
+                  <Leaf size={15} className="mt-1 shrink-0 text-[#238f61]" /> {x}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+      {kart && (
+        <button type="button" onClick={() => setDetay(kart)} className="group overflow-hidden rounded-[24px] border border-[#e3dccb] bg-white text-left">
+          <span className="relative block aspect-[4/3] overflow-hidden bg-[#3c4f3f]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={hastalikGorseli(kart.id)} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" />
+          </span>
+          <span className="block p-4">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#7a877e]">Katalogla karşılaştırın</span>
+            <span className="mt-1 block font-display text-lg text-[#17352a]">
+              {kart.bitki.replace(/\s*\(.*\)/, '')}: {kart.ad.toLocaleLowerCase('tr-TR')}
+            </span>
+            <span className="mt-1 block text-sm text-[#5b6f65]">{kart.kisa}</span>
+          </span>
+        </button>
+      )}
+      {detay && (
+        <HastalikDetayi
+          h={detay}
+          onKapat={() => setDetay(undefined)}
+          onNoksanlik={(n) => {
+            setDetay(undefined);
+            setNDetay(n);
+          }}
+        />
+      )}
+      {nDetay && <NoksanlikDetayi n={nDetay} onKapat={() => setNDetay(undefined)} />}
+    </section>
+  );
+}
+
 function UrunOnerisi({ o, bitki }: { o: Olasilik; bitki: string }) {
   const [detay, setDetay] = useState<Noksanlik>();
+  if (o.tur === 'hastalik' || o.tur === 'zararli') return <HastalikBilgisi o={o} bitki={bitki} />;
   const b = o.besin ? BESIN_COZUM[o.besin] : undefined;
   const destek = !b ? TUR_DESTEK[o.tur] : undefined;
   if (!b && !destek) return null;

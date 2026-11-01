@@ -8,6 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { bolgeBilgisi } from '@/lib/bolgeler';
+import { HASTALIKLAR } from '@/lib/hastaliklar';
 import { suDegerlendir } from '@/lib/su';
 import { SULAMA_YONTEMLERI } from '@/lib/sulama';
 import { oturumKullanici } from '@/lib/supabase/server';
@@ -43,6 +44,8 @@ NASIL DÜŞÜN (sırayla):
 6. Cevapları ve (varsa) toprak analizini kullan: dönem, belirtinin nerede başladığı, tarladaki dağılım, son 2 haftadaki olaylar.
    Toprak analizi verildiyse bağla (ör. pH 8 ve kireç %15 → demir/çinko noksanlığı olasılığı artar; potasyum düşük → K noksanlığı güçlenir).
    Fotoğraf cevaplarla çelişiyorsa bunu açıkça söyle (ör. "Alt yapraklarda başladı dediniz, fotoğraftaki ise genç yaprak gibi görünüyor").
+7. Noksanlıkla en sık karışan hastalıklar ve ayırt etme yolu (bu bitkilerden biriyse dikkate al; hastalık buysa adını aynen böyle yaz):
+${HASTALIKLAR.map((h) => `   - ${h.bitki}: ${h.ad} (${h.etmen}). ${h.noksanliktanFarki}`).join('\n')}
 
 OLASILIKLAR:
 - En fazla 3 olasılık, en olasıdan başla. Yüzdeler tam sayı; toplamı 100'ü geçmesin.
@@ -55,8 +58,9 @@ YAZIM:
 - ozet: 1-2 cümle, "Büyük ihtimalle (%80) ... görünüyor, çünkü ..." biçiminde. Kesin konuşma ama kaçamak da olma.
 - ipuclari: fotoğrafta ve cevaplarda dayandığın 2-4 somut gözlem.
 - kontrol: emin olmak için çiftçinin tarlada bakabileceği 2-3 basit şey (ör. "Yaprağı ters çevirin; alt yüzde turuncu toz varsa pas", "Sağlıklı bir bitkiyle yan yana karşılaştırın", "Yaprak analizi yaptırın").
-- yapilacaklar: 2-4 somut adım. ÜRÜN ya da MARKA ADI YAZMA (ürünler uygulamada ayrıca gösteriliyor). İlaç ticari adı da yazma; hastalık ve zararlıda
-  "bitkinizde ruhsatlı bir ilacı etiketine göre kullanın" de ve kültürel önlemleri yaz (hastalıklı yaprakları toplayın, sulamayı yaprağı ıslatmadan yapın vb.).
+- yapilacaklar: 2-4 somut adım. ÜRÜN ya da MARKA ADI YAZMA (ürünler uygulamada ayrıca gösteriliyor).
+  Hastalık ve zararlıda İLAÇ ÖNERME: ilaç adı, etken madde, ilaç grubu ya da "ilaçlayın" yazma. Yalnızca kültürel önlemleri yaz
+  (hastalıklı yaprakları toplayın, sulamayı yaprağı ıslatmadan yapın, ekim nöbeti vb.) ve "il/ilçe tarım müdürlüğünüze ya da ziraat mühendisinize danışın" de.
 - Sade Türkçe, kısa cümleler, "siz" hitabı. Korkutma. "Bu öneri bağlayıcı değildir" gibi kalıp cümleler yazma.
 Cevabını YALNIZCA teshis aracını çağırarak ver.`;
 

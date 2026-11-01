@@ -2,7 +2,7 @@
 /**
  * Bitki besin noksanlıkları kataloğu: bitki seç → kartlar → kart detayı (büyük resim, belirtiler, neden, ne yapmalı).
  */
-import { ArrowDown, ArrowRight, ArrowUp, Camera, Leaf, Search, ShieldAlert, Sprout, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, Bug, Camera, Leaf, Search, ShieldAlert, Sprout, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -13,6 +13,8 @@ import {
   noksanlikGorseli,
   type Noksanlik,
 } from '@/lib/noksanliklar';
+import { HASTALIKLAR, benzerHastaliklar, hastalikGorseli, type Hastalik } from '@/lib/hastaliklar';
+import { BILGI_NOTU, HastalikDetayi, HastalikKarti } from './Hastalik';
 
 const kisaAd = (b: string) => BITKI_KISA[b] ?? b;
 const YAPRAK_ETIKET: Record<Noksanlik['yaprak'], string> = {
@@ -64,7 +66,8 @@ export function NoksanlikKarti({ n, onAc, bitkiGoster = false }: { n: Noksanlik;
   );
 }
 
-export function NoksanlikDetayi({ n, onKapat }: { n: Noksanlik; onKapat: () => void }) {
+export function NoksanlikDetayi({ n, onKapat, onHastalik }: { n: Noksanlik; onKapat: () => void; onHastalik?: (h: Hastalik) => void }) {
+  const hastaliklar = benzerHastaliklar(n.id);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onKapat();
     document.addEventListener('keydown', k);
@@ -129,9 +132,33 @@ export function NoksanlikDetayi({ n, onKapat }: { n: Noksanlik; onKapat: () => v
                 {n.karisir}
               </div>
             )}
+            {hastaliklar.length > 0 && (
+              <div className="rounded-[20px] border border-[#e3dccb] bg-white p-4">
+                <p className="flex items-center gap-2 text-sm font-semibold text-[#17352a]">
+                  <Bug size={16} className="text-[#8a5a2b]" /> Bu hastalıkla karışabilir
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {hastaliklar.map((h) =>
+                    onHastalik ? (
+                      <button key={h.id} type="button" onClick={() => onHastalik(h)} className="flex items-center gap-2 rounded-full border border-[#e3dccb] bg-[#fbf8f1] py-1 pl-1 pr-3 text-xs font-semibold text-[#3f3420] hover:border-[#8a5a2b]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={hastalikGorseli(h.id)} alt="" className="h-7 w-7 rounded-full bg-[#3c4f3f] object-cover" />
+                        {h.ad}
+                      </button>
+                    ) : (
+                      <Link key={h.id} href={`/noksanliklar?bitki=${encodeURIComponent(h.bitki)}&h=${h.id}`} className="flex items-center gap-2 rounded-full border border-[#e3dccb] bg-[#fbf8f1] py-1 pl-1 pr-3 text-xs font-semibold text-[#3f3420] hover:border-[#8a5a2b]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={hastalikGorseli(h.id)} alt="" className="h-7 w-7 rounded-full bg-[#3c4f3f] object-cover" />
+                        {h.ad}
+                      </Link>
+                    ),
+                  )}
+                </div>
+              </div>
+            )}
             <p className="flex gap-2 text-xs leading-5 text-[#7a877e]">
               <ShieldAlert size={14} className="mt-0.5 shrink-0" />
-              Belirtiler hastalık, ilaç yanığı ya da kuraklığa benzeyebilir. Kesin tanı için toprak ve yaprak analizi yaptırın; ilaç ve gübre dozlarında ürün etiketine uyun.
+              Belirtiler hastalık, ilaç yanığı ya da kuraklığa benzeyebilir. Kesin tanı için toprak ve yaprak analizi yaptırın; gübre dozlarında ürün etiketine uyun.
             </p>
           </div>
         </div>
@@ -140,10 +167,33 @@ export function NoksanlikDetayi({ n, onKapat }: { n: Noksanlik; onKapat: () => v
   );
 }
 
-export function NoksanlikKatalogu({ baslangicBitki, baslangicId, tarlaBitkileri = [] }: { baslangicBitki?: string; baslangicId?: string; tarlaBitkileri?: string[] }) {
+export function NoksanlikKatalogu({
+  baslangicBitki,
+  baslangicId,
+  baslangicHastalik,
+  tarlaBitkileri = [],
+}: {
+  baslangicBitki?: string;
+  baslangicId?: string;
+  baslangicHastalik?: string;
+  tarlaBitkileri?: string[];
+}) {
   const ilk = baslangicId ? NOKSANLIKLAR.find((n) => n.id === baslangicId) : undefined;
-  const [bitki, setBitki] = useState<string>(ilk?.bitki ?? baslangicBitki ?? tarlaBitkileri[0] ?? BITKI_SIRASI[0]);
+  const ilkH = !ilk && baslangicHastalik ? HASTALIKLAR.find((h) => h.id === baslangicHastalik) : undefined;
+  const [bitki, setBitki] = useState<string>(ilk?.bitki ?? ilkH?.bitki ?? baslangicBitki ?? tarlaBitkileri[0] ?? BITKI_SIRASI[0]);
   const [secili, setSecili] = useState<Noksanlik | undefined>(ilk);
+  const [seciliH, setSeciliH] = useState<Hastalik | undefined>(ilkH);
+  const hastaliklar = useMemo(() => HASTALIKLAR.filter((h) => h.bitki === bitki), [bitki]);
+  const noksanligaGec = (n: Noksanlik) => {
+    setSeciliH(undefined);
+    setBitki(n.bitki);
+    setSecili(n);
+  };
+  const hastaligaGec = (h: Hastalik) => {
+    setSecili(undefined);
+    setBitki(h.bitki);
+    setSeciliH(h);
+  };
   const [besin, setBesin] = useState<string>('hepsi');
 
   const kartlar = useMemo(() => NOKSANLIKLAR.filter((n) => n.bitki === bitki), [bitki]);
@@ -156,8 +206,10 @@ export function NoksanlikKatalogu({ baslangicBitki, baslangicId, tarlaBitkileri 
     u.searchParams.set('bitki', bitki);
     if (secili) u.searchParams.set('n', secili.id);
     else u.searchParams.delete('n');
+    if (seciliH) u.searchParams.set('h', seciliH.id);
+    else u.searchParams.delete('h');
     window.history.replaceState(null, '', u.toString());
-  }, [bitki, secili]);
+  }, [bitki, secili, seciliH]);
 
   const bitkiSec = (b: string) => {
     setBitki(b);
@@ -186,7 +238,8 @@ export function NoksanlikKatalogu({ baslangicBitki, baslangicId, tarlaBitkileri 
           </p>
           <h1 className="mt-4 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl">Bitki besin noksanlıkları</h1>
           <p className="mt-4 text-base leading-7 text-white/80">
-            Bitkinizi seçin, yaprağınıza en çok benzeyen resmi bulun. Her kartta nasıl tanınacağı, neden olduğu ve ne yapılacağı yazıyor.
+            Bitkinizi seçin, yaprağınıza en çok benzeyen resmi bulun. Her kartta nasıl tanınacağı, neden olduğu ve ne yapılacağı yazıyor. Noksanlıkla
+            karışan yaygın hastalıkları da aynı sayfada bulabilirsiniz.
           </p>
         </div>
       </header>
@@ -290,12 +343,52 @@ export function NoksanlikKatalogu({ baslangicBitki, baslangicId, tarlaBitkileri 
         ))}
       </div>
 
+      {hastaliklar.length > 0 && (
+        <section className="mt-12">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-[#8a5a2b]">
+                <Bug size={15} /> Noksanlıkla karışan hastalıklar
+              </p>
+              <h2 className="mt-2 font-display text-3xl font-medium text-[#17352a]">
+                {kisaAd(bitki)} <span className="text-[#7a877e]">· {hastaliklar.length} hastalık</span>
+              </h2>
+            </div>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5b6f65]">
+            Gübreyle düzelmeyen sararma ve lekeler bir hastalık olabilir. Her kartta hastalığın nasıl tanındığı ve benzer noksanlıktan nasıl ayrıldığı yazıyor.
+          </p>
+          <ol className="mt-5 grid gap-3 rounded-[24px] border border-[#ecdcbb] bg-[#fbf4e4] p-4 sm:grid-cols-3 sm:p-5">
+            {[
+              ['Toz, küf ya da kabarcık var mı?', 'Parmakla silinen toz, yaprak altında küf veya kabarcık hastalığa işarettir. Noksanlıkta yaprak yüzeyi temizdir.'],
+              ['Tarlada nasıl dağılmış?', 'Noksanlık çoğu zaman tarlanın bir bölümünde düzgün yayılır. Hastalık ise yama yama ya da tek tek bitkilerde başlar ve hızla yayılır.'],
+              ['Lekenin deseni düzenli mi?', 'Noksanlık yaprakta düzenli bir desen izler: kenardan, damarlar arasından ya da uçtan. Hastalık lekeleri dağınık, halkalı veya kenarı renklidir.'],
+            ].map(([t, d], i) => (
+              <li key={t} className="flex gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#8a5a2b] font-display text-sm font-semibold text-white">{i + 1}</span>
+                <span>
+                  <span className="block text-sm font-bold text-[#3f3420]">{t}</span>
+                  <span className="mt-0.5 block text-[13px] leading-5 text-[#5a4a2a]">{d}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {hastaliklar.map((h) => (
+              <HastalikKarti key={h.id} h={h} onAc={() => setSeciliH(h)} />
+            ))}
+          </div>
+          <p className="mt-4 text-xs leading-5 text-[#7a877e]">{BILGI_NOTU}</p>
+        </section>
+      )}
+
       <p className="mt-10 rounded-[20px] bg-[#efe8d8] p-5 text-sm leading-6 text-[#5a4a2a]">
-        Resimler belirtileri tanımaya yardımcı olmak için hazırlanmış örnek görsellerdir. Aynı noksanlık çeşide, toprağa ve havaya göre farklı görünebilir;
+        Resimler belirtileri tanımaya yardımcı olmak için hazırlanmış örnek görsellerdir. Aynı noksanlık ya da hastalık çeşide, toprağa ve havaya göre farklı görünebilir;
         birden fazla noksanlık aynı anda da olabilir. Toprak analiziniz bu tahmini doğrulamanın en kolay yoludur.
       </p>
 
-      {secili && <NoksanlikDetayi n={secili} onKapat={() => setSecili(undefined)} />}
+      {secili && <NoksanlikDetayi n={secili} onKapat={() => setSecili(undefined)} onHastalik={hastaligaGec} />}
+      {seciliH && <HastalikDetayi h={seciliH} onKapat={() => setSeciliH(undefined)} onNoksanlik={noksanligaGec} />}
     </div>
   );
 }
