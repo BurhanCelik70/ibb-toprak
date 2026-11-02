@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/site';
 import { GirisFormu } from './GirisFormu';
 
-export const metadata = { title: 'Giriş' };
+export const metadata = { title: 'Giriş', robots: { index: false, follow: true } };
 
 export default async function GirisSayfasi({ searchParams }: { searchParams: Promise<{ sonra?: string; adim?: string; hata?: string }> }) {
   const { sonra, adim, hata } = await searchParams;

@@ -5,6 +5,7 @@ import { oturumKullanici } from '@/lib/supabase/server';
 
 export const metadata = {
   title: 'Bitki besin noksanlıkları ve hastalıkları',
+  alternates: { canonical: '/noksanliklar' },
   description: 'Mısır, buğday, şeker pancarı, ayçiçeği, pamuk ve diğer bitkilerde azot, fosfor, potasyum, çinko, demir, bor noksanlıklarının ve noksanlıkla karışan hastalıkların resimli kataloğu.',
 };
 

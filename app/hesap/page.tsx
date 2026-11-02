@@ -3,7 +3,7 @@ import { AppHeader, SiteFooter } from '@/components/site';
 import { oturumKullanici } from '@/lib/supabase/server';
 import { CikisDugmesi } from './CikisDugmesi';
 
-export const metadata = { title: 'Hesabım' };
+export const metadata = { title: 'Hesabım', robots: { index: false, follow: true } };
 
 export default async function HesapSayfasi() {
   const { supabase, kullaniciId } = await oturumKullanici();

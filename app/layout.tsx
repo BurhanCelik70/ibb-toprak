@@ -3,11 +3,22 @@ import '@fontsource-variable/fraunces';
 import '@fontsource-variable/plus-jakarta-sans';
 import './globals.css';
 import { MARKA } from '@/lib/marka';
+import { SITE_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: `${MARKA.ad} · ${MARKA.slogan}`, template: `%s · ${MARKA.ad}` },
   description: MARKA.aciklama,
   applicationName: MARKA.ad,
+  authors: [{ name: `${MARKA.kurum} · ${MARKA.ekip.join(', ')}` }],
+  openGraph: {
+    type: 'website',
+    locale: 'tr_TR',
+    siteName: MARKA.ad,
+    title: `${MARKA.ad} · ${MARKA.slogan}`,
+    description: MARKA.aciklama,
+    images: [{ url: '/logo.png', width: 512, height: 512, alt: MARKA.ad }],
+  },
   appleWebApp: { capable: true, title: MARKA.kisa, statusBarStyle: 'default' },
 };
 

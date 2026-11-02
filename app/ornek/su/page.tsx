@@ -4,6 +4,7 @@ import { AppHeader, SiteFooter } from '@/components/site';
 
 export const metadata = {
   title: 'Örnek su karnesi',
+  alternates: { canonical: '/ornek/su' },
   description: 'Hesap açmadan sulama suyu karnesinin nasıl göründüğüne bakın: FAO ölçütlerine göre tuzluluk, sodyum, bikarbonat ve size uygun sulama yöntemi.',
 };
 

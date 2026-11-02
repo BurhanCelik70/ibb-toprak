@@ -2,6 +2,28 @@ import { ArrowRight, CirclePlay, Droplets, GitCompareArrows, MapPinned } from 'l
 import Link from 'next/link';
 import { BuyumeSahnesi } from '@/components/BuyumeSahnesi';
 import { AppHeader, DerinlikCizimi, SiteFooter, ZikzakCizimi } from '@/components/site';
+import { MARKA } from '@/lib/marka';
+import { SITE_URL } from '@/lib/site';
+
+/** Ana sayfanın tek resmî adresi (www'li ve www'siz, parametreli adresler buna bağlanır) */
+export const metadata = { alternates: { canonical: '/' } };
+
+/** Google için yapılandırılmış veri: site adı ve logo arama sonuçlarında doğru görünsün. */
+const YAPILANDIRILMIS_VERI = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'WebSite', '@id': `${SITE_URL}/#site`, url: SITE_URL, name: MARKA.ad, alternateName: MARKA.kisa, inLanguage: 'tr-TR', description: MARKA.aciklama },
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#kurum`,
+      name: MARKA.ad,
+      url: SITE_URL,
+      logo: `${SITE_URL}/logo.png`,
+      parentOrganization: { '@type': 'CollegeOrUniversity', name: MARKA.kurum },
+      member: MARKA.ekip.map((ad) => ({ '@type': 'Person', name: ad })),
+    },
+  ],
+};
 
 const VIDEO_LISTESI = {
   baslik: 'Toprağın uzmanı cevaplıyor',
@@ -37,6 +59,7 @@ const OZELLIKLER = [
 export default function AnaSayfa() {
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip bg-[#f5f0e6] text-[#1d2a22]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(YAPILANDIRILMIS_VERI) }} />
       <AppHeader seffaf />
       <BuyumeSahnesi />
 

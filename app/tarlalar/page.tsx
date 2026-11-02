@@ -8,7 +8,7 @@ import { oturumKullanici } from '@/lib/supabase/server';
 import { formatNumber } from '@/lib/toprak';
 import { tarihYaz, type Tarla } from '@/lib/veri';
 
-export const metadata = { title: 'Tarlalarım' };
+export const metadata = { title: 'Tarlalarım', robots: { index: false, follow: true } };
 
 type Satir = Tarla & { analizler: { id: string; indeks: number | null; analiz_tarihi: string }[] };
 

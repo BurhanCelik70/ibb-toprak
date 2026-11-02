@@ -6,6 +6,7 @@ import { oturumKullanici } from '@/lib/supabase/server';
 
 export const metadata = {
   title: 'Yaprak teşhisi',
+  alternates: { canonical: '/noksanliklar/teshis' },
   description: 'Yaprağınızın fotoğrafını yükleyin, birkaç soruyu cevaplayın; olası besin noksanlığını, hastalığı ya da stresi ve ne yapmanız gerektiğini söyleyelim.',
 };
 
