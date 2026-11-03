@@ -1,6 +1,9 @@
 /**
  * İGSAŞ Z-kartları (23 bitki) – "İGSAŞ Azərbaycan · dönem dönem infografik seti"
  * (Prof. Dr. Metin Turan, Yeditepe Üniversitesi · İGSAŞ & KIANA) PDF'inden çıkarıldı.
+ * Kanola kartı sonradan eklendi (taslak): Trakya Tarımsal Araştırma Enstitüsü önerilerine (N 15, P 5-6, K 6-8, S 4 kg/da; azot üçe bölünür) göre
+ * İGSAŞ ve KIANA ürünleriyle hazırlandı; Prof. Dr. Metin Turan onayına sunulacak.
+ * Bezelye kartı da taslaktır: Samsun İl Tarım ve Orman Müdürlüğü önerisine (N 3-4, P₂O₅ 8-10, K₂O 20 kg/da, ekimden önce) göre hazırlandı.
  * Dozlar dekar (da) başınadır. Bu dosya otomatik üretildi; elle düzeltme yapılabilir.
  * "hedef" alanları OCR metnidir (Türkçe harfler sadeleşmiş) ve yalnızca yapay zekaya bağlam olarak gider.
  */
@@ -315,6 +318,287 @@ export const ZKARTLAR: ZKart[] = [
             ]
           }
         ]
+      }
+    ]
+  },
+  {
+    "bitki": "Kanola",
+    "sulama": "Kuru tarım",
+    "evreler": [
+      {
+        "evre": "EKİM - ÇIKIŞ",
+        "bbch": "00-09",
+        "donem": "Eylül-Ekim",
+        "hedef": "Hizli ve duzgun cikis; P ile kok, S ile protein sentezi. Kisa 6-8 yaprakli rozetle girmek icin erken ekim (TTAE).",
+        "uygulamalar": [
+          {
+            "yontem": "Taban gübresi",
+            "urunler": [
+              {
+                "urun": "NPK 20.20.0+Zn",
+                "doz": "20-25 kg/da (mibzerle banda)"
+              },
+              {
+                "urun": "AS 21",
+                "doz": "15-20 kg/da (kükürt için)"
+              }
+            ]
+          },
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "KIANA EARTH PLUS (tohum)",
+                "doz": "100 g/100 kg tohum"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "ROZET - KIŞA GİRİŞ",
+        "bbch": "12-18",
+        "donem": "Ekim-Kasım",
+        "hedef": "6-8 yaprakli rozet ve guclu kok bogazi; soguga dayaniklilik.",
+        "uygulamalar": [
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "KIANA CLIMATE PLUS",
+                "doz": "200-300 g/da (ilk dondan 5-10 gün önce)"
+              },
+              {
+                "urun": "AMİNO ASİT",
+                "doz": "250 cc/da"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "KIŞ SONU - YENİDEN BÜYÜME",
+        "bbch": "19-30",
+        "donem": "Şubat",
+        "hedef": "Kistan cikista hizli toparlanma; azot ve kukurt alimi hizlanir.",
+        "uygulamalar": [
+          {
+            "yontem": "Baş gübre",
+            "urunler": [
+              {
+                "urun": "AS 21",
+                "doz": "20-25 kg/da"
+              }
+            ]
+          },
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "AMİNO ASİT",
+                "doz": "250 cc/da"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "SAPA KALKMA - TOMURCUK",
+        "bbch": "31-55",
+        "donem": "Mart",
+        "hedef": "Sap uzamasi ve tomurcuk; bor ihtiyaci en yuksek donem.",
+        "uygulamalar": [
+          {
+            "yontem": "Baş gübre",
+            "urunler": [
+              {
+                "urun": "UAN-32",
+                "doz": "10-12 L/da"
+              }
+            ]
+          },
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "N-CALBOR",
+                "doz": "250-300 cc/da"
+              },
+              {
+                "urun": "KOMBİ",
+                "doz": "150 g/da"
+              },
+              {
+                "urun": "MAGNEZYUM",
+                "doz": "300 g/da"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "ÇİÇEKLENME",
+        "bbch": "60-69",
+        "donem": "Nisan",
+        "hedef": "Cicek tutumu; bor ve sicak stresine karsi koruma. Su stresine en duyarli donem.",
+        "uygulamalar": [
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "FLOWER GOLD",
+                "doz": "200 cc/da"
+              },
+              {
+                "urun": "N-CALBOR",
+                "doz": "250 cc/da"
+              },
+              {
+                "urun": "KIANA CLIMATE PLUS",
+                "doz": "200-300 g/da"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "KAPSÜL - TANE DOLUMU",
+        "bbch": "70-85",
+        "donem": "Mayıs-Haziran",
+        "hedef": "Kapsul dolumu ve yag orani; potasyum ve kukurt.",
+        "uygulamalar": [
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "K-S",
+                "doz": "400-500 g/da"
+              },
+              {
+                "urun": "MAGNEZYUM",
+                "doz": "300 g/da"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "bitki": "Bezelye",
+    "sulama": "Kuru tarım",
+    "evreler": [
+      {
+        "evre": "EKİM - ÇIKIŞ",
+        "bbch": "00-09",
+        "donem": "Şubat-Mart",
+        "hedef": "Baklagil: azotun cogunu kok nodullerindeki bakteriler baglar; az baslangic azotu, bol fosfor ve potasyum ekimden once (Samsun Il Mud.: N 3-4, P2O5 8-10, K2O 20 kg/da). Bakteri asili tohum.",
+        "uygulamalar": [
+          {
+            "yontem": "Taban gübresi",
+            "urunler": [
+              {
+                "urun": "DAP",
+                "doz": "18-22 kg/da (ekimden önce toprağa)"
+              },
+              {
+                "urun": "K₂SO₄",
+                "doz": "30-40 kg/da (ekimden önce toprağa)"
+              }
+            ]
+          },
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "KIANA EARTH PLUS (tohum)",
+                "doz": "100 g/100 kg tohum"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "DALLANMA - SÜLÜK",
+        "bbch": "12-39",
+        "donem": "Mart-Nisan",
+        "hedef": "Dallanma ve sulukler; nodul gelisimi. Kirecli toprakta demir sararmasi gorulebilir.",
+        "uygulamalar": [
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "AMİNO ASİT",
+                "doz": "250 cc/da"
+              },
+              {
+                "urun": "KOMBİ",
+                "doz": "150 g/da"
+              },
+              {
+                "urun": "DEMİR ŞELAT",
+                "doz": "250 g/da (kireçli toprakta)"
+              },
+              {
+                "urun": "EDTA Zn-Mn",
+                "doz": "200 cc/da (çinko ya da mangan düşükse)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "ÇİÇEKLENME",
+        "bbch": "60-69",
+        "donem": "Nisan-Mayıs",
+        "hedef": "Cicek tutumu; sicak ve kuraklik stresine karsi koruma. Cicek oncesi su kritik.",
+        "uygulamalar": [
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "FLOWER GOLD",
+                "doz": "200 cc/da"
+              },
+              {
+                "urun": "N-CALBOR",
+                "doz": "250 cc/da"
+              },
+              {
+                "urun": "KIANA CLIMATE PLUS",
+                "doz": "200-300 g/da"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "BAKLA OLUŞUMU - DOLUM",
+        "bbch": "70-79",
+        "donem": "Mayıs",
+        "hedef": "Bakla ve dane dolumu; potasyum ve magnezyum. Meyve tutumundan sonra su kritik.",
+        "uygulamalar": [
+          {
+            "yontem": "Yapraktan",
+            "urunler": [
+              {
+                "urun": "K-S",
+                "doz": "400 g/da"
+              },
+              {
+                "urun": "MAGNEZYUM",
+                "doz": "300 g/da"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "evre": "HASAT OLUMU",
+        "bbch": "80-89",
+        "donem": "Mayıs-Haziran",
+        "hedef": "Taze hasatta baklalar dolgun ve parlak yesil; 3-4 gun arayla kademeli hasat.",
+        "uygulamalar": []
       }
     ]
   },

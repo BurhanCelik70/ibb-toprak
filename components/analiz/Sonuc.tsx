@@ -7,6 +7,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { evreGorseli } from '@/lib/bitkiGorsel';
 import { ORGANIK_MADDE_PROTOKOLU, URUNLER, zkartBul } from '@/lib/igsas';
 import { SINIFLAR, kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
+import { tahilMi } from '@/lib/tahilSulama';
+import { TahilSuPlani } from './TahilSuPlani';
 import { BOLGE_DUZELTME, bolunmusMu, onerilenAralik, sezonTakvimi, sezonTanimi, suBasinaDoz, tarihKisa } from '@/lib/sulamaTakvimi';
 import { karsilastir, ozetle } from '@/lib/karsilastir';
 import {
@@ -1064,8 +1066,9 @@ function SulamaProgrami({
   );
 }
 
-export function SulamaRecetesi({ tarla, ai }: { tarla: SonucTarla; ai?: CozumPlani | null }) {
+export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: CozumPlani | null; report?: SoilReport | null }) {
   const zkart = zkartBul(tarla.bitki ?? undefined);
+  const tahil = tahilMi(zkart?.bitki);
   const y = SULAMA_YONTEMLERI[tarla.sulama];
   const sure = tarla.sulama_suresi_saat ?? y.varsayilanSure;
   const simdi = zkart ? simdikiEvreler(zkart) : [];
@@ -1105,9 +1108,15 @@ export function SulamaRecetesi({ tarla, ai }: { tarla: SonucTarla; ai?: CozumPla
           </div>
         </div>
 
-        <SezonTakvimiKarti key={`tk-${tarla.sulama}-${zkart?.bitki ?? ""}-${tarla.il ?? ""}`} yontem={tarla.sulama} zkart={zkart} alan={tarla.alan_dekar} il={tarla.il} />
+        {zkart && tahil ? (
+          <TahilSuPlani key={`th-${tarla.sulama}-${zkart.bitki}`} zkart={zkart} yontem={tarla.sulama} sure={sure} alan={tarla.alan_dekar} report={report} />
+        ) : (
+          <>
+            <SezonTakvimiKarti key={`tk-${tarla.sulama}-${zkart?.bitki ?? ""}-${tarla.il ?? ""}`} yontem={tarla.sulama} zkart={zkart} alan={tarla.alan_dekar} il={tarla.il} />
 
-        <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} ai={ai} />
+            <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} ai={ai} />
+          </>
+        )}
 
         {!zkart && (
           <p className="rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 text-sm text-[#4b5f55]">
@@ -1116,6 +1125,12 @@ export function SulamaRecetesi({ tarla, ai }: { tarla: SonucTarla; ai?: CozumPla
           </p>
         )}
 
+        {zkart && tahil && (
+          <p className="text-sm leading-6 text-[#5b6f65]">
+            Aşağıdaki dönem kartları İGSAŞ programının genel (sulanmayan tarla) dozlarıdır. Sulu tarlada yukarıdaki su planını esas alın; o plan toprak
+            analizinize ve seçtiğiniz su sayısına göre ayarlandı.
+          </p>
+        )}
         {zkart && (
           <ol className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {zkart.evreler.map((e, i) => {
@@ -1707,7 +1722,7 @@ export function SonucEkrani({
       <OncelikliIsler report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} ilgi={ilgi} />
 
       {/* 2) Dönem dönem program */}
-      <SulamaRecetesi tarla={tarla} ai={ai} />
+      <SulamaRecetesi tarla={tarla} ai={ai} report={report} />
 
       {/* Bitkide görülebilecek noksanlıklar (resimli) */}
       <RaporNoksanliklari report={report} bitki={tarla.bitki} />

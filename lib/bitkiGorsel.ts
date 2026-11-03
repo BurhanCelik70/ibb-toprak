@@ -15,6 +15,8 @@ const SETLER: Record<string, GorselSeti> = {
   Arpa: { klasor: '/buyume', kare: 97 }, // buğdaya çok benzer; arpa videosu gelince değiştirin
   // Evre başına resim (public/bitkiler/<klasor>/1.webp … n.webp; n = Z-karttaki evre sayısı)
   'Mısır (dane)': { klasor: '/bitkiler/misir', kare: 5, tur: 'evre' },
+  Kanola: { klasor: '/bitkiler/kanola', kare: 6, tur: 'evre' },
+  Bezelye: { klasor: '/bitkiler/bezelye', kare: 5, tur: 'evre' },
   Domates: { klasor: '/bitkiler/domates', kare: 6, tur: 'evre' },
   Ayçiçeği: { klasor: '/bitkiler/aycicegi', kare: 5, tur: 'evre' },
   Pamuk: { klasor: '/bitkiler/pamuk', kare: 6, tur: 'evre' },

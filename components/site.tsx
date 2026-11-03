@@ -94,6 +94,7 @@ export function SiteFooter() {
           <span className="flex items-center gap-2.5 text-lg font-extrabold text-white">
             <LogoIsareti size={32} /> <span className="leading-tight">{MARKA.ad}</span>
           </span>
+          {MARKA.isbirligi && <p className="mt-1.5 pl-[42px] text-xs font-semibold leading-5 text-[#9bdd68]">{MARKA.isbirligi}</p>}
           <p className="mt-3 text-sm leading-6">{MARKA.slogan}.</p>
         </div>
         <div className="text-sm leading-7">

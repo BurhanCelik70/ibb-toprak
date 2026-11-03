@@ -13,6 +13,8 @@ export const MARKA = {
   aciklama:
     'Toprak analiz raporunuzu yükleyin; tarlanızın kalite indeksini, eksiklerini ve sulama yönteminize göre dönem dönem gübreleme reçetesini görün.',
   kurum: 'Yeditepe Üniversitesi',
+  /** İş birliği yapılan kurum (footer'da marka adının altında) */
+  isbirligi: 'İBB Çevre Koruma ve Kontrol Dairesi Başkanlığı',
   ekip: ['Prof. Dr. Metin Turan', 'Asistan Burhan Çelik'],
   eposta: 'celikburhan56@gmail.com', // ör. destek@ornek.com — boşsa gösterilmez
   telefon: '+90 542 677 0885', // ör. +90 5xx xxx xx xx — boşsa gösterilmez

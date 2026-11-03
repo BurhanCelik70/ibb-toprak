@@ -246,7 +246,7 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
           )}
         </section>
 
-        <SulamaRecetesi tarla={tarla} />
+        <SulamaRecetesi tarla={tarla} report={son?.rapor} />
       </main>
       <SiteFooter />
     </div>

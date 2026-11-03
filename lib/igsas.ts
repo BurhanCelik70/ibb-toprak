@@ -87,6 +87,7 @@ const ESANLAMLI: Record<string, string> = {
   mandalina: 'Narenciye (mandalina)', portakal: 'Narenciye (mandalina)', limon: 'Narenciye (mandalina)',
   incir: 'İncir', zeytin: 'Zeytin', patates: 'Patates', domates: 'Domates', salatalik: 'Salatalık', hiyar: 'Salatalık',
   sogan: 'Soğan', cay: 'Çay',
+  kanola: 'Kanola', kolza: 'Kanola', bezelye: 'Bezelye',
 };
 
 export function zkartBul(bitki?: string): ZKart | undefined {
