@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const sayfalar: [string, number, MetadataRoute.Sitemap[number]['changeFrequency']][] = [
     ['', 1, 'weekly'],
     ['/noksanliklar', 0.9, 'weekly'],
+    ['/besinler', 0.8, 'monthly'],
     ['/noksanliklar/teshis', 0.8, 'monthly'],
     ['/ornek', 0.8, 'monthly'],
     ['/ornek/su', 0.7, 'monthly'],

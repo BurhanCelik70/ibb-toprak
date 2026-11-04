@@ -30,7 +30,7 @@ export function Logo({ size = 40, yazi = true, acik = false, mobildeGizle = fals
 }
 
 /** seffaf: ana sayfadaki koyu açılış görselinin üstünde, arka plansız ve beyaz yazılı. */
-export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' | 'hesap' | 'noksanlik'; seffaf?: boolean }) {
+export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' | 'hesap' | 'noksanlik' | 'besin'; seffaf?: boolean }) {
   let girisli = false;
   try {
     girisli = !!(await oturumKullanici()).kullaniciId;
@@ -64,12 +64,14 @@ export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' 
             <>
               {link('/tarlalar', 'Tarlalarım', aktif === 'tarlalar')}
               {link('/noksanliklar', 'Noksanlıklar', aktif === 'noksanlik')}
+              <span className="hidden sm:contents">{link('/besinler', 'Besinler', aktif === 'besin')}</span>
               {link('/hesap', 'Hesabım', aktif === 'hesap')}
             </>
           ) : (
             <>
               <Link href="/ornek" className={`whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] sm:px-3 sm:text-sm font-semibold ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek rapor</Link>
               <Link href="/noksanliklar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold sm:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Noksanlıklar</Link>
+              <Link href="/besinler" className={`hidden rounded-full px-3 py-2 text-sm font-semibold sm:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Besinler</Link>
               <Link href="/#ornek" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek alma</Link>
               <Link href="/#videolar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Videolar</Link>
               <Link
@@ -100,6 +102,7 @@ export function SiteFooter() {
         <div className="text-sm leading-7">
           <Link href="/tarlalar" className="block hover:text-white">Tarlalarım</Link>
           <Link href="/noksanliklar" className="block hover:text-white">Besin noksanlıkları</Link>
+          <Link href="/besinler" className="block hover:text-white">Besinleri tanıyalım</Link>
           <Link href="/gizlilik" className="block hover:text-white">Gizlilik ve KVKK</Link>
         </div>
       </div>

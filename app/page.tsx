@@ -34,8 +34,9 @@ const VIDEO_LISTESI = {
 const MODULLER = [
   { href: '/ornek', resim: '/toprak.jpg', etiket: 'Toprak', baslik: 'Toprak karnesi', metin: 'Laboratuvar raporunuzu yükleyin; kalite indeksi, eksikler, gübre ve sulama programı tek sayfada.', link: 'Örnek raporu gör' },
   { href: '/ornek/su', resim: '/su/kapak.webp', etiket: 'Su', baslik: 'Sulama suyu karnesi', metin: 'Tuzluluk, sodyum ve bikarbonat FAO ölçütleriyle; suyunuza uygun sulama yöntemi önerisiyle.', link: 'Örnek su karnesi' },
-  { href: '/noksanliklar', resim: '/noksanlik/misir-fe.webp', etiket: 'Katalog', baslik: 'Besin noksanlıkları', metin: '11 bitkide 53 noksanlık resimli: nasıl tanınır, neden olur, ne yapılır.', link: 'Kataloğa göz at' },
+  { href: '/noksanliklar', resim: '/noksanlik/misir-fe.webp', etiket: 'Katalog', baslik: 'Besin noksanlıkları', metin: '13 bitkide 63 noksanlık resimli: nasıl tanınır, neden olur, ne yapılır.', link: 'Kataloğa göz at' },
   { href: '/noksanliklar/teshis', resim: '/noksanlik/uzum-fe.webp', etiket: 'Yapay zekâ', baslik: 'Yaprak teşhisi', metin: 'Yaprağın fotoğrafını yükleyin, birkaç soruyu cevaplayın; olası sorun yüzdesiyle ve çözümüyle gelsin.', link: 'Yaprağımı incele' },
+  { href: '/besinler', resim: '/besin/n.webp', etiket: 'Rehber', baslik: 'Besinleri tanıyalım', metin: 'Azottan bora 13 besin: bitkide ne işe yarar, ne zaman verilir; gübre torbası nasıl okunur.', link: 'Besinleri keşfet' },
 ];
 
 const OZELLIKLER = [
@@ -70,7 +71,7 @@ export default function AnaSayfa() {
           <h2 id="moduller" className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
             Toprak, su ve bitki tek uygulamada.
           </h2>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {MODULLER.map((m) => (
               <Link key={m.href} href={m.href} className="group flex flex-col overflow-hidden rounded-[26px] border border-[#e3dccb] bg-white transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-24px_rgba(18,20,16,.5)]">
                 <span className="relative block aspect-[4/3] overflow-hidden bg-[#e9e3d4]">
