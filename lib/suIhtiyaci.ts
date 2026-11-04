@@ -8,6 +8,7 @@
  */
 import { IL_IKLIM } from './iklim';
 import { donemAylari } from './sulama';
+import { TAGEM_BITKI, tagemAylikKc, tagemEto, tagemGunluk } from './tagem';
 import type { ZKart } from './zkartlar';
 
 type Kc = { ini: number; mid: number; end: number; yaklasik?: boolean };
@@ -68,7 +69,16 @@ function etkiliYagis(mmAy: number) {
 }
 
 export type EvreSuyu = { evre: number; kc: number; gunluk: number; toplam: number; yagis: number; sulama: number };
-export type SuIhtiyaci = { il: string; evreler: EvreSuyu[]; sezon: { toplam: number; yagis: number; sulama: number }; yaklasik: boolean };
+export type SuIhtiyaci = {
+  il: string;
+  evreler: EvreSuyu[];
+  sezon: { toplam: number; yagis: number; sulama: number };
+  yaklasik: boolean;
+  /** ETo kaynağı: TAGEM-SUET istasyonları (Penman-Monteith) ya da Hargreaves */
+  etoKaynak: { tagem: true; istasyonlar: string[] } | { tagem: false };
+  /** Kc kaynağı: TAGEM bitki verisi ya da FAO-56 Tablo 12 */
+  kcTagem: boolean;
+};
 
 /**
  * Dönemlere Kc dağıtımı (FAO-56 Şekil 34'teki eğrinin basitleştirilmiş hâli):
@@ -86,30 +96,81 @@ function evreKc(k: Kc, i: number, n: number) {
 export function suIhtiyaci(zkart: ZKart, il?: string | null): SuIhtiyaci | undefined {
   if (!il) return undefined;
   const iklim = IL_IKLIM[il];
-  const eto = etoAylik(il);
+  const tE = tagemEto(il);
+  const eto = tE?.eto ?? etoAylik(il);
   const kc = KC[zkart.bitki];
-  if (!iklim || !eto || !kc) return undefined;
+  const tb = TAGEM_BITKI[zkart.bitki];
+  if (!iklim || !eto || (!kc && !tb)) return undefined;
 
   const aylar = zkart.evreler.map((e) => donemAylari(e.donem));
   // Aynı ay birden fazla dönemde geçiyorsa o ay dönemler arasında eşit paylaştırılır (çift sayılmasın)
   const paylasim = new Array(12).fill(0);
   aylar.forEach((as) => as.forEach((m) => (paylasim[m] += 1)));
 
+  // TAGEM bitki verisi varsa: ekim tarihinden başlayan FAO-56 Kc eğrisi, ayın yalnızca sezona düşen günleri sayılır
+  const tk = tb ? tagemAylikKc(tb) : undefined;
+
   const n = zkart.evreler.length;
+
+  // Z-kartta takvim ayı yazmayan dönemler varsa (örn. "+15-30 gün"), TAGEM sezonu dönemlere gün gün, eşit parçalara bölünür
+  if (tb && aylar.some((a) => a.length === 0)) {
+    const gunler = tagemGunluk(tb);
+    const evreler: EvreSuyu[] = zkart.evreler.map((_, i) => {
+      const parca = gunler.slice(Math.round((i * gunler.length) / n), Math.round(((i + 1) * gunler.length) / n));
+      let toplam = 0;
+      let yagis = 0;
+      let kcT = 0;
+      for (const g of parca) {
+        toplam += eto[g.ay] * g.kc;
+        yagis += etkiliYagis(GUN[g.ay] * iklim.yagis[g.ay]) / GUN[g.ay];
+        kcT += g.kc;
+      }
+      const y = Math.min(yagis, toplam);
+      const gun = parca.length;
+      return { evre: i, kc: gun ? kcT / gun : 0, gunluk: gun ? toplam / gun : 0, toplam, yagis: y, sulama: Math.max(0, toplam - y) };
+    });
+    const sezon = evreler.reduce((s, e) => ({ toplam: s.toplam + e.toplam, yagis: s.yagis + e.yagis, sulama: s.sulama + e.sulama }), { toplam: 0, yagis: 0, sulama: 0 });
+    return { il, evreler, sezon, yaklasik: false, etoKaynak: tE ? { tagem: true, istasyonlar: tE.istasyonlar } : { tagem: false }, kcTagem: true };
+  }
+
   const evreler: EvreSuyu[] = zkart.evreler.map((_, i) => {
-    const c = evreKc(kc, i, n);
     let toplam = 0;
     let yagis = 0;
     let gun = 0;
+    let kcGun = 0;
+    const sezondaGun = tk ? aylar[i].reduce((t, m) => t + tk.gun[m], 0) : 0;
     for (const m of aylar[i]) {
       const w = 1 / paylasim[m];
-      toplam += GUN[m] * eto[m] * c * w;
-      yagis += etkiliYagis(GUN[m] * iklim.yagis[m]) * w;
-      gun += GUN[m] * w;
+      let c: number;
+      let g: number;
+      if (tk && tb) {
+        if (sezondaGun > 0) {
+          c = tk.kc[m];
+          g = tk.gun[m];
+        } else {
+          // Z-kart dönemi TAGEM sezonunun dışında kalıyorsa: başta Kc1, sonda Kc4
+          c = i < n / 2 ? tb.kc1 : tb.kc4;
+          g = GUN[m];
+        }
+      } else {
+        c = evreKc(kc!, i, n);
+        g = GUN[m];
+      }
+      toplam += g * eto[m] * c * w;
+      yagis += etkiliYagis(GUN[m] * iklim.yagis[m]) * (g / GUN[m]) * w;
+      gun += g * w;
+      kcGun += c * g * w;
     }
     const y = Math.min(yagis, toplam);
-    return { evre: i, kc: c, gunluk: gun ? toplam / gun : 0, toplam, yagis: y, sulama: Math.max(0, toplam - y) };
+    return { evre: i, kc: gun ? kcGun / gun : 0, gunluk: gun ? toplam / gun : 0, toplam, yagis: y, sulama: Math.max(0, toplam - y) };
   });
   const sezon = evreler.reduce((s, e) => ({ toplam: s.toplam + e.toplam, yagis: s.yagis + e.yagis, sulama: s.sulama + e.sulama }), { toplam: 0, yagis: 0, sulama: 0 });
-  return { il, evreler, sezon, yaklasik: !!kc.yaklasik };
+  return {
+    il,
+    evreler,
+    sezon,
+    yaklasik: !tb && !!kc?.yaklasik,
+    etoKaynak: tE ? { tagem: true, istasyonlar: tE.istasyonlar } : { tagem: false },
+    kcTagem: !!tb,
+  };
 }

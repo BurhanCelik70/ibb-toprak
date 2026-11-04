@@ -1136,16 +1136,37 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
           </p>
         )}
         {zkart && suI && (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-[#cfe3ee] bg-[#f1f8fb] px-4 py-3 text-sm text-[#2c5566]">
-            <span className="flex items-center gap-2 font-semibold text-[#17435a]">
-              <Droplets size={18} className="text-[#1e88c7]" /> Sezonda bitkinin su ihtiyacı ≈ {mm(suI.sezon.toplam)} mm
-            </span>
-            <span>Yağışla karşılanan ≈ {mm(suI.sezon.yagis)} mm</span>
-            <span className="font-semibold text-[#17435a]">Sulamayla verilmesi gereken ≈ {mm(suI.sezon.sulama)} mm</span>
-            <span className="w-full text-[11px] leading-4 text-[#5b7a88]">
-              FAO-56 yöntemi (Hargreaves ETo × bitki katsayısı Kc), {suI.il} için iklim ortalaması (NASA POWER 2001–2025). 1 mm = dekara 1 m³ su.
+          <div className="rounded-2xl border border-[#cfe3ee] bg-[#f1f8fb] px-4 py-4 text-sm text-[#2c5566] sm:px-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2f7f9a]">Bitkinin su tüketimi · Evapotranspirasyon (ETc)</p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
+              <span className="flex items-center gap-2 font-semibold text-[#17435a]">
+                <Droplets size={18} className="text-[#1e88c7]" /> Sezonda ETc ≈ {mm(suI.sezon.toplam)} mm
+              </span>
+              <span>Etkili yağışla karşılanan ≈ {mm(suI.sezon.yagis)} mm</span>
+              <span className="font-semibold text-[#17435a]">Sulamayla verilmesi gereken ≈ {mm(suI.sezon.sulama)} mm</span>
+            </div>
+            <div className="mt-3 grid gap-2 text-xs leading-5 sm:grid-cols-3">
+              <p className="rounded-xl bg-white px-3 py-2 ring-1 ring-[#d6e9f2]">
+                <b className="text-[#17435a]">Transpirasyon:</b> bitkinin terlemesi. Kökün aldığı su, yapraktaki gözeneklerden (stoma) buhar olarak çıkar;
+                gözenek açıkken fotosentez için CO₂ girer.
+              </p>
+              <p className="rounded-xl bg-white px-3 py-2 ring-1 ring-[#d6e9f2]">
+                <b className="text-[#17435a]">Evaporasyon:</b> toprak yüzeyinden doğrudan buharlaşma. İkisinin toplamı{' '}
+                <b className="text-[#17435a]">evapotranspirasyon</b>dur.
+              </p>
+              <p className="rounded-xl bg-white px-3 py-2 ring-1 ring-[#d6e9f2]">
+                <b className="text-[#17435a]">ETc = ETo × Kc.</b> ETo iklimin buharlaştırma gücü, Kc bitkinin o evredeki katsayısı. Yaprak alanı büyüdükçe
+                Kc ve terleme artar.
+              </p>
+            </div>
+            <p className="mt-2 text-[11px] leading-4 text-[#5b7a88]">
+              {suI.etoKaynak.tagem
+                ? `ETo: TAGEM-SUET, Standart Penman-Monteith (MGM ${suI.etoKaynak.istasyonlar.join(', ')} istasyonları, 30 yıllık ortalama).`
+                : `ETo: FAO-56 Hargreaves, ${suI.il} için NASA POWER 2001–2025 iklim ortalaması.`}{' '}
+              {suI.kcTagem ? 'Kc: TAGEM-SUET bitki verileri (TAGEM 2017 rehberi), FAO-56 dört dönemli Kc eğrisi.' : 'Kc: FAO-56 Tablo 12.'} Etkili yağış:
+              USDA-SCS. 1 mm = dekara 1 m³ su.
               {suI.yaklasik ? ' Bu bitkinin katsayısı FAO tablosunda yok; yaklaşık değer kullanıldı.' : ''} Yağışlı ya da kurak yıllarda değişir.
-            </span>
+            </p>
           </div>
         )}
         {zkart && (
@@ -1197,6 +1218,9 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
                         <path d="M9 15.5a3 3 0 0 0 3 3" stroke="#bfe6fb" strokeWidth="1.6" fill="none" strokeLinecap="round" />
                       </svg>
                       <div className="min-w-0 text-[#17435a]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#2f7f9a]">
+                          Evapotranspirasyon (ETc) · Kc {suI.evreler[i].kc.toLocaleString('tr-TR', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                        </p>
                         <p className="text-sm font-bold leading-5">
                           Günde ≈ {suI.evreler[i].gunluk.toLocaleString('tr-TR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} mm
                           <span className="font-semibold text-[#2c5566]"> · dönemde ≈ {mm(suI.evreler[i].toplam)} mm</span>
