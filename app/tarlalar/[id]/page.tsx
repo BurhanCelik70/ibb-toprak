@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Droplets, FilePlus2, Pencil } from 'lucide-r
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { IndeksSeyri, Karsilastirma, SulamaRecetesi } from '@/components/analiz/Sonuc';
+import { ParKarti } from '@/components/ParKarti';
 import { AppHeader, SiteFooter } from '@/components/site';
 import { SINIFLAR, kaliteIndeksi } from '@/lib/indeks';
 import { SULAMA_YONTEMLERI } from '@/lib/sulama';
@@ -179,6 +180,8 @@ export default async function TarlaSayfasi({ params }: { params: Promise<{ id: s
             </section>
           </>
         )}
+
+        <ParKarti il={tarla.il} bitki={tarla.bitki} className="mt-10" />
 
         {/* Sulama suyu */}
         <section className="mt-10" aria-labelledby="su-baslik">

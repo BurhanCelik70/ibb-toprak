@@ -1,5 +1,6 @@
 import { ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { IL_PAR, parOzeti } from '@/lib/par';
 import { redirect } from 'next/navigation';
 import { AppHeader, SiteFooter } from '@/components/site';
 import { SINIFLAR } from '@/lib/indeks';
@@ -67,6 +68,11 @@ export default async function TarlalarSayfasi() {
                           {t.bitki && <span className="rounded-full bg-[#e8f3e6] px-2.5 py-0.5 text-[#1f6f4a]">{t.bitki}</span>}
                           <span className="rounded-full bg-[#e3f0f6] px-2.5 py-0.5 text-[#2c5566]">{SULAMA_YONTEMLERI[t.sulama].kisa}</span>
                           {t.alan_dekar && <span className="rounded-full bg-[#f3efe6] px-2.5 py-0.5 text-[#6b5520]">{formatNumber(t.alan_dekar, 1)} da</span>}
+                          {t.il && IL_PAR[t.il] && (
+                            <span className="rounded-full bg-[#fdf3dc] px-2.5 py-0.5 text-[#8a5a00]" title={`${t.il} ortalama PAR (fotosentetik aktif ışınım), MJ/m²·gün`}>
+                              ☀ PAR {formatNumber(parOzeti(t.il)!.yillik, 1)}
+                            </span>
+                          )}
                         </div>
                       </div>
                       {son?.indeks != null && (

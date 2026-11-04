@@ -8,7 +8,9 @@ import { evreGorseli } from '@/lib/bitkiGorsel';
 import { ORGANIK_MADDE_PROTOKOLU, URUNLER, zkartBul } from '@/lib/igsas';
 import { SINIFLAR, kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
 import { tahilMi } from '@/lib/tahilSulama';
+import { suIhtiyaci } from '@/lib/suIhtiyaci';
 import { TahilSuPlani } from './TahilSuPlani';
+import { ParKarti } from '@/components/ParKarti';
 import { BOLGE_DUZELTME, bolunmusMu, onerilenAralik, sezonTakvimi, sezonTanimi, suBasinaDoz, tarihKisa } from '@/lib/sulamaTakvimi';
 import { karsilastir, ozetle } from '@/lib/karsilastir';
 import {
@@ -1069,6 +1071,8 @@ function SulamaProgrami({
 export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: CozumPlani | null; report?: SoilReport | null }) {
   const zkart = zkartBul(tarla.bitki ?? undefined);
   const tahil = tahilMi(zkart?.bitki);
+  const suI = zkart ? suIhtiyaci(zkart, tarla.il) : undefined;
+  const mm = (x: number) => Math.round(x).toLocaleString('tr-TR');
   const y = SULAMA_YONTEMLERI[tarla.sulama];
   const sure = tarla.sulama_suresi_saat ?? y.varsayilanSure;
   const simdi = zkart ? simdikiEvreler(zkart) : [];
@@ -1131,6 +1135,19 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
             analizinize ve seçtiğiniz su sayısına göre ayarlandı.
           </p>
         )}
+        {zkart && suI && (
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-[#cfe3ee] bg-[#f1f8fb] px-4 py-3 text-sm text-[#2c5566]">
+            <span className="flex items-center gap-2 font-semibold text-[#17435a]">
+              <Droplets size={18} className="text-[#1e88c7]" /> Sezonda bitkinin su ihtiyacı ≈ {mm(suI.sezon.toplam)} mm
+            </span>
+            <span>Yağışla karşılanan ≈ {mm(suI.sezon.yagis)} mm</span>
+            <span className="font-semibold text-[#17435a]">Sulamayla verilmesi gereken ≈ {mm(suI.sezon.sulama)} mm</span>
+            <span className="w-full text-[11px] leading-4 text-[#5b7a88]">
+              FAO-56 yöntemi (Hargreaves ETo × bitki katsayısı Kc), {suI.il} için iklim ortalaması (NASA POWER 2001–2025). 1 mm = dekara 1 m³ su.
+              {suI.yaklasik ? ' Bu bitkinin katsayısı FAO tablosunda yok; yaklaşık değer kullanıldı.' : ''} Yağışlı ya da kurak yıllarda değişir.
+            </span>
+          </div>
+        )}
         {zkart && (
           <ol className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {zkart.evreler.map((e, i) => {
@@ -1173,6 +1190,25 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
                       <span className="absolute right-3 top-3 rounded-full bg-[#e2b65c] px-2.5 py-1 text-[11px] font-bold text-[#121410] shadow">Şu an bu dönem</span>
                     )}
                   </div>
+                  {suI && suI.evreler[i] && (
+                    <div className="flex items-center gap-3 border-b border-[#d6e9f2] bg-[#eef7fb] px-4 py-2.5">
+                      <svg viewBox="0 0 24 24" className="h-8 w-8 shrink-0" aria-hidden>
+                        <path d="M12 2.5C9 7 5.5 10.6 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10.6 15 7 12 2.5Z" fill="#1e88c7" />
+                        <path d="M9 15.5a3 3 0 0 0 3 3" stroke="#bfe6fb" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+                      </svg>
+                      <div className="min-w-0 text-[#17435a]">
+                        <p className="text-sm font-bold leading-5">
+                          Günde ≈ {suI.evreler[i].gunluk.toLocaleString('tr-TR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} mm
+                          <span className="font-semibold text-[#2c5566]"> · dönemde ≈ {mm(suI.evreler[i].toplam)} mm</span>
+                        </p>
+                        <p className="text-[11px] leading-4 text-[#4a6b7a]">
+                          {suI.evreler[i].sulama < 5
+                            ? `Yağış ≈ ${mm(suI.evreler[i].yagis)} mm · ortalama yılda yağış yeterli`
+                            : `Yağış ≈ ${mm(suI.evreler[i].yagis)} mm → sulamayla ≈ ${mm(suI.evreler[i].sulama)} mm`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex-1 px-4 py-3">
                     <div className="text-xs text-[#7b8c82]">{[e.bbch && `BBCH ${e.bbch}`, e.donem].filter(Boolean).join(' · ')}</div>
                     {gruplar.length === 0 ? (
@@ -1723,6 +1759,8 @@ export function SonucEkrani({
 
       {/* 2) Dönem dönem program */}
       <SulamaRecetesi tarla={tarla} ai={ai} report={report} />
+
+      <ParKarti il={tarla.il} bitki={tarla.bitki} className="mt-10" />
 
       {/* Bitkide görülebilecek noksanlıklar (resimli) */}
       <RaporNoksanliklari report={report} bitki={tarla.bitki} />
