@@ -5,7 +5,7 @@ export const metadata = {
   title: 'Besinleri tanıyalım: makro ve mikro elementler',
   alternates: { canonical: '/besinler' },
   description:
-    'Azot, fosfor, potasyum, kalsiyum, magnezyum, kükürt, demir, çinko, mangan, bakır, bor, molibden ve silisyum bitkide ne işe yarar, toprakta nasıl davranır, ne zaman verilir. 15-15-15 gübre torbası nasıl okunur.',
+    'Azot, fosfor, potasyum, kalsiyum, magnezyum, kükürt, demir, çinko, mangan, bakır, bor, molibden, klor, nikel ve silisyum bitkide ne işe yarar, toprakta nasıl davranır, ne zaman verilir. 15-15-15 gübre torbası nasıl okunur.',
 };
 
 export default async function BesinlerSayfasi({ searchParams }: { searchParams: Promise<{ b?: string }> }) {

@@ -36,7 +36,7 @@ const MODULLER = [
   { href: '/ornek/su', resim: '/su/kapak.webp', etiket: 'Su', baslik: 'Sulama suyu karnesi', metin: 'Tuzluluk, sodyum ve bikarbonat FAO ölçütleriyle; suyunuza uygun sulama yöntemi önerisiyle.', link: 'Örnek su karnesi' },
   { href: '/noksanliklar', resim: '/noksanlik/misir-fe.webp', etiket: 'Katalog', baslik: 'Besin noksanlıkları', metin: '13 bitkide 63 noksanlık resimli: nasıl tanınır, neden olur, ne yapılır.', link: 'Kataloğa göz at' },
   { href: '/noksanliklar/teshis', resim: '/noksanlik/uzum-fe.webp', etiket: 'Yapay zekâ', baslik: 'Yaprak teşhisi', metin: 'Yaprağın fotoğrafını yükleyin, birkaç soruyu cevaplayın; olası sorun yüzdesiyle ve çözümüyle gelsin.', link: 'Yaprağımı incele' },
-  { href: '/besinler', resim: '/besin/n.webp', etiket: 'Rehber', baslik: 'Besinleri tanıyalım', metin: 'Azottan bora 13 besin: bitkide ne işe yarar, ne zaman verilir; gübre torbası nasıl okunur.', link: 'Besinleri keşfet' },
+  { href: '/besinler', resim: '/besin/n.webp', etiket: 'Rehber', baslik: 'Besinleri tanıyalım', metin: 'Azottan bora 15 besin: bitkide ne işe yarar, ne zaman verilir; gübre torbası nasıl okunur.', link: 'Besinleri keşfet' },
 ];
 
 const OZELLIKLER = [

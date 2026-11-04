@@ -203,6 +203,32 @@ export const BESINLER: Besin[] = [
     urunler: ['NPK 20-20-20+ME'],
   },
   {
+    sembol: 'Cl', ad: 'Klor', atomNo: 17, grup: 'mikro', renk: '#3f9a8c', resim: '/besin/cl.webp',
+    alinanSekil: 'Klorür (Cl⁻)',
+    kisa: 'Yaprak gözeneklerinin açılıp kapanmasına yardım eder.',
+    gorevler: ['Gözeneklerin açılıp kapanmasında potasyumla birlikte çalışır', 'Fotosentezde suyun parçalanmasına yardım eder', 'Hücrenin su dengesini korur'],
+    hareket: 'hareketli',
+    noksanlikYeri: 'Tarlada çok nadir görülür; yaprak uçlarında solgunluk ve bronzlaşma.',
+    toprakta: 'Suda kolayca çözünür ve yıkanır. Yağmur, sulama suyu ve gübrelerle (potasyum klorür) zaten fazlasıyla gelir.',
+    alimiBozan: 'Nitrat ve sülfatla yarışır; eksiklikten çok fazlalığı önemlidir.',
+    neZaman: 'Ayrıca verilmez. Tuzlu toprakta ve tuzlu suyla sulanan tarlada klorlu gübreden kaçınılır.',
+    fazlasi: 'Tuzluluğun bir parçasıdır: yaprak kenarlarını yakar. Tütün, patates, üzüm ve meyve ağaçları klora hassastır; bunlarda potasyum klorür yerine potasyum sülfat tercih edilir.',
+    urunler: [],
+  },
+  {
+    sembol: 'Ni', ad: 'Nikel', atomNo: 28, grup: 'mikro', renk: '#7d9a7a', resim: '/besin/ni.webp',
+    alinanSekil: 'Nikel iyonu (Ni²⁺)',
+    kisa: 'Ürenin bitki içinde parçalanmasını sağlayan enzimin parçası.',
+    gorevler: ['Üreyi parçalayan üreaz enziminin merkezinde bulunur', 'Azotun bitki içinde kullanılmasına yardım eder', 'Baklagillerde nodül çalışmasını destekler'],
+    hareket: 'hareketli',
+    noksanlikYeri: 'Çok nadir; yaprak uçlarında üre birikmesine bağlı koyu kahverengi ölü lekeler.',
+    toprakta: 'Çok küçük miktarda gerekir; tarım topraklarının çoğunda yeterli bulunur.',
+    alimiBozan: 'Yüksek pH ve kireç; fazla çinko, bakır ve demir alımını azaltır.',
+    neZaman: 'Ayrıca verilmez. Analizde düşük çıkarsa ve bitki üreyle besleniyorsa ziraat mühendisinizle değerlendirin.',
+    fazlasi: 'Serpantin kayalı bölgelerde ve bazı atık çamurlarda yüksek olabilir; fazlası zehirlidir.',
+    urunler: [],
+  },
+  {
     sembol: 'Si', ad: 'Silisyum', atomNo: 14, grup: 'faydali', renk: '#4f8fa8', resim: '/besin/si.webp',
     alinanSekil: 'Silisik asit (H₄SiO₄)',
     kisa: 'Yaprağa cam gibi bir zırh: dik duruş ve dayanıklılık.',
@@ -215,12 +241,6 @@ export const BESINLER: Besin[] = [
     fazlasi: 'Bilinen bir zararı yoktur.',
     urunler: [],
   },
-];
-
-/** Resmi olmayan, kısa bahsedilen besinler */
-export const DIGER_BESINLER = [
-  { sembol: 'Cl', ad: 'Klor', atomNo: 17, metin: 'Gözeneklerin çalışmasında ve fotosentezde görev alır. Topraklarımızda ve sulama suyunda zaten bulunur; eksiklikten çok fazlalığı (tuzluluk) sorun çıkarır.' },
-  { sembol: 'Ni', ad: 'Nikel', atomNo: 28, metin: 'Üreyi parçalayan enzimin (üreaz) parçasıdır. Çok küçük miktarda gerekir; tarlada eksikliği nadirdir.' },
 ];
 
 export function besinBul(sembol: string | undefined | null) {

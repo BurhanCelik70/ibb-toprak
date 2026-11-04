@@ -9,7 +9,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AZOT_YOLU,
   BESINLER,
-  DIGER_BESINLER,
   GRUP_ACIKLAMA,
   GRUP_ADI,
   HAVA_SU,
@@ -394,21 +393,6 @@ export function BesinKatalogu({ baslangic }: { baslangic?: string }) {
             {liste.map((b) => (
               <BesinKutusu key={b.sembol} b={b} onAc={() => setSecili(b)} />
             ))}
-            {g === 'mikro' &&
-              DIGER_BESINLER.map((d) => (
-                <div key={d.sembol} className="flex min-h-full flex-col gap-2 justify-between rounded-[22px] border border-dashed border-[#cfc6ae] bg-[#fbf8f1] p-4">
-                  <span className="flex items-start justify-between">
-                    <span className="font-display text-4xl font-semibold leading-none text-[#5e6a60]">{d.sembol}</span>
-                    <span className="text-[11px] font-semibold tabular-nums text-[#8a8270]">{d.atomNo}</span>
-                  </span>
-                  <span>
-                    <span className="block text-base font-bold text-[#3e5248]">{d.ad}</span>
-                    <span className="mt-0.5 line-clamp-3 block text-xs leading-5 text-[#6b7d72]" title={d.metin}>
-                      {d.metin}
-                    </span>
-                  </span>
-                </div>
-              ))}
           </div>
         </section>
       ))}
