@@ -36,13 +36,37 @@ const IL_ISTASYON: Record<string, string[]> = {
   İstanbul: ['Kumköy', 'Bahçeköy', 'Florya', 'Kartal', 'Kireçburnu', 'Göztepe', 'Şile'],
 };
 
-export function tagemEto(il?: string | null): { eto: number[]; istasyonlar: string[] } | undefined {
+/**
+ * İlçeye göre en yakın / en benzer iklimli istasyon. Avrupa yakasının batısı ve Silivri–Çatalca tarım alanları Florya'ya,
+ * kuzey ormanlık kuşak Bahçeköy'e, Boğaz kıyısı Kireçburnu'na, Anadolu yakasının iç kesimi Göztepe'ye, güneydoğusu Kartal'a bağlandı.
+ */
+const ILCE_ISTASYON: Record<string, Record<string, string>> = {
+  İstanbul: {
+    silivri: 'Florya', çatalca: 'Florya', büyükçekmece: 'Florya', beylikdüzü: 'Florya', esenyurt: 'Florya', avcılar: 'Florya',
+    küçükçekmece: 'Florya', bakırköy: 'Florya', bahçelievler: 'Florya', bağcılar: 'Florya', güngören: 'Florya', esenler: 'Florya',
+    başakşehir: 'Florya', zeytinburnu: 'Florya', bayrampaşa: 'Florya', fatih: 'Florya',
+    arnavutköy: 'Bahçeköy', eyüpsultan: 'Bahçeköy', eyüp: 'Bahçeköy', gaziosmanpaşa: 'Bahçeköy', sultangazi: 'Bahçeköy', kağıthane: 'Bahçeköy',
+    sarıyer: 'Kireçburnu', beşiktaş: 'Kireçburnu', şişli: 'Kireçburnu', beyoğlu: 'Kireçburnu', beykoz: 'Kireçburnu',
+    üsküdar: 'Göztepe', kadıköy: 'Göztepe', ataşehir: 'Göztepe', ümraniye: 'Göztepe', çekmeköy: 'Göztepe', sancaktepe: 'Göztepe',
+    maltepe: 'Kartal', kartal: 'Kartal', pendik: 'Kartal', tuzla: 'Kartal', sultanbeyli: 'Kartal', adalar: 'Kartal',
+    şile: 'Şile',
+  },
+};
+
+export function tagemIstasyonu(il?: string | null, ilce?: string | null): string | undefined {
+  if (!il || !ilce) return undefined;
+  const k = ilce.toLocaleLowerCase('tr-TR').replace(/merkez/g, '').trim();
+  return ILCE_ISTASYON[il]?.[k];
+}
+
+export function tagemEto(il?: string | null, ilce?: string | null): { eto: number[]; istasyonlar: string[]; ilceye: boolean } | undefined {
   if (!il) return undefined;
-  const adlar = IL_ISTASYON[il] ?? TAGEM_ISTASYONLAR.filter((s) => s.il === il).map((s) => s.ad);
+  const yakin = tagemIstasyonu(il, ilce);
+  const adlar = yakin ? [yakin] : (IL_ISTASYON[il] ?? TAGEM_ISTASYONLAR.filter((s) => s.il === il).map((s) => s.ad));
   const ist = adlar.map((a) => TAGEM_ISTASYONLAR.find((s) => s.ad === a)).filter((s): s is TagemIstasyon => !!s);
   if (ist.length === 0) return undefined;
   const eto = Array.from({ length: 12 }, (_, m) => ist.reduce((t, s) => t + s.eto[m], 0) / ist.length);
-  return { eto, istasyonlar: ist.map((s) => s.ad) };
+  return { eto, istasyonlar: ist.map((s) => s.ad), ilceye: !!yakin };
 }
 
 export type TagemBitki = {

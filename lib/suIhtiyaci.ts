@@ -75,7 +75,7 @@ export type SuIhtiyaci = {
   sezon: { toplam: number; yagis: number; sulama: number };
   yaklasik: boolean;
   /** ETo kaynağı: TAGEM-SUET istasyonları (Penman-Monteith) ya da Hargreaves */
-  etoKaynak: { tagem: true; istasyonlar: string[] } | { tagem: false };
+  etoKaynak: { tagem: true; istasyonlar: string[]; ilce?: string } | { tagem: false };
   /** Kc kaynağı: TAGEM bitki verisi ya da FAO-56 Tablo 12 */
   kcTagem: boolean;
 };
@@ -93,10 +93,10 @@ function evreKc(k: Kc, i: number, n: number) {
   return k.mid;
 }
 
-export function suIhtiyaci(zkart: ZKart, il?: string | null): SuIhtiyaci | undefined {
+export function suIhtiyaci(zkart: ZKart, il?: string | null, ilce?: string | null): SuIhtiyaci | undefined {
   if (!il) return undefined;
   const iklim = IL_IKLIM[il];
-  const tE = tagemEto(il);
+  const tE = tagemEto(il, ilce);
   const eto = tE?.eto ?? etoAylik(il);
   const kc = KC[zkart.bitki];
   const tb = TAGEM_BITKI[zkart.bitki];
@@ -130,7 +130,7 @@ export function suIhtiyaci(zkart: ZKart, il?: string | null): SuIhtiyaci | undef
       return { evre: i, kc: gun ? kcT / gun : 0, gunluk: gun ? toplam / gun : 0, toplam, yagis: y, sulama: Math.max(0, toplam - y) };
     });
     const sezon = evreler.reduce((s, e) => ({ toplam: s.toplam + e.toplam, yagis: s.yagis + e.yagis, sulama: s.sulama + e.sulama }), { toplam: 0, yagis: 0, sulama: 0 });
-    return { il, evreler, sezon, yaklasik: false, etoKaynak: tE ? { tagem: true, istasyonlar: tE.istasyonlar } : { tagem: false }, kcTagem: true };
+    return { il, evreler, sezon, yaklasik: false, etoKaynak: tE ? { tagem: true, istasyonlar: tE.istasyonlar, ilce: tE.ilceye ? (ilce ?? undefined) : undefined } : { tagem: false }, kcTagem: true };
   }
 
   const evreler: EvreSuyu[] = zkart.evreler.map((_, i) => {
@@ -170,7 +170,7 @@ export function suIhtiyaci(zkart: ZKart, il?: string | null): SuIhtiyaci | undef
     evreler,
     sezon,
     yaklasik: !tb && !!kc?.yaklasik,
-    etoKaynak: tE ? { tagem: true, istasyonlar: tE.istasyonlar } : { tagem: false },
+    etoKaynak: tE ? { tagem: true, istasyonlar: tE.istasyonlar, ilce: tE.ilceye ? (ilce ?? undefined) : undefined } : { tagem: false },
     kcTagem: !!tb,
   };
 }

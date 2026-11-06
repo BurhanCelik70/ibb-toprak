@@ -49,6 +49,7 @@ export type SonucTarla = {
   sulama_suresi_saat: number | null;
   konum?: string | null;
   il?: string | null;
+  ilce?: string | null;
 };
 
 export const TONE_STYLE: Record<Tone, { dot: string; text: string; bar: string; label: string }> = {
@@ -1071,7 +1072,7 @@ function SulamaProgrami({
 export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: CozumPlani | null; report?: SoilReport | null }) {
   const zkart = zkartBul(tarla.bitki ?? undefined);
   const tahil = tahilMi(zkart?.bitki);
-  const suI = zkart ? suIhtiyaci(zkart, tarla.il) : undefined;
+  const suI = zkart ? suIhtiyaci(zkart, tarla.il, tarla.ilce) : undefined;
   const mm = (x: number) => Math.round(x).toLocaleString('tr-TR');
   const y = SULAMA_YONTEMLERI[tarla.sulama];
   const sure = tarla.sulama_suresi_saat ?? y.varsayilanSure;
@@ -1137,7 +1138,15 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
         )}
         {zkart && suI && (
           <div className="rounded-2xl border border-[#cfe3ee] bg-[#f1f8fb] px-4 py-4 text-sm text-[#2c5566] sm:px-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2f7f9a]">Bitkinin su tüketimi · Evapotranspirasyon (ETc)</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2f7f9a]">Bitkinin su tüketimi · Evapotranspirasyon (ETc)</p>
+              {suI.etoKaynak.tagem && (
+                <span className="rounded-full bg-[#1f6f8f] px-2.5 py-0.5 text-[11px] font-bold text-white">
+                  TAGEM-SUET ·{' '}
+                  {suI.etoKaynak.ilce ? `${suI.etoKaynak.ilce} → ${suI.etoKaynak.istasyonlar[0]} istasyonu` : `${suI.etoKaynak.istasyonlar.length} MGM istasyonu`}
+                </span>
+              )}
+            </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
               <span className="flex items-center gap-2 font-semibold text-[#17435a]">
                 <Droplets size={18} className="text-[#1e88c7]" /> Sezonda ETc ≈ {mm(suI.sezon.toplam)} mm
@@ -1161,7 +1170,9 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
             </div>
             <p className="mt-2 text-[11px] leading-4 text-[#5b7a88]">
               {suI.etoKaynak.tagem
-                ? `ETo: TAGEM-SUET, Standart Penman-Monteith (MGM ${suI.etoKaynak.istasyonlar.join(', ')} istasyonları, 30 yıllık ortalama).`
+                ? suI.etoKaynak.ilce
+                  ? `ETo: TAGEM-SUET, Standart Penman-Monteith; ${suI.etoKaynak.ilce} için en yakın MGM istasyonu ${suI.etoKaynak.istasyonlar[0]} (30 yıllık ortalama).`
+                  : `ETo: TAGEM-SUET, Standart Penman-Monteith (MGM ${suI.etoKaynak.istasyonlar.join(', ')} istasyonları ortalaması, 30 yıl).`
                 : `ETo: FAO-56 Hargreaves, ${suI.il} için NASA POWER 2001–2025 iklim ortalaması.`}{' '}
               {suI.kcTagem ? 'Kc: TAGEM-SUET bitki verileri (TAGEM 2017 rehberi), FAO-56 dört dönemli Kc eğrisi.' : 'Kc: FAO-56 Tablo 12.'} Etkili yağış:
               USDA-SCS. 1 mm = dekara 1 m³ su.

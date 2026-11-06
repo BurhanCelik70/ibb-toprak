@@ -23,7 +23,8 @@ export function ParKarti({ il, bitki, className = '' }: { il?: string | null; bi
             <Sun size={22} className="text-[#e0a21b]" /> Fotosentetik aktif ışınım (PAR)
           </h2>
           <p className="mt-1 max-w-xl text-sm leading-6 text-[#5a4a2a]">
-            Güneş ışığının bitkinin fotosentezde kullanabildiği kısmı. Bitkinin ürettiği şekerin ve dolayısıyla verimin enerji kaynağıdır.
+            Güneş ışığının bitkinin fotosentezde kullanabildiği kısmı (400–700 nm). Fotosentez intensitesini, yani bitkinin birim sürede ürettiği şeker
+            miktarını belirleyen ana etkendir.
           </p>
         </div>
         <div className="flex gap-3">
@@ -31,14 +32,14 @@ export function ParKarti({ il, bitki, className = '' }: { il?: string | null; bi
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7a55]">Yıllık ortalama</p>
             <p className="mt-0.5 font-display text-3xl tabular-nums text-[#17352a]">{f1(p.yillik)}</p>
             <p className="text-[11px] text-[#8a7a55]">MJ/m²·gün · ≈ {f0(dli(p.yillik))} mol/m²·gün</p>
-            <p className="mt-1 text-[11px] font-bold" style={{ color: yil.renk }}>{yil.ad}</p>
+            <p className="mt-1 text-[11px] font-bold" style={{ color: yil.renk }}>Fotosentez intensitesi: {yil.ad}</p>
           </div>
           {p.sezon && sez && (
             <div className="rounded-2xl bg-white px-4 py-3 text-center ring-1 ring-[#ecdcae]">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7a55]">Büyüme sezonu</p>
               <p className="mt-0.5 font-display text-3xl tabular-nums text-[#17352a]">{f1(p.sezon.ortalama)}</p>
               <p className="text-[11px] text-[#8a7a55]">{p.sezon.etiket} · ≈ {f0(dli(p.sezon.ortalama))} mol</p>
-              <p className="mt-1 text-[11px] font-bold" style={{ color: sez.renk }}>{sez.ad}</p>
+              <p className="mt-1 text-[11px] font-bold" style={{ color: sez.renk }}>Fotosentez intensitesi: {sez.ad}</p>
             </div>
           )}
         </div>
@@ -75,6 +76,20 @@ export function ParKarti({ il, bitki, className = '' }: { il?: string | null; bi
         <span>
           Türkiye ortalamasının <b>{p.farkYuzde >= 0 ? `%${p.farkYuzde} üstünde` : `%${-p.farkYuzde} altında`}</b> · 81 il içinde <b>{p.sira}.</b>
         </span>
+      </div>
+      <div className="mt-4 grid gap-2 text-xs leading-5 text-[#5a4a2a] sm:grid-cols-3">
+        <p className="rounded-xl bg-white/80 px-3 py-2 ring-1 ring-[#ecdcae]">
+          <b className="text-[#17352a]">PAR → fotosentez intensitesi:</b> ışık arttıkça fotosentez hızlanır; bir noktadan sonra (ışık doygunluğu) artış
+          durur.
+        </p>
+        <p className="rounded-xl bg-white/80 px-3 py-2 ring-1 ring-[#ecdcae]">
+          <b className="text-[#17352a]">Işık ve su birlikte:</b> fotosentez için gözenekler açılır, CO₂ girer, su terlenir (transpirasyon). Susuz kalan
+          bitki gözeneğini kapatır, ışık bol olsa da fotosentez düşer.
+        </p>
+        <p className="rounded-xl bg-white/80 px-3 py-2 ring-1 ring-[#ecdcae]">
+          <b className="text-[#17352a]">DLI (günlük ışık integrali):</b> bir günde yaprağa düşen toplam fotosentetik ışık, mol/m²·gün. 1 MJ PAR ≈ 4,57
+          mol foton.
+        </p>
       </div>
       <p className="mt-2 text-[11px] leading-4 text-[#8a7a55]">
         {PAR_KAYNAK}, il merkezi için. Tarlanın yönü, eğimi ve gölgelenme bu değeri değiştirebilir.
