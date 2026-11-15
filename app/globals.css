@@ -112,7 +112,15 @@ select {
   100% { transform: translate3d(36px, -60px, 0); opacity: 0; }
 }
 .ebru-toz { animation: ebru-toz linear infinite; box-shadow: 0 0 6px 1px rgba(243, 210, 122, .65); }
+@keyframes ebru-tane {
+  0% { top: 71.4%; margin-left: 0; opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: .9; }
+  100% { top: 73.8%; margin-left: -0.5%; opacity: 0; }
+}
+.ebru-tane { animation: ebru-tane cubic-bezier(.45, 0, .9, .6) infinite; box-shadow: 0 0 6px 2px rgba(255, 226, 140, .8); }
 @media (prefers-reduced-motion: reduce) {
-  .ebru-yakinlas, .ebru-toz { animation: none; }
+  .ebru-yakinlas, .ebru-toz, .ebru-tane { animation: none; }
+  .ebru-tane { opacity: 0; }
   .ebru-toz { opacity: .6; }
 }
