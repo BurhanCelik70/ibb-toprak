@@ -3,7 +3,9 @@
  * Ürünler yapay zekaya bırakılmaz; teşhis edilen besine göre burada, katalogdaki dozlarla seçilir.
  * Tanı yaklaşımı: Missouri Üniv. G9074 (tarladaki dağılım, yaprak konumu, belirti türü, zamanlama, hava ve uygulamalar, toprak analizi).
  */
-import { URUNLER, type Urun } from './igsas';
+import { IGSAS_URUNLER } from './igsas';
+
+export type Urun = { ad: string; rol: string; doz: string };
 
 export const DONEMLER = ['Fide / çıkış', 'Büyüme (yapraklanma, sürgün)', 'Çiçeklenme', 'Meyve / tane / yumru dolumu', 'Olgunlaşma, hasada yakın'] as const;
 export const KONUMLAR = ['Alt (yaşlı) yapraklarda', 'Üst (genç) yapraklarda', 'Bütün bitkide', 'Meyvede / yumruda', 'Emin değilim'] as const;
@@ -51,7 +53,7 @@ export type TeshisSonucu = {
 };
 
 /** Besin → etken madde ve katalog ürünleri (sıra önemli: ilk ürün öne çıkar) */
-export const BESIN_COZUM: Record<Besin, { ad: string; etkenMadde: string; urunler: string[]; not?: string }> = {
+export const BESIN_COZUM: Record<Besin, { ad: string; etkenMadde: string; urunler: string[]; safBesin?: string; not?: string }> = {
   N: { ad: 'Azot', etkenMadde: 'Azot (amonyum sülfat, üre, amonyum nitrat; hızlı destek için yapraktan amino asit)', urunler: ['UAN-32', 'AS 21', 'NPK 20-20-20+ME', 'AMİNO ASİT'] },
   P: { ad: 'Fosfor', etkenMadde: 'Fosfor (monoamonyum fosfat, mono potasyum fosfat)', urunler: ['NPK 12-40-12', 'MKP', 'DAP'], not: 'Soğuk ve ıslak toprakta görülen geçici fosfor noksanlığı hava ısınınca kendiliğinden geçebilir.' },
   K: { ad: 'Potasyum', etkenMadde: 'Potasyum (potasyum sülfat, potasyum nitrat)', urunler: ['ENLARGE POTASH', 'KNO₃', 'K₂SO₄', 'NPK 7-7-40+ME'] },
@@ -85,7 +87,13 @@ export const TUR_DESTEK: Partial<Record<TeshisTuru, { etkenMadde: string; urunle
 };
 
 export function cozumUrunleri(adlar: string[]): Urun[] {
-  return adlar.map((a) => URUNLER.find((u) => u.ad === a)).filter((u): u is Urun => !!u);
+  return adlar.flatMap((a) => {
+    const u = IGSAS_URUNLER.find((x) => x.ad === a);
+    if (!u) return [];
+    const d = u.dozlar.find((x) => x.yol === 'yaprak') ?? u.dozlar[0];
+    const yol = d?.yol === 'yaprak' ? 'Yapraktan' : d?.yol === 'damla' ? 'Damlayla' : d?.yol === 'tohum' ? 'Tohuma' : 'Toprağa';
+    return [{ ad: u.ad, rol: u.rol, doz: d ? `${yol}: ${d.doz}` : '' }];
+  });
 }
 
 export const TUR_AD: Record<TeshisTuru, string> = {

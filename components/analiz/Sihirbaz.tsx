@@ -3,14 +3,19 @@
  * Rapor yükleme sihirbazı: yöntem seçimi → dosya / fotoğraf / elle giriş → kontrol.
  * Kontrol ekranında "Kaydet ve yorumla" denince onKaydet(report, kaynak) çağrılır.
  */
+import { useTx } from '@/components/DilSaglayici';
+import { birimDonusumu, birimGoster, degerGoster, DE_BODENARTEN, etiketGoster, icDeger } from '@/lib/birimler';
+import type { Ceviri } from '@/lib/i18n';
 import { jsonOku, raporDosyasiHazirla } from '@/lib/dosya';
 import { adimGorseli } from '@/lib/bitkiGorsel';
-import { ILLER } from '@/lib/bolgeler';
+import { ulkeBirimi, ulkeBul, type Ulke } from '@/lib/bolgeler';
+import { UlkeSecenekleri, useIlSecenekleri } from '@/components/UlkeSecimi';
+import { konumGoster } from '@/lib/dunya';
 import { AlertTriangle, ArrowLeft, ArrowRight, Camera, ChevronRight, FileSpreadsheet, Loader2, Upload, UserRound, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ChoiceGrid, MethodCard, Panel, Row, Warning } from '@/components/ui';
 import { parseLabWorkbook } from '@/lib/excelRapor';
-import { ZKART_BITKILERI } from '@/lib/igsas';
+import { ZKART_BITKILERI } from '@/lib/bitki';
 import {
   BUNYE_SINIFLARI,
   MANUAL_STEPS,
@@ -34,6 +39,10 @@ const emptyDraft = () => Object.fromEntries(PARAM_KEYS.map((k) => [k, ''])) as D
 const emptyMissing = () => Object.fromEntries(PARAM_KEYS.map((k) => [k, false])) as Missing;
 const emptyMeta = (): Meta => ({ ilce: '', bitki: '', numuneAdi: '', bunyeSinifi: '', raporNo: '' });
 // Z-kartı olan bitkiler önce; listede olmayan bitki elle yazılabilir
+/** Bünye sınıfı ekranda: Almancada Alman Bodenart adı, Türkçede kendisi */
+const bodenartAdi = (kod: string | undefined, tx: Ceviri) =>
+  !kod ? '' : tx.dil === 'de' ? DE_BODENARTEN.find((b) => b.kod === kod)?.ad ?? tx(kod) : kod;
+
 export const COMMON_CROPS = [...ZKART_BITKILERI, 'Bilmiyorum'];
 
 export type SihirbazTarla = { ad: string; ilce?: string | null; bitki?: string | null };
@@ -49,6 +58,7 @@ export function Sihirbaz({
   kaydediliyor?: boolean;
   hata?: string | null;
 }) {
+  const tx = useTx();
   // Tarla içinden açıldıysa ilçe/bitki sorulmaz (elle girişte 0. adım atlanır)
   const ilkAdim = tarla ? 1 : 0;
   const [ekran, setEkran] = useState<Ekran>('yontem');
@@ -76,7 +86,8 @@ export function Sihirbaz({
     PARAM_KEYS.forEach((k) => {
       if (missing[k]) return;
       const n = parseNumber(draft[k]);
-      if (n !== undefined) values[k] = n;
+      // Almancada pH (CaCl₂) ve P/K (mg/100 g, CAL) girilir; içeride Türk birimine çevrilir
+      if (n !== undefined) values[k] = +icDeger(k, n, tx.dil).toFixed(4);
     });
     return {
       raporNo: meta.raporNo || undefined,
@@ -97,7 +108,7 @@ export function Sihirbaz({
     PARAM_KEYS.forEach((k) => {
       const v = parseNumber(r.values?.[k]);
       if (v === undefined) m[k] = true;
-      else d[k] = formatNumber(v, 4);
+      else d[k] = tx(formatNumber(degerGoster(k, v, tx.dil), 4));
     });
     setDraft(d);
     setMissing(m);
@@ -140,7 +151,7 @@ export function Sihirbaz({
       if (reports.length === 1) loadReport(reports[0]);
       else setCandidates(reports);
     } catch (e) {
-      setUploadError(e instanceof Error ? e.message : 'Dosya okunamadı.');
+      setUploadError(e instanceof Error ? e.message : tx("Dosya okunamadı."));
     } finally {
       setUploading(false);
     }
@@ -222,17 +233,18 @@ export function Sihirbaz({
 }
 
 function MethodScreen({ method, onSelect }: { method: Method | null; onSelect: (m: Method) => void }) {
+  const tx = useTx();
   return (
     <div className="animate-[fadeIn_.4s_ease-out]">
       <div className="relative overflow-hidden rounded-[32px] bg-[#121410] px-6 py-12 text-center text-white sm:px-10 sm:py-16">
         <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-center opacity-80" aria-hidden />
         <div className="absolute inset-0 bg-gradient-to-b from-[#121410]/80 via-[#121410]/50 to-[#121410]/90" aria-hidden />
         <div className="relative">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">Yeni analiz</p>
-          <h1 className="mt-3 font-display text-4xl font-medium tracking-[-0.02em] sm:text-6xl">Raporunuz elinizde mi?</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">{tx("Yeni analiz")}</p>
+          <h1 className="mt-3 font-display text-4xl font-medium tracking-[-0.02em] sm:text-6xl">{tx("Raporunuz elinizde mi?")}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-white/75 sm:text-lg">
-            En hızlısı laboratuvarın gönderdiği dosyayı yüklemek. Dosyanız yoksa kâğıt raporun fotoğrafını çekebilir ya da değerleri tek
-            tek girebilirsiniz.
+            
+            {tx("En hızlısı laboratuvarın gönderdiği dosyayı yüklemek. Dosyanız yoksa kâğıt raporun fotoğrafını çekebilir ya da değerleri tek tek girebilirsiniz.")}
           </p>
         </div>
       </div>
@@ -240,25 +252,25 @@ function MethodScreen({ method, onSelect }: { method: Method | null; onSelect: (
       <div className="relative z-10 -mt-8 grid gap-4 px-2 sm:px-6 md:grid-cols-3">
         <MethodCard
           icon={<FileSpreadsheet size={30} />}
-          title="Dosya yükle"
-          description="Excel (.xlsx) veya PDF rapor"
-          detail="Excel dosyası cihazınızda okunur, hiçbir yere gönderilmez."
+          title={tx("Dosya yükle")}
+          description={tx("Excel (.xlsx) veya PDF rapor")}
+          detail={tx("Excel dosyası cihazınızda okunur, hiçbir yere gönderilmez.")}
           selected={method === 'dosya'}
           onClick={() => onSelect('dosya')}
         />
         <MethodCard
           icon={<Camera size={30} />}
-          title="Fotoğraf çek"
-          description="Kâğıt raporun fotoğrafı"
-          detail="Raporu düz bir yüzeye koyup tamamı görünecek şekilde çekin."
+          title={tx("Fotoğraf çek")}
+          description={tx("Kâğıt raporun fotoğrafı")}
+          detail={tx("Raporu düz bir yüzeye koyup tamamı görünecek şekilde çekin.")}
           selected={method === 'foto'}
           onClick={() => onSelect('foto')}
         />
         <MethodCard
           icon={<UserRound size={30} />}
-          title="Elle gireceğim"
-          description="Değerleri raporunuzdan bakarak yazın"
-          detail="Raporunuzda olmayan değerleri atlayabilirsiniz."
+          title={tx("Elle gireceğim")}
+          description={tx("Değerleri raporunuzdan bakarak yazın")}
+          detail={tx("Raporunuzda olmayan değerleri atlayabilirsiniz.")}
           selected={method === 'manuel'}
           onClick={() => onSelect('manuel')}
         />
@@ -286,31 +298,32 @@ function UploadDialog({
   onManual: () => void;
   onClose: () => void;
 }) {
+  const tx = useTx();
   const inputRef = useRef<HTMLInputElement>(null);
   const isPhoto = method === 'foto';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#09271f]/60 p-5 backdrop-blur-sm" role="dialog" aria-modal="true">
       <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[30px] bg-white p-7 shadow-2xl sm:p-9">
-        <button onClick={onClose} aria-label="Kapat" className="absolute right-5 top-5 rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+        <button onClick={onClose} aria-label={tx("Kapat")} className="absolute right-5 top-5 rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
           <X size={20} />
         </button>
 
         {candidates.length > 0 ? (
           <>
-            <h2 className="text-2xl font-extrabold">Dosyada {candidates.length} rapor var</h2>
-            <p className="mt-2 text-sm leading-6 text-[#718078]">Hangi tarlanın raporunu yorumlayalım?</p>
+            <h2 className="text-2xl font-extrabold">{tx("Dosyada")}{' '}{candidates.length}{' '}{tx("rapor var")}</h2>
+            <p className="mt-2 text-sm leading-6 text-[#718078]">{tx("Hangi tarlanın raporunu yorumlayalım?")}</p>
             <div className="mt-6 space-y-3">
               {candidates.map((r, i) => (
                 <button
-                  key={r.raporNo ?? i}
+                  key={tx(r.raporNo) ?? i}
                   onClick={() => onPick(r)}
                   className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#dfe9df] bg-[#f9fbf9] px-4 py-4 text-left transition hover:border-[#38a66d] hover:bg-[#eefaf0]"
                 >
                   <span>
-                    <span className="block font-bold">{r.numuneAdi ?? `Rapor ${i + 1}`}</span>
+                    <span className="block font-bold">{tx(r.numuneAdi) ?? `Rapor ${i + 1}`}</span>
                     <span className="mt-0.5 block text-xs text-[#718078]">
-                      {[r.raporNo, r.bitki, r.ilce].filter(Boolean).join(' / ')}
+                      {tx([r.raporNo, r.bitki, konumGoster(r.ilce, tx.dil)].filter(Boolean).join(" / "))}
                     </span>
                   </span>
                   <ChevronRight size={20} className="text-[#238f61]" />
@@ -323,11 +336,11 @@ function UploadDialog({
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eaf6e4] text-[#238f61]">
               <Upload size={27} />
             </div>
-            <h2 className="mt-6 text-2xl font-extrabold">{isPhoto ? 'Raporun fotoğrafını seçin' : 'Rapor dosyanızı seçin'}</h2>
+            <h2 className="mt-6 text-2xl font-extrabold">{isPhoto ? tx("Raporun fotoğrafını seçin") : tx("Rapor dosyanızı seçin")}</h2>
             <p className="mt-2 text-sm leading-6 text-[#718078]">
               {isPhoto
-                ? 'Tüm tablo görünür ve yazılar okunaklı olmalı. Okunan değerleri bir sonraki adımda kontrol edeceksiniz.'
-                : 'Laboratuvarın gönderdiği Excel (.xlsx) veya PDF dosyası.'}
+                ? tx("Tüm tablo görünür ve yazılar okunaklı olmalı. Okunan değerleri bir sonraki adımda kontrol edeceksiniz.")
+                : tx("Laboratuvarın gönderdiği Excel (.xlsx) veya PDF dosyası.")}
             </p>
 
             <button
@@ -338,15 +351,15 @@ function UploadDialog({
               {uploading ? (
                 <>
                   <Loader2 className="animate-spin text-[#238f61]" size={32} />
-                  <div className="mt-4 font-bold">Rapor okunuyor…</div>
+                  <div className="mt-4 font-bold">{tx("Rapor okunuyor…")}</div>
                 </>
               ) : (
                 <>
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm">
                     {isPhoto ? <Camera className="text-[#238f61]" /> : <FileSpreadsheet className="text-[#238f61]" />}
                   </div>
-                  <div className="mt-4 font-bold">Dosya seçmek için dokunun</div>
-                  <div className="mt-1 text-xs text-[#819087]">{isPhoto ? 'JPG, PNG veya WEBP' : 'XLSX veya PDF, en fazla 10 MB'}</div>
+                  <div className="mt-4 font-bold">{tx("Dosya seçmek için dokunun")}</div>
+                  <div className="mt-1 text-xs text-[#819087]">{isPhoto ? tx("JPG, PNG veya WEBP") : tx("XLSX veya PDF, en fazla 10 MB")}</div>
                 </>
               )}
             </button>
@@ -355,9 +368,10 @@ function UploadDialog({
               <div className="mt-4 flex gap-2 rounded-2xl bg-[#fff4e5] p-4 text-sm text-[#7a4b00]">
                 <AlertTriangle size={18} className="shrink-0" />
                 <span>
-                  {error}{' '}
+                  {tx(error)}{' '}
                   <button onClick={onManual} className="font-bold underline">
-                    Elle gir
+                    
+                    {tx("Elle gir")}
                   </button>
                 </span>
               </div>
@@ -404,6 +418,9 @@ function ManualScreen({
   onBack: () => void;
   onNext: () => void;
 }) {
+  const tx = useTx();
+  const [ulke, setUlke] = useState<Ulke>(ulkeBul(meta.ilce, tx.dil));
+  const ilSec = useIlSecenekleri(ulke, meta.ilce);
   const total = MANUAL_STEPS.length + 1 - ilkAdim;
   const section = step === 0 ? null : MANUAL_STEPS[step - 1];
   const textureWarn =
@@ -432,16 +449,18 @@ function ManualScreen({
               className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur hover:bg-white/20"
             >
               <ArrowLeft size={16} />
-              Geri
+              
+              {tx("Geri")}
             </button>
             <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide backdrop-blur">
-              Adım {step + 1 - ilkAdim} / {total}
+              
+              {tx("Adım")}{' '}{step + 1 - ilkAdim} / {total}
             </div>
           </div>
           <div>
-            <h2 className="font-display text-3xl font-medium leading-tight tracking-[-0.01em] sm:text-4xl">{section ? section.title : 'Tarlanız hakkında'}</h2>
+            <h2 className="font-display text-3xl font-medium leading-tight tracking-[-0.01em] sm:text-4xl">{section ? tx(section.title) : tx("Tarlanız hakkında")}</h2>
             <p className="mt-2 max-w-lg text-sm text-white/75 sm:text-base">
-              {section ? section.description : 'Bu bilgiler önerileri size özel hale getirir.'}
+              {section ? tx(section.description) : tx("Bu bilgiler önerileri size özel hale getirir.")}
             </p>
             <div className="mt-4 flex gap-1.5">
               {Array.from({ length: total }, (_, i) => (
@@ -456,24 +475,40 @@ function ManualScreen({
       <div className="space-y-5">
         {step === 0 ? (
           <>
-            <Panel title="İl" helper="Toprağın alındığı il.">
-              <select
-                value={meta.ilce}
-                onChange={(e) => onMeta('ilce', e.target.value)}
-                className="mt-4 w-full rounded-2xl border border-[#dfe9df] bg-white px-4 py-3 text-lg font-semibold outline-none focus:border-[#38a66d]"
-              >
-                <option value="">Seçin</option>
-                {ILLER.map((i) => (
-                  <option key={i}>{i}</option>
-                ))}
-              </select>
+            <Panel
+              title={tx(ulkeBirimi(ulke))}
+              helper={tx("Toprağın alındığı yer.")}
+            >
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
+                <select
+                  aria-label={tx("Ülke")}
+                  value={ulke}
+                  onChange={(e) => {
+                    setUlke(e.target.value as Ulke);
+                    onMeta('ilce', '');
+                  }}
+                  className="w-full rounded-2xl border border-[#dfe9df] bg-white px-4 py-3 text-lg font-semibold outline-none focus:border-[#38a66d]"
+                >
+                  <UlkeSecenekleri secili={ulke} />
+                </select>
+                <select
+                  value={meta.ilce}
+                  onChange={(e) => onMeta('ilce', e.target.value)}
+                  className="w-full rounded-2xl border border-[#dfe9df] bg-white px-4 py-3 text-lg font-semibold outline-none focus:border-[#38a66d]"
+                >
+                  <option value="">{ilSec.yukleniyor ? tx("Yükleniyor…") : tx("Seçin")}</option>
+                  {ilSec.secenekler.map((i) => (
+                    <option key={i.deger} value={i.deger}>{i.ad}</option>
+                  ))}
+                </select>
+              </div>
             </Panel>
-            <Panel title="Ne ekmeyi planlıyorsunuz?" helper='Raporda "Ekimi Planlanan Bitki" olarak geçer.'>
+            <Panel title={tx("Ne ekmeyi planlıyorsunuz?")} helper={tx("Raporda \"Ekimi Planlanan Bitki\" olarak geçer.")}>
               <ChoiceGrid options={COMMON_CROPS} value={meta.bitki} onChange={(v) => onMeta('bitki', v)} />
               <input
-                value={COMMON_CROPS.includes(meta.bitki) ? '' : meta.bitki}
+                value={COMMON_CROPS.includes(meta.bitki) ? '' : tx(meta.bitki)}
                 onChange={(e) => onMeta('bitki', e.target.value)}
-                placeholder="Listede yoksa yazın"
+                placeholder={tx("Listede yoksa yazın")}
                 className="mt-3 w-full rounded-2xl border border-[#dfe9df] bg-white px-4 py-3 outline-none focus:border-[#38a66d]"
               />
             </Panel>
@@ -491,9 +526,10 @@ function ManualScreen({
               />
             ))}
             {section!.fields.includes('kil') && (
-              <Panel title="Bünye sınıfı" helper='Raporda kum oranının yanında yazan sınıf (ör. "CL (Killi Tın Bünyeli)").'>
+              <Panel title={tx("Bünye sınıfı")} helper={tx("Raporda kum oranının yanında yazan sınıf (ör. \"CL (Killi Tın Bünyeli)\").")}>
                 <ChoiceGrid
-                  options={BUNYE_SINIFLARI.map((b) => `${b.code} (${b.label})`)}
+                  options={tx.dil === 'de' ? DE_BODENARTEN.map((b) => b.kod) : BUNYE_SINIFLARI.map((b) => `${b.code} (${b.label})`)}
+                  etiket={(o) => bodenartAdi(o, tx)}
                   value={meta.bunyeSinifi}
                   onChange={(v) => onMeta('bunyeSinifi', v)}
                 />
@@ -508,7 +544,7 @@ function ManualScreen({
         onClick={onNext}
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1d2a22] px-6 py-4 text-base font-semibold text-white transition hover:bg-[#2f7a4f]"
       >
-        {step === MANUAL_STEPS.length ? 'Değerleri kontrol et' : 'Sonraki'}
+        {step === MANUAL_STEPS.length ? tx("Değerleri kontrol et") : tx("Sonraki")}
         <ArrowRight size={18} />
       </button>
       </div>
@@ -529,7 +565,9 @@ function NumberField({
   onChange: (v: string) => void;
   onToggleMissing: () => void;
 }) {
+  const tx = useTx();
   const def = PARAMS[k];
+  const donusum = birimDonusumu(k, tx.dil);
   const n = parseNumber(value);
   const invalid = value.trim() !== '' && n === undefined;
   const warn = n !== undefined ? sanityWarning(k, n) : undefined;
@@ -540,15 +578,17 @@ function NumberField({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <label htmlFor={id} className="text-lg font-bold">
-            {def.label}
+            {tx(etiketGoster(k, tx.dil))}
           </label>
           <div className="mt-1 text-xs leading-5 text-[#75867a]">
-            Raporda: <span className="font-semibold">{def.reportLabel}</span>. {def.helper}
+            
+            {tx("Raporda:")}{' '}<span className="font-semibold">{donusum ? donusum.etiket : tx(def.reportLabel)}</span>. {donusum ? donusum.aciklama : tx(def.helper)}
           </div>
         </div>
         <label className="flex cursor-pointer items-center gap-2 rounded-full border border-[#d8e8d6] bg-white px-3 py-2 text-xs font-semibold text-[#476456]">
           <input type="checkbox" checked={missing} onChange={onToggleMissing} className="h-4 w-4 accent-[#238f61]" />
-          Raporumda yok
+          
+          {tx("Raporumda yok")}
         </label>
       </div>
 
@@ -559,14 +599,14 @@ function NumberField({
           inputMode="decimal"
           autoComplete="off"
           value={value}
-          placeholder={def.placeholder}
+          placeholder={donusum ? donusum.ornek : tx(def.placeholder)}
           disabled={missing}
           onChange={(e) => onChange(e.target.value)}
           className="w-full border-none bg-transparent text-lg font-bold outline-none placeholder:text-[#b3bdb7] disabled:opacity-50"
         />
-        {def.unit && <span className="whitespace-nowrap rounded-full bg-[#edf7ed] px-3 py-1 text-sm font-bold text-[#238f61]">{def.unit}</span>}
+        {birimGoster(k, tx.dil) && <span className="whitespace-nowrap rounded-full bg-[#edf7ed] px-3 py-1 text-sm font-bold text-[#238f61]">{tx(birimGoster(k, tx.dil))}</span>}
       </div>
-      {invalid && <Warning text="Lütfen yalnızca sayı girin (ör. 7,12)." />}
+      {invalid && <Warning text={tx("Lütfen yalnızca sayı girin (ör. 7,12).")} />}
       {warn && <Warning text={warn} />}
     </div>
   );
@@ -587,48 +627,51 @@ function ReviewScreen({
   onEdit: () => void;
   onConfirm: () => void;
 }) {
+  const tx = useTx();
   const count = Object.keys(report.values).length + (report.ekDegerler?.length ?? 0);
 
   return (
     <div className="mx-auto max-w-3xl rounded-[32px] border border-[#dfe9df] bg-white p-6 shadow-[0_18px_50px_rgba(19,53,41,.08)] sm:p-8">
-      <h2 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl">Değerler raporunuzla aynı mı?</h2>
+      <h2 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl">{tx("Değerler raporunuzla aynı mı?")}</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-[#64766c]">
         {source === 'dosya'
-          ? 'Dosyanızdan okuduğumuz değerler aşağıda. Raporunuzla karşılaştırın; farklı olan varsa düzeltin.'
-          : 'Girdiğiniz değerleri son kez kontrol edin.'}
+          ? tx("Dosyanızdan okuduğumuz değerler aşağıda. Raporunuzla karşılaştırın; farklı olan varsa düzeltin.")
+          : tx("Girdiğiniz değerleri son kez kontrol edin.")}
       </p>
 
       <dl className="mt-8 divide-y divide-[#edf2ee] rounded-[24px] border border-[#dfe9df] bg-[#f8fbf7] px-5">
-        <Row label="Rapor / numune" value={[report.raporNo, report.numuneAdi].filter(Boolean).join(' – ') || 'Belirtilmedi'} />
-        <Row label="Konum" value={report.ilce ?? 'Belirtilmedi'} />
-        <Row label="Planlanan bitki" value={report.bitki ?? 'Belirtilmedi'} />
+        <Row label={tx("Rapor / numune")} value={tx([report.raporNo, report.numuneAdi].filter(Boolean).join(' – ')) || tx("Belirtilmedi")} />
+        <Row label={tx("Konum")} value={tx(konumGoster(report.ilce, tx.dil)) || tx("Belirtilmedi")} />
+        <Row label={tx("Planlanan bitki")} value={tx(report.bitki) || tx("Belirtilmedi")} />
         {(Object.keys(PARAMS) as ParamKey[])
           .filter((k) => !PARAMS[k].ek || report.values[k] !== undefined)
           .map((k) => (
           <Row
             key={k}
-            label={PARAMS[k].label}
-            value={report.values[k] !== undefined ? `${formatNumber(report.values[k]!, 4)} ${PARAMS[k].unit}` : 'Belirtilmedi'}
+            label={tx(etiketGoster(k, tx.dil))}
+            value={report.values[k] !== undefined ? `${tx(formatNumber(degerGoster(k, report.values[k]!, tx.dil), 4))} ${tx(birimGoster(k, tx.dil))}`.trim() : tx("Belirtilmedi")}
             muted={report.values[k] === undefined}
           />
         ))}
-        <Row label="Bünye sınıfı" value={report.bunyeSinifi ?? 'Belirtilmedi'} muted={!report.bunyeSinifi} />
+        <Row label={tx("Bünye sınıfı")} value={bodenartAdi(report.bunyeSinifi, tx) || tx("Belirtilmedi")} muted={!report.bunyeSinifi} />
         {(report.ekDegerler ?? []).map((e, i) => (
-          <Row key={`ek-${i}`} label={e.ad} value={`${formatNumber(e.deger, 4)} ${e.birim ?? ''}`.trim()} />
+          <Row key={`ek-${i}`} label={tx(e.ad)} value={tx(`${formatNumber(e.deger, 4)} ${e.birim ?? ''}`.trim())} />
         ))}
       </dl>
       {(report.ekDegerler?.length ?? 0) > 0 && (
         <p className="mt-3 text-xs leading-5 text-[#75867a]">
-          Son {report.ekDegerler!.length} satır raporunuzdaki ek ölçümlerdir; tabloda “Diğer ölçümler” başlığında gösterilir.
+          
+          {tx("Son")}{' '}{report.ekDegerler!.length}{' '}{tx("satır raporunuzdaki ek ölçümlerdir; tabloda “Diğer ölçümler” başlığında gösterilir.")}
         </p>
       )}
 
-      {count === 0 && <Warning text="Yorum için en az bir değer girmelisiniz." />}
+      {count === 0 && <Warning text={tx("Yorum için en az bir değer girmelisiniz.")} />}
       {hata && <Warning text={hata} />}
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <button onClick={onEdit} className="rounded-full border border-[#dfe9df] bg-[#f4faf3] px-6 py-4 font-semibold text-[#476456] hover:bg-[#edf6eb]">
-          Değerleri düzelt
+          
+          {tx("Değerleri düzelt")}
         </button>
         <button
           disabled={count === 0 || kaydediliyor}
@@ -637,11 +680,12 @@ function ReviewScreen({
         >
           {kaydediliyor ? (
             <>
-              <Loader2 className="animate-spin" size={20} /> Kaydediliyor…
+              <Loader2 className="animate-spin" size={20} />{' '}{tx("Kaydediliyor…")}
             </>
           ) : (
             <>
-              Doğru, kaydet ve yorumla
+              
+              {tx("Doğru, kaydet ve yorumla")}
               <ChevronRight size={22} />
             </>
           )}

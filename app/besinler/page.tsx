@@ -1,14 +1,18 @@
+import { ceviriAl } from '@/lib/dilSunucu';
 import { BesinKatalogu } from '@/components/besin/BesinKatalogu';
 import { AppHeader, SiteFooter } from '@/components/site';
 
-export const metadata = {
-  title: 'Besinleri tanıyalım: makro ve mikro elementler',
-  alternates: { canonical: '/besinler' },
-  description:
-    'Azot, fosfor, potasyum, kalsiyum, magnezyum, kükürt, demir, çinko, mangan, bakır, bor, molibden, klor, nikel ve silisyum bitkide ne işe yarar, toprakta nasıl davranır, ne zaman verilir. 15-15-15 gübre torbası nasıl okunur.',
-};
+export async function generateMetadata() {
+  const { tx } = await ceviriAl();
+  return {
+    title: tx('Besinleri tanıyalım: makro ve mikro elementler'),
+    alternates: { canonical: '/besinler' },
+    description: tx('Azot, fosfor, potasyum, kalsiyum, magnezyum, kükürt, demir, çinko, mangan, bakır, bor, molibden, klor, nikel ve silisyum bitkide ne işe yarar, toprakta nasıl davranır, ne zaman verilir. 15-15-15 gübre torbası nasıl okunur.'),
+  };
+}
 
 export default async function BesinlerSayfasi({ searchParams }: { searchParams: Promise<{ b?: string }> }) {
+  const { tx } = await ceviriAl();
   const sp = await searchParams;
   return (
     <div className="flex min-h-screen flex-col bg-[#f5f0e6] text-[#1d2a22]">
@@ -19,10 +23,12 @@ export default async function BesinlerSayfasi({ searchParams }: { searchParams: 
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/85 via-black/50 to-black/10" />
         <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-[#f5f0e6] to-transparent" />
         <div className="mx-auto max-w-6xl px-5 pb-24 pt-32 sm:px-8 sm:pb-32 sm:pt-40">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#9bdd68]">Makro ve mikro elementler</p>
-          <h1 className="mt-4 max-w-2xl font-display text-5xl font-medium leading-[1.04] tracking-[-0.02em] sm:text-6xl">Besinleri tanıyalım</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#9bdd68]">{tx("Makro ve mikro elementler")}</p>
+          <h1 className="mt-4 max-w-2xl font-display text-5xl font-medium leading-[1.04] tracking-[-0.02em] sm:text-6xl">{tx("Besinleri tanıyalım")}</h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-white/80 sm:text-lg">
-            Her besin bitkide ne işe yarar, toprakta nasıl davranır, eksikliği nerede görülür ve ne zaman verilir? Bir elemente dokunun, kartı açılsın.
+            {tx(
+              "Her besin bitkide ne işe yarar, toprakta nasıl davranır, eksikliği nerede görülür ve ne zaman verilir? Bir elemente dokunun, kartı açılsın."
+            )}
           </p>
         </div>
       </header>

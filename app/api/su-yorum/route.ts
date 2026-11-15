@@ -14,7 +14,7 @@ export const maxDuration = 300;
 const client = new Anthropic();
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 
-const SYSTEM = `Sen sulama suyu kalitesini çiftçiye anlatan deneyimli bir ziraat mühendisisin ("Tarım Ticareti ve İşletmeciliği 4.0" uygulaması).
+const SYSTEM = `Sen sulama suyu kalitesini çiftçiye anlatan deneyimli bir ziraat mühendisisin ("İGSAŞ Toprak Asistanı" uygulaması).
 Sana bir sulama suyu analizinin KODDA HESAPLANMIŞ sonuçları verilir: ABD Tuzluluk Laboratuvarı sınıfı (C-S), FAO 29 tablosuna göre
 her sorunun kısıtlama derecesi, kalıntı sodyum karbonat (RSC), bitkiye göre bor ve tuz toleransı, sulama yöntemlerinin uygunluğu.
 
@@ -30,6 +30,14 @@ KURALLAR
 - yontemNotu: 1-2 cümle. Kullandığı sulama yöntemi bu su için uygun mu; değilse önerilen yöntem ve nedeni.
 - bitkiNotu: bitki biliniyorsa 1 cümle (tuz ve bor toleransına göre); bilinmiyorsa null.
 Cevabını YALNIZCA su_yorumu aracını çağırarak ver.`;
+
+/** Almanca ve İspanyolca arayüzde yorum o dilde yazılır */
+const DIL_TALIMATI: Record<string, string> = {
+  ar: `\n\nاللغة: اكتب ozet وyapilacaklar وyontemNotu وbitkiNotu بالعربية الفصحى البسيطة والواضحة. لا تستخدم كلمات تركية. اكتب الأرقام بالأرقام اللاتينية (0-9).`,
+  en: `\n\nLANGUAGE: Write ozet, yapilacaklar, yontemNotu and bitkiNotu in plain, clear ENGLISH (British English). No Turkish words.`,
+  de: `\n\nSPRACHE: Schreibe ozet, yapilacaklar, yontemNotu und bitkiNotu auf DEUTSCH (Sie-Form), einfach und klar. Keine türkischen Wörter.`,
+  es: `\n\nIDIOMA: Escribe ozet, yapilacaklar, yontemNotu y bitkiNotu en ESPAÑOL (trato de usted), claro y sencillo. Ninguna palabra en turco.`,
+};
 
 const TOOL: Anthropic.Tool = {
   name: 'su_yorumu',
@@ -50,12 +58,16 @@ export async function POST(req: Request) {
   try {
     const { supabase, kullaniciId } = await oturumKullanici();
     if (!kullaniciId) return NextResponse.json({ error: 'Devam etmek için giriş yapın.' }, { status: 401 });
-    const { suAnaliziId, yenile } = (await req.json()) as { suAnaliziId?: string; yenile?: boolean };
+    const { suAnaliziId, yenile, dil: istenen } = (await req.json()) as { suAnaliziId?: string; yenile?: boolean; dil?: string };
+    // Türkçe yorum "yorum" alanının kendisidir; Almanca ve İspanyolca yorum aynı alanın "diller" kısmında saklanır
+    const dil = istenen === 'de' || istenen === 'es' || istenen === 'en' || istenen === 'ar' ? istenen : 'tr';
     if (!suAnaliziId) return NextResponse.json({ error: 'Analiz bulunamadı.' }, { status: 400 });
 
     const { data: su } = await supabase.from('su_analizleri').select('*').eq('id', suAnaliziId).single<SuAnalizi>();
     if (!su) return NextResponse.json({ error: 'Analiz bulunamadı.' }, { status: 404 });
-    if (su.yorum && !yenile) return NextResponse.json(su.yorum);
+    const kayitli = su.yorum as (Record<string, unknown> & { ozet?: string; diller?: Record<string, unknown> }) | null;
+    const onceki = dil === 'tr' ? (kayitli?.ozet ? kayitli : null) : kayitli?.diller?.[dil];
+    if (onceki && !yenile) return NextResponse.json(onceki);
     const { data: tarla } = await supabase.from('tarlalar').select('*').eq('id', su.tarla_id).single<Tarla>();
     if (!tarla) return NextResponse.json({ error: 'Tarla bulunamadı.' }, { status: 404 });
 
@@ -64,12 +76,12 @@ export async function POST(req: Request) {
     const input = suAiOzeti(su.rapor, v, { bitki: tarla.bitki, yontem: SULAMA_YONTEMLERI[yontem].ad, il: tarla.il });
 
     const mesaj = { role: 'user' as const, content: JSON.stringify(input) };
-    let msg = await client.messages.create({ model: MODEL, max_tokens: 2000, system: SYSTEM, tools: [TOOL], tool_choice: { type: 'auto' }, messages: [mesaj] });
+    let msg = await client.messages.create({ model: MODEL, max_tokens: 2000, system: SYSTEM + (DIL_TALIMATI[dil] ?? ''), tools: [TOOL], tool_choice: { type: 'auto' }, messages: [mesaj] });
     if (!msg.content.some((b) => b.type === 'tool_use')) {
       msg = await client.messages.create({
         model: MODEL,
         max_tokens: 2000,
-        system: SYSTEM,
+        system: SYSTEM + (DIL_TALIMATI[dil] ?? ''),
         tools: [TOOL],
         tool_choice: { type: 'auto' },
         messages: [mesaj, { role: 'assistant', content: msg.content }, { role: 'user', content: 'Lütfen cevabı su_yorumu aracını çağırarak ver.' }],
@@ -84,7 +96,8 @@ export async function POST(req: Request) {
       yontemNotu: typeof o.yontemNotu === 'string' ? o.yontemNotu : '',
       bitkiNotu: typeof o.bitkiNotu === 'string' && o.bitkiNotu.trim() ? o.bitkiNotu : null,
     };
-    await supabase.from('su_analizleri').update({ yorum, yorum_tarihi: new Date().toISOString() }).eq('id', suAnaliziId);
+    const yeni = dil === 'tr' ? { ...yorum, ...(kayitli?.diller ? { diller: kayitli.diller } : {}) } : { ...(kayitli ?? {}), diller: { ...(kayitli?.diller ?? {}), [dil]: yorum } };
+    await supabase.from('su_analizleri').update({ yorum: yeni, yorum_tarihi: new Date().toISOString() }).eq('id', suAnaliziId);
     return NextResponse.json(yorum);
   } catch (err) {
     console.error('su-yorum hatası', err);

@@ -1,4 +1,5 @@
 'use client';
+import { useTx } from '@/components/DilSaglayici';
 /**
  * Besinleri tanıyalım: element tabloları, ayrıntı penceresi, azotun yolculuğu ve gübre torbası hesaplayıcısı.
  */
@@ -18,13 +19,12 @@ import {
   type Besin,
   type BesinGrubu,
 } from '@/lib/besinler';
-import { URUNLER } from '@/lib/igsas';
+import { IGSAS_URUNLER } from '@/lib/igsas';
 import { BITKI_KISA, NOKSANLIKLAR, noksanlikGorseli } from '@/lib/noksanliklar';
 
 const kisaAd = (b: string) => BITKI_KISA[b] ?? b;
 const GRUPLAR: BesinGrubu[] = ['birincil', 'ikincil', 'mikro', 'faydali'];
 const fmt = (n: number, d = 1) => n.toLocaleString('tr-TR', { maximumFractionDigits: d, minimumFractionDigits: 0 });
-const marka = (ad: string) => (/^KIANA/i.test(ad) ? 'KIANA' : 'İGSAŞ');
 
 const HAREKET: Record<Besin['hareket'], { ad: string; metin: string }> = {
   hareketli: { ad: 'Bitki içinde hareketli', metin: 'Eksik kalınca bitki onu yaşlı yapraktan alıp gence taşır; belirti önce alt yapraklarda.' },
@@ -34,12 +34,13 @@ const HAREKET: Record<Besin['hareket'], { ad: string; metin: string }> = {
 
 /* ---------- Element kutusu ---------- */
 function BesinKutusu({ b, onAc }: { b: Besin; onAc: () => void }) {
+  const tx = useTx();
   return (
     <button
       type="button"
       onClick={onAc}
       className="group relative flex aspect-square flex-col sm:aspect-[4/3] justify-between overflow-hidden rounded-[22px] bg-[#0f1511] p-4 text-left text-white ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-20px_rgba(10,14,10,.7)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8f57]"
-      aria-label={`${b.ad} (${b.sembol}) hakkında`}
+      aria-label={tx("{a} ({b}) hakkında", { a: tx(b.ad), b: b.sembol })}
     >
       {b.resim && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -47,12 +48,12 @@ function BesinKutusu({ b, onAc }: { b: Besin; onAc: () => void }) {
       )}
       <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
       <span className="relative flex items-start justify-between">
-        <span className="font-display text-4xl font-semibold leading-none drop-shadow sm:text-5xl">{b.sembol}</span>
+        <span className="font-display text-4xl font-semibold leading-none drop-shadow sm:text-5xl">{tx(b.sembol)}</span>
         <span className="rounded-full bg-black/40 px-2 py-0.5 text-[11px] font-semibold tabular-nums backdrop-blur">{b.atomNo}</span>
       </span>
       <span className="relative">
-        <span className="block text-base font-bold sm:text-lg">{b.ad}</span>
-        <span className="mt-0.5 line-clamp-2 hidden text-xs leading-5 text-white/80 sm:block">{b.kisa}</span>
+        <span className="block text-base font-bold sm:text-lg">{tx(b.ad)}</span>
+        <span className="mt-0.5 line-clamp-2 hidden text-xs leading-5 text-white/80 sm:block">{tx(b.kisa)}</span>
       </span>
       <span className="absolute inset-x-0 bottom-0 h-1" style={{ background: b.renk }} />
     </button>
@@ -61,10 +62,11 @@ function BesinKutusu({ b, onAc }: { b: Besin; onAc: () => void }) {
 
 /* ---------- Ayrıntı penceresi ---------- */
 function Bilgi({ ikon: Ikon, baslik, renk, children }: { ikon: typeof Leaf; baslik: string; renk: string; children: ReactNode }) {
+  const tx = useTx();
   return (
     <div className="rounded-2xl bg-white p-4 ring-1 ring-[#1d2a22]/8">
       <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em]" style={{ color: renk }}>
-        <Ikon size={15} /> {baslik}
+        <Ikon size={15} /> {tx(baslik)}
       </p>
       <div className="mt-1.5 text-sm leading-6 text-[#33463c]">{children}</div>
     </div>
@@ -72,6 +74,7 @@ function Bilgi({ ikon: Ikon, baslik, renk, children }: { ikon: typeof Leaf; basl
 }
 
 function BesinDetayi({ b, onKapat }: { b: Besin; onKapat: () => void }) {
+  const tx = useTx();
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onKapat();
     document.addEventListener('keydown', k);
@@ -84,7 +87,7 @@ function BesinDetayi({ b, onKapat }: { b: Besin; onKapat: () => void }) {
   }, [onKapat]);
 
   const noksanliklar = NOKSANLIKLAR.filter((n) => n.sembol === b.sembol);
-  const urunler = b.urunler.map((ad) => URUNLER.find((u) => u.ad === ad)).filter((u): u is (typeof URUNLER)[number] => !!u);
+  const urunler = b.urunler.map((ad) => IGSAS_URUNLER.find((u) => u.ad === ad)).filter((u): u is (typeof IGSAS_URUNLER)[number] => !!u);
   const h = HAREKET[b.hareket];
 
   return (
@@ -93,23 +96,23 @@ function BesinDetayi({ b, onKapat }: { b: Besin; onKapat: () => void }) {
         <div className="relative">
           {b.resim && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={b.resim} alt={`${b.ad} temsili görseli`} className="aspect-[4/3] w-full object-cover sm:aspect-[16/8]" />
+            <img src={b.resim} alt={tx("{a} temsili görseli", { a: tx(b.ad) })} className="aspect-[4/3] w-full object-cover sm:aspect-[16/8]" />
           )}
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-5 pb-5 pt-20 sm:px-8">
             <div className="flex items-end gap-4">
               <span className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-white/25 bg-black/40 text-white backdrop-blur sm:h-24 sm:w-24">
                 <span className="self-end pr-2 text-[11px] font-semibold tabular-nums text-white/70">{b.atomNo}</span>
-                <span className="-mt-1 font-display text-4xl font-semibold leading-none sm:text-5xl">{b.sembol}</span>
+                <span className="-mt-1 font-display text-4xl font-semibold leading-none sm:text-5xl">{tx(b.sembol)}</span>
                 <span className="mt-1 h-1 w-8 rounded-full" style={{ background: b.renk }} />
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">{GRUP_ADI[b.grup]}</p>
-                <h2 className="mt-1 font-display text-3xl font-medium text-white sm:text-4xl">{b.ad}</h2>
-                <p className="mt-1 text-sm leading-6 text-white/85">{b.kisa}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">{tx(GRUP_ADI[b.grup])}</p>
+                <h2 className="mt-1 font-display text-3xl font-medium text-white sm:text-4xl">{tx(b.ad)}</h2>
+                <p className="mt-1 text-sm leading-6 text-white/85">{tx(b.kisa)}</p>
               </div>
             </div>
           </div>
-          <button type="button" onClick={onKapat} aria-label="Kapat" className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70">
+          <button type="button" onClick={onKapat} aria-label={tx("Kapat")} className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70">
             <X size={20} />
           </button>
         </div>
@@ -121,55 +124,56 @@ function BesinDetayi({ b, onKapat }: { b: Besin; onKapat: () => void }) {
                 {b.gorevler.map((g) => (
                   <li key={g} className="flex gap-2">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: b.renk }} />
-                    {g}
+                    {tx(g)}
                   </li>
                 ))}
               </ul>
             </Bilgi>
             <Bilgi renk={b.renk} ikon={Leaf} baslik="Eksikse nerede görülür">
-              <p className="font-semibold text-[#17352a]">{h.ad}</p>
-              <p className="text-xs leading-5 text-[#6b7d72]">{h.metin}</p>
-              <p className="mt-1.5">{b.noksanlikYeri}</p>
+              <p className="font-semibold text-[#17352a]">{tx(h.ad)}</p>
+              <p className="text-xs leading-5 text-[#6b7d72]">{tx(h.metin)}</p>
+              <p className="mt-1.5">{tx(b.noksanlikYeri)}</p>
             </Bilgi>
             <Bilgi renk={b.renk} ikon={Mountain} baslik="Toprakta">
-              <p>{b.toprakta}</p>
-              <p className="mt-1.5 text-xs leading-5 text-[#6b7d72]">Kökün aldığı şekli: {b.alinanSekil}</p>
+              <p>{tx(b.toprakta)}</p>
+              <p className="mt-1.5 text-xs leading-5 text-[#6b7d72]">{tx("Kökün aldığı şekli:")} {tx(b.alinanSekil)}</p>
             </Bilgi>
             <Bilgi renk={b.renk} ikon={TriangleAlert} baslik="Alımını ne bozar">
-              {b.alimiBozan}
+              {tx(b.alimiBozan)}
             </Bilgi>
             <Bilgi renk={b.renk} ikon={Droplets} baslik="Ne zaman verilir">
-              {b.neZaman}
+              {tx(b.neZaman)}
             </Bilgi>
             <Bilgi renk={b.renk} ikon={TriangleAlert} baslik="Fazlası">
-              {b.fazlasi}
+              {tx(b.fazlasi)}
             </Bilgi>
           </div>
 
           {urunler.length > 0 && (
             <section>
-              <h3 className="font-display text-xl font-medium text-[#17352a]">{b.ad} içeren İGSAŞ ve KIANA ürünleri</h3>
+              <h3 className="font-display text-xl font-medium text-[#17352a]">{tx(b.ad)} {tx("için İGSAŞ ürünleri")}</h3>
               <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                 {urunler.map((u) => {
-                  const m = marka(u.ad);
                   return (
                     <li key={u.ad} className="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-[#1d2a22]/8">
                       <span className="flex items-center gap-2">
-                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${m === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#e4eef5] text-[#2c5566]'}`}>{m}</span>
-                        <span className="font-semibold text-[#17352a]">{u.ad}</span>
+                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${u.marka === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#1C4734] text-white'}`}>{u.marka}</span>
+                        <span className="font-semibold text-[#17352a]">{tx(u.ad)}</span>
                       </span>
-                      <span className="mt-0.5 block text-xs leading-5 text-[#6b7d72]">{u.rol}</span>
+                      <span className="mt-0.5 block text-xs leading-5 text-[#6b7d72]">{tx(u.rol)}</span>
                     </li>
                   );
                 })}
               </ul>
-              <p className="mt-2 text-xs text-[#7a877e]">Hangi üründen ne kadar verileceği toprak analizinize ve bitkinize göre tarlanızın raporunda hesaplanır.</p>
+              <p className="mt-2 text-xs text-[#7a877e]">{tx(
+                "Hangi üründen dekara ne kadar verileceği tarlanızın raporunda, bitkinizin dönem programına göre hesaplanır."
+              )}</p>
             </section>
           )}
 
           {noksanliklar.length > 0 && (
             <section>
-              <h3 className="font-display text-xl font-medium text-[#17352a]">{b.ad} noksanlığı tarlada nasıl görünür</h3>
+              <h3 className="font-display text-xl font-medium text-[#17352a]">{tx(b.ad)} {tx("noksanlığı tarlada nasıl görünür")}</h3>
               <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-2">
                 {noksanliklar.map((n) => (
                   <Link
@@ -178,8 +182,8 @@ function BesinDetayi({ b, onKapat }: { b: Besin; onKapat: () => void }) {
                     className="group w-40 shrink-0 snap-start overflow-hidden rounded-2xl bg-white ring-1 ring-[#1d2a22]/8 sm:w-44"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={noksanlikGorseli(n.id)} alt={`${kisaAd(n.bitki)} bitkisinde ${b.ad.toLocaleLowerCase('tr-TR')} noksanlığı`} loading="lazy" className="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.04]" />
-                    <span className="block px-3 py-2 text-sm font-semibold text-[#17352a]">{kisaAd(n.bitki)}</span>
+                    <img src={noksanlikGorseli(n.id)} alt={tx(`${kisaAd(n.bitki)} bitkisinde ${b.ad} noksanlığı`)} loading="lazy" className="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.04]" />
+                    <span className="block px-3 py-2 text-sm font-semibold text-[#17352a]">{tx(kisaAd(n.bitki))}</span>
                   </Link>
                 ))}
               </div>
@@ -203,10 +207,11 @@ const HAZIR = [
 ];
 
 function SayiKutusu({ etiket, deger, setDeger, renk }: { etiket: string; deger: number; setDeger: (v: number) => void; renk: string }) {
+  const tx = useTx();
   return (
     <label className="flex flex-col items-center gap-1">
       <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: renk }}>
-        {etiket}
+        {tx(etiket)}
       </span>
       <input
         type="number"
@@ -223,6 +228,7 @@ function SayiKutusu({ etiket, deger, setDeger, renk }: { etiket: string; deger: 
 }
 
 function TorbaHesabi() {
+  const tx = useTx();
   const [n, setN] = useState(15);
   const [p, setP] = useState(15);
   const [k, setK] = useState(15);
@@ -241,11 +247,12 @@ function TorbaHesabi() {
 
   return (
     <section id="torba" className="scroll-mt-24 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8" aria-labelledby="torba-baslik">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a87a2a]">Gübre torbasını okuyun</p>
-      <h2 id="torba-baslik" className="mt-1 font-display text-3xl font-medium text-[#17352a]">15-15-15 ne demek?</h2>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a87a2a]">{tx("Gübre torbasını okuyun")}</p>
+      <h2 id="torba-baslik" className="mt-1 font-display text-3xl font-medium text-[#17352a]">{tx("15-15-15 ne demek?")}</h2>
       <p className="mt-2 max-w-3xl text-sm leading-6 text-[#4b5f55]">
-        Torbadaki üç sayı her zaman aynı sırayla yazılır: <b>azot – fosfor – potasyum</b>, yüzde olarak. Fosfor <b>P₂O₅</b>, potasyum <b>K₂O</b> cinsinden
-        yazılır. Kendi torbanızın sayılarını girin, içinde ne kadar besin olduğunu görün.
+        {tx("Torbadaki üç sayı her zaman aynı sırayla yazılır:")} <b>{tx("azot – fosfor – potasyum")}</b>{tx(", yüzde olarak. Fosfor")} <b>{tx("P₂O₅")}</b>{tx(", potasyum")} <b>{tx("K₂O")}</b> {tx(
+          "cinsinden yazılır. Kendi torbanızın sayılarını girin, içinde ne kadar besin olduğunu görün."
+        )}
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -262,7 +269,7 @@ function TorbaHesabi() {
               }}
               className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${on ? 'bg-[#17352a] text-white' : 'bg-[#f1ede2] text-[#3e5248] hover:bg-[#e8e2d2]'}`}
             >
-              {h.ad}
+              {tx(h.ad)}
             </button>
           );
         })}
@@ -276,7 +283,7 @@ function TorbaHesabi() {
           <span className="hidden pb-3 text-2xl text-[#b8b09a] sm:inline">–</span>
           <SayiKutusu etiket="K₂O" deger={k} setDeger={setK} renk="#b5651d" />
           <label className="ml-0 flex flex-col items-center gap-1 sm:ml-3">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-[#6b7d72]">Torba (kg)</span>
+            <span className="text-[11px] font-bold uppercase tracking-wide text-[#6b7d72]">{tx("Torba (kg)")}</span>
             <input
               type="number"
               inputMode="decimal"
@@ -290,7 +297,7 @@ function TorbaHesabi() {
 
         <div>
           {/* Torba çubuğu */}
-          <div className="flex h-10 overflow-hidden rounded-xl ring-1 ring-[#1d2a22]/10" role="img" aria-label={`Torbanın %${fmt(Math.min(toplam, 100))} kadarı besin`}>
+          <div className="flex h-10 overflow-hidden rounded-xl ring-1 ring-[#1d2a22]/10" role="img" aria-label={tx("Torbanın %{a} kadarı besin", { a: fmt(Math.min(toplam, 100)) })}>
             {seri.map((s) =>
               s.yuzde > 0 ? (
                 <span key={s.ad} className="flex items-center justify-center text-xs font-bold text-white" style={{ width: `${(s.yuzde / Math.max(100, toplam)) * 100}%`, background: s.renk }}>
@@ -299,39 +306,39 @@ function TorbaHesabi() {
               ) : null,
             )}
             {geri > 0 && (
-              <span className="flex flex-1 items-center justify-center bg-[repeating-linear-gradient(45deg,#ece6d6,#ece6d6_6px,#f5f1e6_6px,#f5f1e6_12px)] text-xs font-semibold text-[#7a6f55]">
-                %{fmt(geri)} geri kalan
+              <span className="flex flex-1 items-center justify-center bg-[repeating-linear-gradient(45deg,#ece6d6,#ece6d6_6px,#f5f1e6_6px,#f5f1e6_12px)] text-xs font-semibold text-[#7a6f55]">{tx('%{a}', { a: fmt(geri) })} {tx("geri kalan")}
               </span>
             )}
           </div>
 
           {asim ? (
-            <p className="mt-3 rounded-xl bg-[#fdeeee] px-3 py-2 text-sm text-[#9a3434]">Üç sayının toplamı 100’ü geçemez. Torbadaki sayıları kontrol edin.</p>
+            <p className="mt-3 rounded-xl bg-[#fdeeee] px-3 py-2 text-sm text-[#9a3434]">{tx("Üç sayının toplamı 100’ü geçemez. Torbadaki sayıları kontrol edin.")}</p>
           ) : (
             <>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {[
                   { ad: 'Azot', kg: kgN, alt: 'saf azot (N)', renk: '#2f7d4f' },
-                  { ad: 'Fosfor', kg: kgP2O5, alt: `P₂O₅ · saf fosfor ≈ ${fmt(kgP2O5 * P2O5_P)} kg`, renk: '#7b4fa3' },
-                  { ad: 'Potasyum', kg: kgK2O, alt: `K₂O · saf potasyum ≈ ${fmt(kgK2O * K2O_K)} kg`, renk: '#b5651d' },
+                  { ad: 'Fosfor', kg: kgP2O5, alt: tx("P₂O₅ · saf fosfor ≈ {a} kg", { a: fmt(kgP2O5 * P2O5_P) }), renk: '#7b4fa3' },
+                  { ad: 'Potasyum', kg: kgK2O, alt: tx("K₂O · saf potasyum ≈ {a} kg", { a: fmt(kgK2O * K2O_K) }), renk: '#b5651d' },
                 ].map((s) => (
                   <div key={s.ad} className="rounded-2xl bg-[#f8f5ec] p-4">
                     <p className="text-xs font-bold uppercase tracking-wide" style={{ color: s.renk }}>
-                      {s.ad}
+                      {tx(s.ad)}
                     </p>
                     <p className="mt-0.5 font-display text-3xl tabular-nums text-[#17352a]">
-                      {fmt(s.kg)} <span className="text-base text-[#6b7d72]">kg</span>
+                      {tx(fmt(s.kg))} <span className="text-base text-[#6b7d72]">{tx("kg")}</span>
                     </p>
-                    <p className="text-xs text-[#6b7d72]">{s.alt}</p>
+                    <p className="text-xs text-[#6b7d72]">{tx(s.alt)}</p>
                   </div>
                 ))}
               </div>
               <p className="mt-3 text-sm leading-6 text-[#33463c]">
-                {fmt(kg, 0)} kg’lık torbada toplam <b>{fmt((kg * toplam) / 100)} kg</b> besin var.
+                {tx(fmt(kg, 0))} {tx("kg’lık torbada toplam")} <b>{tx(fmt((kg * toplam) / 100))} {tx("kg")}</b> {tx("besin var.")}
                 {geri > 0 && (
                   <>
-                    {' '}Geri kalan <b>%{fmt(geri)}</b> ({fmt((kg * geri) / 100)} kg) boşa değil: fosfor ve potasyumun oksit yazımındaki oksijen, besinlere eşlik eden
-                    iyonlar (sülfat, klorür, kalsiyum gibi) ve gübreyi taneli hâle getiren taşıyıcı ile dolgu maddesidir.
+                    {' '}{tx("Geri kalan")} <b>{tx('%{a}', { a: fmt(geri) })}</b> ({tx(fmt((kg * geri) / 100))} {tx(
+                      "kg) boşa değil: fosfor ve potasyumun oksit yazımındaki oksijen, besinlere eşlik eden iyonlar (sülfat, klorür, kalsiyum gibi) ve gübreyi taneli hâle getiren taşıyıcı ile dolgu maddesidir."
+                    )}
                   </>
                 )}
               </p>
@@ -345,6 +352,7 @@ function TorbaHesabi() {
 
 /* ---------- Ana bileşen ---------- */
 export function BesinKatalogu({ baslangic }: { baslangic?: string }) {
+  const tx = useTx();
   const [secili, setSecili] = useState<Besin | undefined>(() => besinBul(baslangic));
   const kapat = useCallback(() => setSecili(undefined), []);
   const gruplar = useMemo(() => GRUPLAR.map((g) => ({ g, liste: BESINLER.filter((b) => b.grup === g) })), []);
@@ -362,20 +370,21 @@ export function BesinKatalogu({ baslangic }: { baslangic?: string }) {
       <section className="mx-auto max-w-6xl px-5 sm:px-8" aria-labelledby="on-yedi">
         <div className="grid gap-6 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <h2 id="on-yedi" className="font-display text-2xl font-medium text-[#17352a] sm:text-3xl">Bitki 17 elemente ihtiyaç duyar</h2>
+            <h2 id="on-yedi" className="font-display text-2xl font-medium text-[#17352a] sm:text-3xl">{tx("Bitki 17 elemente ihtiyaç duyar")}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#4b5f55]">
-              Üçünü havadan ve sudan kendisi alır. Kalan 14’ünü kökleriyle topraktan alır; gübreyle tamamladığımız besinler bunlardır. Birinin eksikliği,
-              diğerleri bol olsa bile verimi sınırlar: fıçının en kısa tahtası gibi.
+              {tx(
+                "Üçünü havadan ve sudan kendisi alır. Kalan 14’ünü kökleriyle topraktan alır; gübreyle tamamladığımız besinler bunlardır. Birinin eksikliği, diğerleri bol olsa bile verimi sınırlar: fıçının en kısa tahtası gibi."
+              )}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {HAVA_SU.map((e) => (
-              <span key={e.sembol} className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-[#eef4f6] text-[#2c5566]" title={`${e.ad}: ${e.kaynak}`}>
-                <span className="font-display text-2xl font-semibold leading-none">{e.sembol}</span>
-                <span className="mt-1 text-[10px] font-semibold">{e.ad}</span>
+              <span key={e.sembol} className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-[#eef4f6] text-[#2c5566]" title={`${tx(e.ad)}: ${tx(e.kaynak)}`}>
+                <span className="font-display text-2xl font-semibold leading-none">{tx(e.sembol)}</span>
+                <span className="mt-1 text-[10px] font-semibold">{tx(e.ad)}</span>
               </span>
             ))}
-            <span className="flex h-16 items-center rounded-2xl bg-[#e8f3e6] px-4 text-sm font-bold text-[#1f6f4a]">+ 14 topraktan</span>
+            <span className="flex h-16 items-center rounded-2xl bg-[#e8f3e6] px-4 text-sm font-bold text-[#1f6f4a]">{tx("+ 14 topraktan")}</span>
           </div>
         </div>
       </section>
@@ -385,9 +394,9 @@ export function BesinKatalogu({ baslangic }: { baslangic?: string }) {
         <section key={g} className="mx-auto mt-12 max-w-6xl px-5 sm:px-8" aria-labelledby={`grup-${g}`}>
           <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
             <h2 id={`grup-${g}`} className="font-display text-2xl font-medium text-[#17352a] sm:text-3xl">
-              {GRUP_ADI[g]}
+              {tx(GRUP_ADI[g])}
             </h2>
-            <p className="max-w-xl text-sm leading-6 text-[#5e6a60]">{GRUP_ACIKLAMA[g]}</p>
+            <p className="max-w-xl text-sm leading-6 text-[#5e6a60]">{tx(GRUP_ACIKLAMA[g])}</p>
           </div>
           <div className={`mt-5 grid gap-4 ${g === 'mikro' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
             {liste.map((b) => (
@@ -400,27 +409,29 @@ export function BesinKatalogu({ baslangic }: { baslangic?: string }) {
       {/* Azotun yolculuğu */}
       <section className="mx-auto mt-14 max-w-6xl px-5 sm:px-8" aria-labelledby="azot-yolu">
         <div className="overflow-hidden rounded-[28px] bg-[#10201a] p-5 text-white sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9bdd68]">Gübreden bitkiye</p>
-          <h2 id="azot-yolu" className="mt-1 font-display text-3xl font-medium">Ürenin toprakta yolculuğu</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9bdd68]">{tx("Gübreden bitkiye")}</p>
+          <h2 id="azot-yolu" className="mt-1 font-display text-3xl font-medium">{tx("Ürenin toprakta yolculuğu")}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-white/75">
-            Bitki üreyi doğrudan pek kullanmaz. Toprağa düşen üre önce amonyuma, sonra nitrata dönüşür. Ilık ve nemli toprakta bu yaklaşık şöyle olur; soğukta
-            yavaşlar. Bu yüzden üre, ihtiyaçtan birkaç gün önce verilmeli ve yüzeyde kalmamalıdır.
+            {tx(
+              "Bitki üreyi doğrudan pek kullanmaz. Toprağa düşen üre önce amonyuma, sonra nitrata dönüşür. Ilık ve nemli toprakta bu yaklaşık şöyle olur; soğukta yavaşlar. Bu yüzden üre, ihtiyaçtan birkaç gün önce verilmeli ve yüzeyde kalmamalıdır."
+            )}
           </p>
           <ol className="mt-6 grid gap-3 sm:grid-cols-3">
             {AZOT_YOLU.map((a, i) => (
               <li key={a.ad} className="relative rounded-2xl bg-white/[0.07] p-4 ring-1 ring-white/10">
-                {a.sure && <span className="mb-2 inline-block rounded-full bg-[#9bdd68] px-2.5 py-0.5 text-xs font-bold text-[#10201a]">{a.sure} sonra</span>}
-                {!a.sure && <span className="mb-2 inline-block rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-bold">Başlangıç</span>}
-                <p className="font-display text-2xl">{a.ad}</p>
-                <p className="font-mono text-sm text-[#9bdd68]">{a.formul}</p>
-                <p className="mt-1 text-sm text-white/75">{a.not}</p>
+                {a.sure && <span className="mb-2 inline-block rounded-full bg-[#9bdd68] px-2.5 py-0.5 text-xs font-bold text-[#10201a]">{tx(a.sure)} {tx("sonra")}</span>}
+                {!a.sure && <span className="mb-2 inline-block rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-bold">{tx("Başlangıç")}</span>}
+                <p className="font-display text-2xl">{tx(a.ad)}</p>
+                <p className="font-mono text-sm text-[#9bdd68]">{tx(a.formul)}</p>
+                <p className="mt-1 text-sm text-white/75">{tx(a.not)}</p>
                 {i < AZOT_YOLU.length - 1 && <ArrowRight className="absolute -right-3 top-1/2 hidden -translate-y-1/2 text-[#9bdd68] sm:block" size={22} />}
               </li>
             ))}
           </ol>
           <p className="mt-4 text-xs leading-5 text-white/55">
-            Amonyum sülfat (AS 21) doğrudan amonyum adımından, potasyum nitrat ve magnezyum nitrat doğrudan nitrat adımından başlar; bu yüzden etkileri daha
-            hızlıdır.
+            {tx(
+              "Amonyum sülfat (AS 21) doğrudan amonyum adımından, potasyum nitrat ve magnezyum nitrat doğrudan nitrat adımından başlar; bu yüzden etkileri daha hızlıdır."
+            )}
           </p>
         </div>
       </section>
@@ -432,15 +443,17 @@ export function BesinKatalogu({ baslangic }: { baslangic?: string }) {
       <section className="mx-auto mt-14 max-w-6xl px-5 sm:px-8">
         <div className="flex flex-col items-start justify-between gap-4 rounded-[28px] bg-[#e8f3e6] p-6 sm:flex-row sm:items-center sm:p-8">
           <div>
-            <h2 className="font-display text-2xl font-medium text-[#17352a]">Toprağınızda hangisi eksik?</h2>
-            <p className="mt-1 text-sm leading-6 text-[#3e5248]">Toprak analizinizi yükleyin; eksik besinler ve hangi gübrenin ne zaman verileceği tarlanıza göre çıksın.</p>
+            <h2 className="font-display text-2xl font-medium text-[#17352a]">{tx("Toprağınızda hangisi eksik?")}</h2>
+            <p className="mt-1 text-sm leading-6 text-[#3e5248]">{tx(
+              "Toprak analizinizi yükleyin; eksik besinler ve hangi gübrenin ne zaman verileceği tarlanıza göre çıksın."
+            )}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link href="/ornek" className="inline-flex items-center gap-1.5 rounded-full bg-[#238f61] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1d7d54]">
-              Örnek raporu gör <ArrowRight size={16} />
+              {tx("Örnek raporu gör")} <ArrowRight size={16} />
             </Link>
             <Link href="/noksanliklar" className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#17352a] ring-1 ring-[#1d2a22]/10 hover:bg-[#f6f9f6]">
-              <Package size={16} /> Noksanlık kataloğu
+              <Package size={16} /> {tx("Noksanlık kataloğu")}
             </Link>
           </div>
         </div>

@@ -10,7 +10,7 @@
  * - Damlada tıkanma riski (pH): Nakayama ve Bucks (1991) — pH <7 düşük, 7–8 orta, >8 yüksek.
  * Hesaplar kodda yapılır; yapay zeka yalnızca sonucu sade dille anlatır.
  */
-import { zkartBul } from './igsas';
+import { zkartBul } from './bitki';
 import type { SulamaYontemi } from './sulama';
 
 export type Ton = 'iyi' | 'dikkat' | 'sorun' | 'bilgi';

@@ -137,8 +137,8 @@ export function zamanCizelgesi(yontem: SulamaYontemi, sure: number): Dilim[] | u
 export const KURALLAR: Record<SulamaYontemi, string[]> = {
   damla: [
     'Kalsiyumlu gübreleri sülfatlı ve fosfatlı gübrelerle aynı tankta karıştırmayın; çökelti yapar, damlatıcıyı tıkar. Gerekirse iki ayrı tank (A/B) kullanın.',
-    'Mikrobiyal ürünleri (KIANA EARTH PLUS) asitle aynı enjeksiyonda vermeyin; ayrı sulamada uygulayın.',
-    'Sulama suyunun pH’ı 5,5–6,5 aralığında olmalı; gerekirse NİTRİK ASİT veya FOSFORİK ASİT ile düzenleyin.',
+    'Mikroorganizmalı ürünleri (MICROSENSE, BioHealth) asitle aynı enjeksiyonda vermeyin; ayrı sulamada uygulayın.',
+    'Sulama suyunun pH’ı 5,5–6,5 aralığında olmalı; gerekirse nitrik asit veya fosforik asitle düzenleyin.',
   ],
   yagmurlama: [
     'Gübreyi toprak ıslandıktan sonra verin; kalan sürede temiz su yaprakları yıkasın.',

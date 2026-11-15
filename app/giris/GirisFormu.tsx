@@ -6,24 +6,32 @@
 import { ArrowLeft, ArrowRight, KeyRound, Loader2, Mail, UserRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { sozluk, type Sozluk } from '@/lib/ceviri';
+import type { Dil } from '@/lib/dil';
 import { createClient } from '@/lib/supabase/client';
 
 type Adim = 'eposta' | 'kod' | 'ad';
 
 const epostaGecerli = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
 
-const HATALAR: Record<string, string> = {
-  'Token has expired or is invalid': 'Kod hatalı ya da süresi dolmuş. Yeni kod isteyin.',
-  'otp_expired': 'Kodun süresi dolmuş. Yeni kod isteyin.',
-  'For security purposes': 'Çok sık denediniz. Lütfen biraz bekleyip tekrar deneyin.',
-  'rate limit': 'Şu an çok fazla kod istendi. Birkaç dakika sonra tekrar deneyin.',
-  'Error sending': 'E-posta gönderilemedi. Adresi kontrol edip tekrar deneyin.',
-  'Signups not allowed': 'Yeni kayıtlar şu an kapalı.',
-  'invalid format': 'Geçerli bir e-posta adresi yazın.',
+/** Supabase hata iletisinin bir parçası → sözlükteki karşılığı */
+const HATALAR: [string, keyof Sozluk['form']['hata']][] = [
+  ['Token has expired or is invalid', 'kodHatali'],
+  ['otp_expired', 'kodDoldu'],
+  ['For security purposes', 'sik'],
+  ['rate limit', 'limit'],
+  ['Error sending', 'gonderilemedi'],
+  ['Signups not allowed', 'kayitKapali'],
+  ['invalid format', 'bicim'],
+];
+const hataMetni = (m: string, h: Sozluk['form']['hata']) => {
+  const bul = HATALAR.find(([k]) => m.toLowerCase().includes(k.toLowerCase()));
+  return bul ? h[bul[1]] : m;
 };
-const hataMetni = (m: string) => Object.entries(HATALAR).find(([k]) => m.toLowerCase().includes(k.toLowerCase()))?.[1] ?? m;
 
-export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonra: string; ilkAdim?: Adim; ilkHata?: string | null }) {
+export function GirisFormu({ dil = 'tr', sonra, ilkAdim = 'eposta', ilkHata = null }: { dil?: Dil; sonra: string; ilkAdim?: Adim; ilkHata?: string | null }) {
+  const f = sozluk(dil).form;
+  const h = f.hata;
   const router = useRouter();
   const supabase = createClient();
   const [adim, setAdim] = useState<Adim>(ilkAdim);
@@ -51,7 +59,7 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
     // Başarılıysa tarayıcı Google'a gider; buraya yalnızca hata olursa düşülür
     if (error) {
       setYukleniyor(false);
-      setHata(error.message.includes('provider is not enabled') ? 'Google ile giriş henüz açılmadı. Şimdilik e-postayla devam edin.' : hataMetni(error.message));
+      setHata(error.message.includes('provider is not enabled') ? h.googleKapali : hataMetni(error.message, h));
     }
   };
 
@@ -59,14 +67,14 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
     e?.preventDefault();
     setHata(null);
     const adres = eposta.trim().toLowerCase();
-    if (!epostaGecerli(adres)) return setHata('Geçerli bir e-posta adresi yazın (ör. ad@gmail.com).');
+    if (!epostaGecerli(adres)) return setHata(h.gecersizEposta);
     setYukleniyor(true);
     const { error } = await supabase.auth.signInWithOtp({
       email: adres,
       options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/auth/callback?sonra=${encodeURIComponent(sonra)}` },
     });
     setYukleniyor(false);
-    if (error) return setHata(hataMetni(error.message));
+    if (error) return setHata(hataMetni(error.message, h));
     setEposta(adres);
     setKod('');
     setBekle(60);
@@ -77,12 +85,12 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
   const kodDogrula = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setHata(null);
-    if (!/^\d{6,8}$/.test(kod)) return setHata('E-postanıza gelen kodu girin.');
+    if (!/^\d{6,8}$/.test(kod)) return setHata(h.kodYok);
     setYukleniyor(true);
     const { data, error } = await supabase.auth.verifyOtp({ email: eposta, token: kod, type: 'email' });
     if (error || !data.user) {
       setYukleniyor(false);
-      return setHata(hataMetni(error?.message ?? 'Giriş yapılamadı.'));
+      return setHata(hataMetni(error?.message ?? h.girisYok, h));
     }
     const { data: profil } = await supabase.from('profiller').select('ad_soyad').eq('id', data.user.id).maybeSingle();
     setYukleniyor(false);
@@ -94,7 +102,7 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
   const adKaydet = async (e: React.FormEvent) => {
     e.preventDefault();
     setHata(null);
-    if (ad.trim().length < 2) return setHata('Adınızı ve soyadınızı yazın.');
+    if (ad.trim().length < 2) return setHata(h.adYok);
     setYukleniyor(true);
     const {
       data: { user },
@@ -115,8 +123,8 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
     <div className="w-full rounded-[28px] bg-[#fbf8f2] p-6 shadow-[0_40px_80px_-24px_rgba(0,0,0,.6)] sm:p-8">
       {adim === 'eposta' && (
         <form onSubmit={kodGonder} noValidate>
-          <h1 className="font-display text-3xl font-medium tracking-[-0.01em]">Giriş yap</h1>
-          <p className="mt-2 text-sm leading-6 text-[#64766c]">Şifre gerekmez. Hesabınız yoksa otomatik açılır.</p>
+          <h1 className="font-display text-3xl font-medium tracking-[-0.01em]">{f.girisYap}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#64766c]">{f.sifreYok}</p>
 
           <button
             type="button"
@@ -124,15 +132,15 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
             disabled={yukleniyor}
             className="mt-6 flex w-full items-center justify-center gap-3 rounded-full bg-[#1d2a22] px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-[#2f3d34] disabled:opacity-60"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white"><GoogleLogo /></span> Google ile devam et
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white"><GoogleLogo /></span> {f.google}
           </button>
 
           <div className="my-6 flex items-center gap-3 text-xs font-medium text-[#8a968d]">
-            <span className="h-px flex-1 bg-[#1d2a22]/10" /> ya da e-postanıza kod gönderelim <span className="h-px flex-1 bg-[#1d2a22]/10" />
+            <span className="h-px flex-1 bg-[#1d2a22]/10" /> {f.yaDa} <span className="h-px flex-1 bg-[#1d2a22]/10" />
           </div>
 
           <label htmlFor="eposta" className="block text-sm font-semibold text-[#3e5248]">
-            E-posta adresi
+            {f.eposta}
           </label>
           <input
             id="eposta"
@@ -141,7 +149,7 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
             autoComplete="email"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="ad@gmail.com"
+            placeholder={f.epostaOrnek}
             value={eposta}
             onChange={(e) => setEposta(e.target.value)}
             className={`mt-2 ${kutu}`}
@@ -152,7 +160,7 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
             disabled={yukleniyor}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-[#1d2a22]/20 px-6 py-3.5 text-base font-semibold text-[#1d2a22] transition hover:bg-[#1d2a22]/5 disabled:opacity-60"
           >
-            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : <><Mail size={18} /> Kod gönder <ArrowRight size={18} /></>}
+            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : <><Mail size={18} /> {f.kodGonder} <ArrowRight size={18} /></>}
           </button>
         </form>
       )}
@@ -160,15 +168,14 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
       {adim === 'kod' && (
         <form onSubmit={kodDogrula}>
           <button type="button" onClick={() => setAdim('eposta')} className="flex items-center gap-1 text-sm font-semibold text-[#476456]">
-            <ArrowLeft size={16} /> Adresi değiştir
+            <ArrowLeft size={16} /> {f.adresDegistir}
           </button>
           <div className={`mt-5 ${ikon}`}>
             <KeyRound size={24} />
           </div>
-          <h1 className={baslik}>Kodu girin</h1>
+          <h1 className={baslik}>{f.kodGirin}</h1>
           <p className="mt-2 text-sm leading-6 text-[#64766c]">
-            <strong className="break-all">{eposta}</strong> adresine bir e-posta gönderdik. İçindeki kodu aşağıya yazın ya da e-postadaki
-            bağlantıya dokunun. Gelen kutusunda yoksa <strong>Spam / Gereksiz</strong> klasörüne bakın.
+            <strong className="break-all">{eposta}</strong> {dil === 'tr' ? '' : '· '}{f.gonderdik1} <strong>{f.spam}</strong> {f.gonderdik2}
           </p>
           <input
             ref={kodRef}
@@ -180,11 +187,11 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
             value={kod}
             onChange={(e) => setKod(e.target.value.replace(/\D/g, '').slice(0, 8))}
             className={`mt-6 ${kutu} text-center tracking-[0.5em]`}
-            aria-label="Doğrulama kodu"
+            aria-label={f.kodEtiket}
           />
           {hata && <p className="mt-3 text-sm text-[#a83422]">{hata}</p>}
           <button type="submit" disabled={yukleniyor} className={dugme}>
-            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : 'Giriş yap'}
+            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : f.girisYap}
           </button>
           <button
             type="button"
@@ -192,7 +199,7 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
             disabled={bekle > 0 || yukleniyor}
             className="mt-3 w-full text-sm font-semibold text-[#2f7a4f] disabled:text-[#9aa7a0]"
           >
-            {bekle > 0 ? `Yeni kod ${bekle} sn sonra istenebilir` : 'Kodu tekrar gönder'}
+            {bekle > 0 ? f.yeniKod(bekle) : f.tekrar}
           </button>
         </form>
       )}
@@ -202,19 +209,19 @@ export function GirisFormu({ sonra, ilkAdim = 'eposta', ilkHata = null }: { sonr
           <div className={ikon}>
             <UserRound size={24} />
           </div>
-          <h1 className={baslik}>Hoş geldiniz</h1>
-          <p className="mt-2 text-sm leading-6 text-[#64766c]">Size nasıl hitap edelim?</p>
+          <h1 className={baslik}>{f.hosGeldiniz}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#64766c]">{f.hitap}</p>
           <input
             type="text"
             autoComplete="name"
-            placeholder="Ad Soyad"
+            placeholder={f.adSoyad}
             value={ad}
             onChange={(e) => setAd(e.target.value)}
             className={`mt-6 ${kutu}`}
           />
           {hata && <p className="mt-3 text-sm text-[#a83422]">{hata}</p>}
           <button type="submit" disabled={yukleniyor} className={dugme}>
-            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : 'Devam et'}
+            {yukleniyor ? <Loader2 className="animate-spin" size={20} /> : f.devam}
           </button>
         </form>
       )}

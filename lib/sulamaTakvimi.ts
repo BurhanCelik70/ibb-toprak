@@ -68,6 +68,19 @@ export const BOLGE_DUZELTME: Record<Bolge, { carpan: number; kaydir: number; kis
   Marmara: { carpan: 1.1, kaydir: -10, kisalt: 0, not: 'Yaz yağışı İç Anadolu\'dan biraz fazla; aralıklar biraz uzundur.' },
   Karadeniz: { carpan: 1.5, kaydir: 0, kisalt: 0, not: 'Yağışlı bölge; Bolu ve Tokat denemelerinde mısıra 3–4 su yetmiştir. Yağışlı yazlarda su sayısı daha da azalır.' },
   'Doğu Anadolu': { carpan: 1, kaydir: 15, kisalt: 30, not: 'Yaz kısa; sulama sezonu geç başlar ve erken biter.' },
+  // Almanya: yaz ETo ~3–3,7 mm/gün (Konya'nın yarısı) ve yaz yağışı var; sulama yalnız kurak dönemlerde, takviye niteliğinde
+  Norddeutschland: { carpan: 1.6, kaydir: 10, kisalt: 15, not: 'Kuzey Almanya: ETo düşük ve yaz yağışı var; kumlu Geest topraklarında su tutma az olduğundan kurak dönemde yağmurlama (Beregnung) gerekir. Yağış olan haftalarda sulama atlanır.' },
+  Ostdeutschland: { carpan: 1.4, kaydir: 10, kisalt: 15, not: 'Doğu Almanya: ülkenin en kurak kesimi (yıllık ~500–600 mm); yaz başı kuraklığında sulama aralığı kısalır, kumlu topraklarda daha da sık.' },
+  Westdeutschland: { carpan: 1.8, kaydir: 10, kisalt: 15, not: 'Batı Almanya: ılıman ve yağışlı; sulama çoğunlukla sebze, patates ve kurak yazlarda takviye olarak yapılır.' },
+  Süddeutschland: { carpan: 1.8, kaydir: 10, kisalt: 15, not: 'Güney Almanya: yaz yağışı yüksek (Alp önü); Aşağı Frankonya (Unterfranken) ve Yukarı Ren ovası daha kurak, orada aralıklar kısalır.' },
+  // İspanya: ETo Hargreaves ile il ikliminden hesaplanır; aralık düzeltmeleri bölgenin yaz kuraklığına göre (yaklaşık)
+  'España atlántica': { carpan: 1.6, kaydir: 10, kisalt: 15, not: 'Atlantik İspanya: yaz yağışı var, ETo düşük; sulama çoğunlukla takviye niteliğinde, kurak haftalarda yapılır.' },
+  'Valle del Ebro': { carpan: 0.85, kaydir: -10, kisalt: 0, not: 'Ebro vadisi: yarı kurak, kuru ve rüzgârlı (cierzo); yaz ETo yüksek, sulama sık.' },
+  'Meseta Norte': { carpan: 1, kaydir: 5, kisalt: 15, not: 'Kuzey Meseta: karasal iklim, geç donlar; sulama sezonu mayıs–eylül arası, kısadır.' },
+  'Meseta Sur': { carpan: 0.8, kaydir: -15, kisalt: 0, not: 'Güney Meseta (La Mancha, Extremadura): yaz çok sıcak ve kurak; sulama sık, yeraltı suyu sınırlı.' },
+  Mediterráneo: { carpan: 0.8, kaydir: -20, kisalt: 0, not: 'Akdeniz kıyısı: sıcak ve uzun yaz; damla sulama yaygın, sulama suyu tuzluluğuna dikkat.' },
+  Andalucía: { carpan: 0.7, kaydir: -25, kisalt: 0, not: 'Endülüs: Guadalquivir vadisinde yaz sıcağı çok yüksek; sezon erken başlar, sulama aralıkları kısadır.' },
+  Canarias: { carpan: 0.8, kaydir: -30, kisalt: 0, not: 'Kanarya Adaları: yıl boyu ılık ve kurak kıyı; sulama yıl boyu sürer, su tuzlu ya da arıtılmış olabilir.' },
 };
 
 /** Bitki + yöntem + il için önerilen sıcak ay aralığı (gün) ve bölge bilgisi */

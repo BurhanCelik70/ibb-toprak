@@ -1,4 +1,5 @@
 'use client';
+import { useTx } from '@/components/DilSaglayici';
 /**
  * Noksanlıkla karışabilen bitki hastalıkları: kart + detay penceresi. Yalnızca bilgilendirme; ilaç önerisi yok.
  */
@@ -21,6 +22,7 @@ export const BILGI_NOTU =
 
 /** Resim yoksa ya da yüklenemezse sade bir zemin gösterir */
 function HastalikResmi({ h, className }: { h: Hastalik; className: string }) {
+  const tx = useTx();
   const [hata, setHata] = useState(false);
   if (hata)
     return (
@@ -30,19 +32,21 @@ function HastalikResmi({ h, className }: { h: Hastalik; className: string }) {
     );
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={hastalikGorseli(h.id)} alt={`${kisaAd(h.bitki)} bitkisinde ${h.ad.toLocaleLowerCase('tr-TR')}`} loading="lazy" onError={() => setHata(true)} className={`object-cover ${className}`} />
+    <img src={hastalikGorseli(h.id)} alt={tx(`${kisaAd(h.bitki)} bitkisinde ${h.ad}`)} loading="lazy" onError={() => setHata(true)} className={`object-cover ${className}`} />
   );
 }
 
 export function TurRozeti({ h, buyuk = false }: { h: Hastalik; buyuk?: boolean }) {
+  const tx = useTx();
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full font-bold text-white ${buyuk ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'}`} style={{ background: TUR_RENK[h.tur] }}>
-      <Bug size={buyuk ? 15 : 13} /> {h.tur}
+      <Bug size={buyuk ? 15 : 13} /> {tx(h.tur)}
     </span>
   );
 }
 
 export function HastalikKarti({ h, onAc, bitkiGoster = false }: { h: Hastalik; onAc: () => void; bitkiGoster?: boolean }) {
+  const tx = useTx();
   return (
     <button
       type="button"
@@ -56,17 +60,18 @@ export function HastalikKarti({ h, onAc, bitkiGoster = false }: { h: Hastalik; o
         </span>
       </span>
       <span className="flex flex-1 flex-col p-4">
-        {bitkiGoster && <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7a877e]">{kisaAd(h.bitki)}</span>}
-        <span className="font-display text-xl font-medium leading-tight text-[#17352a]">{h.ad}</span>
-        <span className="text-xs italic text-[#7a877e]">{h.etmen}</span>
-        <span className="mt-1.5 text-sm leading-6 text-[#4f6158]">{h.kisa}</span>
-        <span className="mt-auto pt-3 text-xs font-semibold text-[#8a5a2b]">Nasıl tanınır, noksanlıktan farkı →</span>
+        {bitkiGoster && <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7a877e]">{tx(kisaAd(h.bitki))}</span>}
+        <span className="font-display text-xl font-medium leading-tight text-[#17352a]">{tx(h.ad)}</span>
+        <span className="text-xs italic text-[#7a877e]">{tx(h.etmen)}</span>
+        <span className="mt-1.5 text-sm leading-6 text-[#4f6158]">{tx(h.kisa)}</span>
+        <span className="mt-auto pt-3 text-xs font-semibold text-[#8a5a2b]">{tx("Nasıl tanınır, noksanlıktan farkı →")}</span>
       </span>
     </button>
   );
 }
 
 export function HastalikDetayi({ h, onKapat, onNoksanlik }: { h: Hastalik; onKapat: () => void; onNoksanlik?: (n: Noksanlik) => void }) {
+  const tx = useTx();
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onKapat();
     document.addEventListener('keydown', k);
@@ -88,36 +93,36 @@ export function HastalikDetayi({ h, onKapat, onNoksanlik }: { h: Hastalik; onKap
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-5 pb-5 pt-16 sm:px-8">
             <TurRozeti h={h} buyuk />
             <h2 className="mt-2 font-display text-3xl font-medium text-white sm:text-4xl">
-              {kisaAd(h.bitki)}: {h.ad.toLocaleLowerCase('tr-TR')}
+              {tx(kisaAd(h.bitki))}: {tx(h.ad)}
             </h2>
-            <p className="text-sm italic text-white/75">{h.etmen}</p>
+            <p className="text-sm italic text-white/75">{tx(h.etmen)}</p>
           </div>
-          <button type="button" onClick={onKapat} aria-label="Kapat" className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70">
+          <button type="button" onClick={onKapat} aria-label={tx("Kapat")} className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70">
             <X size={20} />
           </button>
         </div>
 
         <div className="grid gap-5 p-5 sm:p-8 md:grid-cols-[1.1fr_1fr]">
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-[#7a877e]">Nasıl tanınır?</h3>
+            <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-[#7a877e]">{tx("Nasıl tanınır?")}</h3>
             <ul className="mt-2 space-y-2">
               {h.belirtiler.map((b) => (
                 <li key={b} className="flex gap-2.5 text-[15px] leading-6 text-[#24342b]">
-                  <Search size={16} className="mt-1 shrink-0 text-[#8a5a2b]" /> {b}
+                  <Search size={16} className="mt-1 shrink-0 text-[#8a5a2b]" /> {tx(b)}
                 </li>
               ))}
             </ul>
             <h3 className="mt-6 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-[#7a877e]">
-              <CloudRain size={15} /> Ne zaman çıkar?
+              <CloudRain size={15} /> {tx("Ne zaman çıkar?")}
             </h3>
-            <p className="mt-2 text-[15px] leading-6 text-[#24342b]">{h.kosullar}</p>
+            <p className="mt-2 text-[15px] leading-6 text-[#24342b]">{tx(h.kosullar)}</p>
           </div>
           <div className="space-y-4">
             <div className="rounded-[20px] border border-[#ecd9b0] bg-[#fbf1dc] p-5">
               <h3 className="flex items-center gap-2 font-bold text-[#5a4a2a]">
-                <Scale size={18} /> Noksanlıktan nasıl ayırırım?
+                <Scale size={18} /> {tx("Noksanlıktan nasıl ayırırım?")}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-[#5a4a2a]">{h.noksanliktanFarki}</p>
+              <p className="mt-2 text-sm leading-6 text-[#5a4a2a]">{tx(h.noksanliktanFarki)}</p>
               {benzerler.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {benzerler.map((n) => (
@@ -130,7 +135,7 @@ export function HastalikDetayi({ h, onKapat, onNoksanlik }: { h: Hastalik; onKap
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={noksanlikGorseli(n.id)} alt="" className="h-7 w-7 rounded-full object-cover" />
-                      {n.besin} noksanlığı
+                      {tx(n.besin)} {tx("noksanlığı")}
                     </button>
                   ))}
                 </div>
@@ -138,18 +143,18 @@ export function HastalikDetayi({ h, onKapat, onNoksanlik }: { h: Hastalik; onKap
             </div>
             <div className="rounded-[20px] bg-[#e8f3e6] p-5">
               <h3 className="flex items-center gap-2 font-bold text-[#17352a]">
-                <ShieldCheck size={18} className="text-[#238f61]" /> Önlemek için (ilaçsız)
+                <ShieldCheck size={18} className="text-[#238f61]" /> {tx("Önlemek için (ilaçsız)")}
               </h3>
               <ul className="mt-3 space-y-2">
                 {h.onlemler.map((c) => (
                   <li key={c} className="flex gap-2.5 text-sm leading-6 text-[#24342b]">
-                    <Leaf size={15} className="mt-1 shrink-0 text-[#238f61]" /> {c}
+                    <Leaf size={15} className="mt-1 shrink-0 text-[#238f61]" /> {tx(c)}
                   </li>
                 ))}
               </ul>
             </div>
             <p className="flex gap-2 text-xs leading-5 text-[#7a877e]">
-              <Info size={14} className="mt-0.5 shrink-0" /> {BILGI_NOTU}
+              <Info size={14} className="mt-0.5 shrink-0" /> {tx(BILGI_NOTU)}
             </p>
           </div>
         </div>

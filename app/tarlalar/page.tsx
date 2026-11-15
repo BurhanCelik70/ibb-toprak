@@ -1,6 +1,8 @@
+import { ceviriAl } from '@/lib/dilSunucu';
 import { ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { IL_PAR, parOzeti } from '@/lib/par';
+import { dunyaIli } from '@/lib/dunya';
 import { redirect } from 'next/navigation';
 import { AppHeader, SiteFooter } from '@/components/site';
 import { SINIFLAR } from '@/lib/indeks';
@@ -9,11 +11,15 @@ import { oturumKullanici } from '@/lib/supabase/server';
 import { formatNumber } from '@/lib/toprak';
 import { tarihYaz, type Tarla } from '@/lib/veri';
 
-export const metadata = { title: 'Tarlalarım', robots: { index: false, follow: true } };
+export async function generateMetadata() {
+  const { tx } = await ceviriAl();
+  return { title: tx('Tarlalarım'), robots: { index: false, follow: true } };
+}
 
 type Satir = Tarla & { analizler: { id: string; indeks: number | null; analiz_tarihi: string }[] };
 
 export default async function TarlalarSayfasi() {
+  const { tx } = await ceviriAl();
   const { supabase, kullaniciId } = await oturumKullanici();
   if (!kullaniciId) redirect('/giris?sonra=/tarlalar');
 
@@ -29,11 +35,11 @@ export default async function TarlalarSayfasi() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-[#2f8f57]">{profil?.ad_soyad ? `Merhaba ${profil.ad_soyad.split(' ')[0]}` : 'Hoş geldiniz'}</p>
-            <h1 className="mt-1 font-display text-4xl font-medium tracking-[-0.02em] sm:text-5xl">Tarlalarım</h1>
+            <p className="text-sm font-semibold text-[#2f8f57]">{profil?.ad_soyad ? tx('Merhaba {a}', { a: profil.ad_soyad.split(' ')[0] }) : tx("Hoş geldiniz")}</p>
+            <h1 className="mt-1 font-display text-4xl font-medium tracking-[-0.02em] sm:text-5xl">{tx("Tarlalarım")}</h1>
           </div>
           <Link href="/tarlalar/yeni" className="inline-flex items-center gap-2 rounded-full bg-[#238f61] px-5 py-3 font-bold text-white hover:bg-[#1d7d54]">
-            <Plus size={20} /> Tarla ekle
+            <Plus size={20} /> {' '}{tx("Tarla ekle")}
           </Link>
         </div>
 
@@ -45,9 +51,10 @@ export default async function TarlalarSayfasi() {
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#eaf6e4] text-[#238f61]">
               <Plus size={32} />
             </span>
-            <span className="mt-5 text-xl font-bold">İlk tarlanızı ekleyin</span>
+            <span className="mt-5 text-xl font-bold">{tx("İlk tarlanızı ekleyin")}</span>
             <span className="mt-2 max-w-sm text-sm leading-6 text-[#64766c]">
-              Ad, alan, bitki ve sulama yöntemini bir kez girin. Analizleriniz bu tarlanın altında saklanır ve karşılaştırılır.
+              
+              {tx("Ad, alan, bitki ve sulama yöntemini bir kez girin. Analizleriniz bu tarlanın altında saklanır ve karşılaştırılır.")}
             </span>
           </Link>
         ) : (
@@ -63,14 +70,15 @@ export default async function TarlalarSayfasi() {
                   <Link href={`/tarlalar/${t.id}`} className="group flex h-full flex-col rounded-[26px] border border-[#dfe9df] bg-white p-5 transition hover:border-[#9aca89] hover:shadow-lg">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="truncate text-lg font-extrabold">{t.ad}</div>
+                        <div className="truncate text-lg font-extrabold">{tx(t.ad)}</div>
                         <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-semibold">
-                          {t.bitki && <span className="rounded-full bg-[#e8f3e6] px-2.5 py-0.5 text-[#1f6f4a]">{t.bitki}</span>}
-                          <span className="rounded-full bg-[#e3f0f6] px-2.5 py-0.5 text-[#2c5566]">{SULAMA_YONTEMLERI[t.sulama].kisa}</span>
-                          {t.alan_dekar && <span className="rounded-full bg-[#f3efe6] px-2.5 py-0.5 text-[#6b5520]">{formatNumber(t.alan_dekar, 1)} da</span>}
-                          {t.il && IL_PAR[t.il] && (
-                            <span className="rounded-full bg-[#fdf3dc] px-2.5 py-0.5 text-[#8a5a00]" title={`${t.il} ortalama PAR (fotosentetik aktif ışınım), MJ/m²·gün`}>
-                              ☀ PAR {formatNumber(parOzeti(t.il)!.yillik, 1)}
+                          {t.bitki && <span className="rounded-full bg-[#e8f3e6] px-2.5 py-0.5 text-[#1f6f4a]">{tx(t.bitki)}</span>}
+                          <span className="rounded-full bg-[#e3f0f6] px-2.5 py-0.5 text-[#2c5566]">{tx(SULAMA_YONTEMLERI[t.sulama].kisa)}</span>
+                          {t.alan_dekar && <span className="rounded-full bg-[#f3efe6] px-2.5 py-0.5 text-[#6b5520]">{tx.alan(t.alan_dekar)}</span>}
+                          {t.il && !dunyaIli(t.il) && IL_PAR[t.il] && (
+                            <span className="rounded-full bg-[#fdf3dc] px-2.5 py-0.5 text-[#8a5a00]" title={tx("{a} ortalama PAR (fotosentetik aktif ışınım), MJ/m²·gün", { a: t.il })}>
+                              
+                              {tx("☀ PAR")}{' '}{tx(formatNumber(parOzeti(t.il)!.yillik, 1))}
                             </span>
                           )}
                         </div>
@@ -79,14 +87,14 @@ export default async function TarlalarSayfasi() {
                         <div className="text-right">
                           <div className="text-3xl font-extrabold leading-none" style={{ color: sinif?.renk }}>{son.indeks}</div>
                           <div className="mt-1 text-[11px] font-semibold text-[#6b7d72]">
-                            {fark !== null && fark !== 0 ? (fark > 0 ? `▲ ${fark}` : `▼ ${-fark}`) : sinif?.ad}
+                            {fark !== null && fark !== 0 ? (fark > 0 ? `▲ ${fark}` : `▼ ${-fark}`) : tx(sinif?.ad)}
                           </div>
                         </div>
                       )}
                     </div>
                     <div className="mt-auto flex items-center justify-between pt-5 text-sm text-[#64766c]">
                       <span>
-                        {son ? `${t.analizler.length} analiz · son ${tarihYaz(son.analiz_tarihi)}` : 'Henüz analiz yok'}
+                        {son ? tx("{a} analiz · son {b}", { a: t.analizler.length, b: tarihYaz(son.analiz_tarihi, tx.dil) }) : tx("Henüz analiz yok")}
                       </span>
                       <ChevronRight size={18} className="text-[#238f61] transition-transform group-hover:translate-x-1" />
                     </div>

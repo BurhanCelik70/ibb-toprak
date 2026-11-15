@@ -1,4 +1,5 @@
 'use client';
+import { useTx } from '@/components/DilSaglayici';
 /**
  * Bitki besin noksanlıkları kataloğu: bitki seç → kartlar → kart detayı (büyük resim, belirtiler, neden, ne yapmalı).
  */
@@ -26,18 +27,20 @@ const YAPRAK_ETIKET: Record<Noksanlik['yaprak'], string> = {
 };
 
 export function BesinRozeti({ n, buyuk = false }: { n: Pick<Noksanlik, 'sembol' | 'besin'>; buyuk?: boolean }) {
+  const tx = useTx();
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full font-bold text-white ${buyuk ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs'}`}
       style={{ background: BESIN_RENK[n.sembol] ?? '#3e5248' }}
     >
-      <span className="font-display">{n.sembol}</span>
-      <span className="font-semibold opacity-90">{n.besin}</span>
+      <span className="font-display">{tx(n.sembol)}</span>
+      <span className="font-semibold opacity-90">{tx(n.besin)}</span>
     </span>
   );
 }
 
 export function NoksanlikKarti({ n, onAc, bitkiGoster = false }: { n: Noksanlik; onAc: () => void; bitkiGoster?: boolean }) {
+  const tx = useTx();
   return (
     <button
       type="button"
@@ -48,7 +51,7 @@ export function NoksanlikKarti({ n, onAc, bitkiGoster = false }: { n: Noksanlik;
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={noksanlikGorseli(n.id)}
-          alt={`${kisaAd(n.bitki)} bitkisinde ${n.besin.toLocaleLowerCase('tr-TR')} noksanlığı`}
+          alt={tx(`${kisaAd(n.bitki)} bitkisinde ${n.besin} noksanlığı`)}
           loading="lazy"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
         />
@@ -57,16 +60,17 @@ export function NoksanlikKarti({ n, onAc, bitkiGoster = false }: { n: Noksanlik;
         </span>
       </span>
       <span className="flex flex-1 flex-col p-4">
-        {bitkiGoster && <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7a877e]">{kisaAd(n.bitki)}</span>}
-        <span className="font-display text-xl font-medium leading-tight text-[#17352a]">{n.besin} noksanlığı</span>
-        <span className="mt-1.5 text-sm leading-6 text-[#4f6158]">{n.kisa}</span>
-        <span className="mt-auto pt-3 text-xs font-semibold text-[#2f8f57]">Belirtiler ve çözüm →</span>
+        {bitkiGoster && <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7a877e]">{tx(kisaAd(n.bitki))}</span>}
+        <span className="font-display text-xl font-medium leading-tight text-[#17352a]">{tx(n.besin)} {tx("noksanlığı")}</span>
+        <span className="mt-1.5 text-sm leading-6 text-[#4f6158]">{tx(n.kisa)}</span>
+        <span className="mt-auto pt-3 text-xs font-semibold text-[#2f8f57]">{tx("Belirtiler ve çözüm →")}</span>
       </span>
     </button>
   );
 }
 
 export function NoksanlikDetayi({ n, onKapat, onHastalik }: { n: Noksanlik; onKapat: () => void; onHastalik?: (h: Hastalik) => void }) {
+  const tx = useTx();
   const hastaliklar = benzerHastaliklar(n.id);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onKapat();
@@ -88,10 +92,10 @@ export function NoksanlikDetayi({ n, onKapat, onHastalik }: { n: Noksanlik; onKa
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-5 pb-5 pt-16 sm:px-8">
             <BesinRozeti n={n} buyuk />
             <h2 className="mt-2 font-display text-3xl font-medium text-white sm:text-4xl">
-              {kisaAd(n.bitki)}: {n.besin.toLocaleLowerCase('tr-TR')} noksanlığı
+              {tx(kisaAd(n.bitki))}: {tx(`${n.besin} noksanlığı`)}
             </h2>
           </div>
-          <button type="button" onClick={onKapat} aria-label="Kapat" className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70">
+          <button type="button" onClick={onKapat} aria-label={tx("Kapat")} className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70">
             <X size={20} />
           </button>
         </div>
@@ -99,43 +103,43 @@ export function NoksanlikDetayi({ n, onKapat, onHastalik }: { n: Noksanlik; onKa
         <div className="grid gap-5 p-5 sm:p-8 md:grid-cols-[1.1fr_1fr]">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full bg-[#ece5d4] px-3 py-1 text-xs font-semibold text-[#5a4a2a]">
-              {n.yaprak === 'yaşlı' ? <ArrowDown size={14} /> : <ArrowUp size={14} />} {YAPRAK_ETIKET[n.yaprak]}
+              {n.yaprak === 'yaşlı' ? <ArrowDown size={14} /> : <ArrowUp size={14} />} {tx(YAPRAK_ETIKET[n.yaprak])}
             </p>
-            <h3 className="mt-4 text-sm font-bold uppercase tracking-[0.14em] text-[#7a877e]">Nasıl tanınır?</h3>
+            <h3 className="mt-4 text-sm font-bold uppercase tracking-[0.14em] text-[#7a877e]">{tx("Nasıl tanınır?")}</h3>
             <ul className="mt-2 space-y-2">
               {n.belirtiler.map((b) => (
                 <li key={b} className="flex gap-2.5 text-[15px] leading-6 text-[#24342b]">
-                  <Search size={16} className="mt-1 shrink-0 text-[#2f8f57]" /> {b}
+                  <Search size={16} className="mt-1 shrink-0 text-[#2f8f57]" /> {tx(b)}
                 </li>
               ))}
             </ul>
-            <h3 className="mt-6 text-sm font-bold uppercase tracking-[0.14em] text-[#7a877e]">Neden olur?</h3>
-            <p className="mt-2 text-[15px] leading-6 text-[#24342b]">{n.neden}</p>
+            <h3 className="mt-6 text-sm font-bold uppercase tracking-[0.14em] text-[#7a877e]">{tx("Neden olur?")}</h3>
+            <p className="mt-2 text-[15px] leading-6 text-[#24342b]">{tx(n.neden)}</p>
           </div>
           <div className="space-y-4">
             <div className="rounded-[20px] bg-[#e8f3e6] p-5">
               <h3 className="flex items-center gap-2 font-bold text-[#17352a]">
-                <Sprout size={18} className="text-[#238f61]" /> Ne yapmalı?
+                <Sprout size={18} className="text-[#238f61]" /> {tx("Ne yapmalı?")}
               </h3>
               <ol className="mt-3 space-y-2.5">
                 {n.cozum.map((c, i) => (
                   <li key={c} className="flex gap-3 text-sm leading-6 text-[#24342b]">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#238f61] text-xs font-bold text-white">{i + 1}</span>
-                    {c}
+                    {tx(c)}
                   </li>
                 ))}
               </ol>
             </div>
             {n.karisir && (
               <div className="rounded-[20px] border border-[#ecd9b0] bg-[#fbf1dc] p-4 text-sm leading-6 text-[#5a4a2a]">
-                <span className="font-semibold">Karıştırmayın: </span>
-                {n.karisir}
+                <span className="font-semibold">{tx("Karıştırmayın:")} </span>
+                {tx(n.karisir)}
               </div>
             )}
             {hastaliklar.length > 0 && (
               <div className="rounded-[20px] border border-[#e3dccb] bg-white p-4">
                 <p className="flex items-center gap-2 text-sm font-semibold text-[#17352a]">
-                  <Bug size={16} className="text-[#8a5a2b]" /> Bu hastalıkla karışabilir
+                  <Bug size={16} className="text-[#8a5a2b]" /> {tx("Bu hastalıkla karışabilir")}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {hastaliklar.map((h) =>
@@ -143,13 +147,13 @@ export function NoksanlikDetayi({ n, onKapat, onHastalik }: { n: Noksanlik; onKa
                       <button key={h.id} type="button" onClick={() => onHastalik(h)} className="flex items-center gap-2 rounded-full border border-[#e3dccb] bg-[#fbf8f1] py-1 pl-1 pr-3 text-xs font-semibold text-[#3f3420] hover:border-[#8a5a2b]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={hastalikGorseli(h.id)} alt="" className="h-7 w-7 rounded-full bg-[#3c4f3f] object-cover" />
-                        {h.ad}
+                        {tx(h.ad)}
                       </button>
                     ) : (
                       <Link key={h.id} href={`/noksanliklar?bitki=${encodeURIComponent(h.bitki)}&h=${h.id}`} className="flex items-center gap-2 rounded-full border border-[#e3dccb] bg-[#fbf8f1] py-1 pl-1 pr-3 text-xs font-semibold text-[#3f3420] hover:border-[#8a5a2b]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={hastalikGorseli(h.id)} alt="" className="h-7 w-7 rounded-full bg-[#3c4f3f] object-cover" />
-                        {h.ad}
+                        {tx(h.ad)}
                       </Link>
                     ),
                   )}
@@ -158,7 +162,9 @@ export function NoksanlikDetayi({ n, onKapat, onHastalik }: { n: Noksanlik; onKa
             )}
             <p className="flex gap-2 text-xs leading-5 text-[#7a877e]">
               <ShieldAlert size={14} className="mt-0.5 shrink-0" />
-              Belirtiler hastalık, ilaç yanığı ya da kuraklığa benzeyebilir. Kesin tanı için toprak ve yaprak analizi yaptırın; gübre dozlarında ürün etiketine uyun.
+              {tx(
+                "Belirtiler hastalık, ilaç yanığı ya da kuraklığa benzeyebilir. Kesin tanı için toprak ve yaprak analizi yaptırın; gübre dozlarında ürün etiketine uyun."
+              )}
             </p>
           </div>
         </div>
@@ -178,6 +184,7 @@ export function NoksanlikKatalogu({
   baslangicHastalik?: string;
   tarlaBitkileri?: string[];
 }) {
+  const tx = useTx();
   const ilk = baslangicId ? NOKSANLIKLAR.find((n) => n.id === baslangicId) : undefined;
   const ilkH = !ilk && baslangicHastalik ? HASTALIKLAR.find((h) => h.id === baslangicHastalik) : undefined;
   const [bitki, setBitki] = useState<string>(ilk?.bitki ?? ilkH?.bitki ?? baslangicBitki ?? tarlaBitkileri[0] ?? BITKI_SIRASI[0]);
@@ -234,12 +241,13 @@ export function NoksanlikKatalogu({
         <div className="absolute inset-0 bg-gradient-to-r from-[#0f241b] via-[#0f241b]/80 to-transparent" />
         <div className="relative max-w-2xl">
           <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#bfe6a6] backdrop-blur">
-            <Leaf size={14} /> Katalog
+            <Leaf size={14} /> {tx("Katalog")}
           </p>
-          <h1 className="mt-4 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl">Bitki besin noksanlıkları</h1>
+          <h1 className="mt-4 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl">{tx("Bitki besin noksanlıkları")}</h1>
           <p className="mt-4 text-base leading-7 text-white/80">
-            Bitkinizi seçin, yaprağınıza en çok benzeyen resmi bulun. Her kartta nasıl tanınacağı, neden olduğu ve ne yapılacağı yazıyor. Noksanlıkla
-            karışan yaygın hastalıkları da aynı sayfada bulabilirsiniz.
+            {tx(
+              "Bitkinizi seçin, yaprağınıza en çok benzeyen resmi bulun. Her kartta nasıl tanınacağı, neden olduğu ve ne yapılacağı yazıyor. Noksanlıkla karışan yaygın hastalıkları da aynı sayfada bulabilirsiniz."
+            )}
           </p>
         </div>
       </header>
@@ -254,12 +262,14 @@ export function NoksanlikKatalogu({
             <Camera size={24} />
           </span>
           <span>
-            <span className="block font-display text-xl text-[#17352a]">Resimlerde bulamadınız mı?</span>
-            <span className="mt-0.5 block text-sm leading-6 text-[#4f6158]">Yaprağınızın fotoğrafını yükleyin, birkaç soruyu cevaplayın; yapay zekâ olası sorunu ve çözümünü söylesin.</span>
+            <span className="block font-display text-xl text-[#17352a]">{tx("Resimlerde bulamadınız mı?")}</span>
+            <span className="mt-0.5 block text-sm leading-6 text-[#4f6158]">{tx(
+              "Yaprağınızın fotoğrafını yükleyin, birkaç soruyu cevaplayın; yapay zekâ olası sorunu ve çözümünü söylesin."
+            )}</span>
           </span>
         </span>
         <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-[#238f61] px-5 py-3 text-sm font-bold text-white group-hover:bg-[#1d7d54] sm:self-auto">
-          Yaprağımı incele <ArrowRight size={16} />
+          {tx("Yaprağımı incele")} <ArrowRight size={16} />
         </span>
       </Link>
 
@@ -270,8 +280,8 @@ export function NoksanlikKatalogu({
             <ArrowDown size={22} />
           </span>
           <div>
-            <p className="font-bold text-[#17352a]">Alt (yaşlı) yapraklarda başlıyorsa</p>
-            <p className="mt-1 text-sm leading-6 text-[#5b6f65]">Bitki bu besinleri yaşlı yapraktan gence taşır: büyük ihtimalle <b>azot, fosfor, potasyum</b> ya da <b>magnezyum</b>.</p>
+            <p className="font-bold text-[#17352a]">{tx("Alt (yaşlı) yapraklarda başlıyorsa")}</p>
+            <p className="mt-1 text-sm leading-6 text-[#5b6f65]">{tx("Bitki bu besinleri yaşlı yapraktan gence taşır: büyük ihtimalle")} <b>{tx("azot, fosfor, potasyum")}</b> {tx("ya da")} <b>{tx("magnezyum")}</b>.</p>
           </div>
         </div>
         <div className="flex gap-4 rounded-[22px] border border-[#e3dccb] bg-white p-5">
@@ -279,15 +289,15 @@ export function NoksanlikKatalogu({
             <ArrowUp size={22} />
           </span>
           <div>
-            <p className="font-bold text-[#17352a]">Üst (genç) yapraklarda başlıyorsa</p>
-            <p className="mt-1 text-sm leading-6 text-[#5b6f65]">Bu besinler taşınamaz: <b>demir, çinko, mangan, kükürt, bor</b> ya da <b>kalsiyum</b>. Kireçli topraklarda demir ve çinko en sık görülenlerdir.</p>
+            <p className="font-bold text-[#17352a]">{tx("Üst (genç) yapraklarda başlıyorsa")}</p>
+            <p className="mt-1 text-sm leading-6 text-[#5b6f65]">{tx("Bu besinler taşınamaz:")} <b>{tx("demir, çinko, mangan, kükürt, bor")}</b> {tx("ya da")} <b>{tx("kalsiyum")}</b>{tx(". Kireçli topraklarda demir ve çinko en sık görülenlerdir.")}</p>
           </div>
         </div>
       </div>
 
       {/* Bitki seçimi */}
       <div className="mt-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7a877e]">Bitki seçin</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7a877e]">{tx("Bitki seçin")}</p>
         <div ref={seritRef} className="relative -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-2 sm:flex-wrap sm:overflow-visible">
           {sira.map((b) => {
             const on = b === bitki;
@@ -302,9 +312,9 @@ export function NoksanlikKatalogu({
                   on ? 'border-[#17352a] bg-[#17352a] text-white' : 'border-[#ddd5c3] bg-white text-[#2c3d33] hover:border-[#238f61]'
                 }`}
               >
-                {kisaAd(b)}
+                {tx(kisaAd(b))}
                 <span className={`rounded-full px-1.5 text-xs ${on ? 'bg-white/20' : 'bg-[#f0ebe0] text-[#7a877e]'}`}>{sayi}</span>
-                {tarlaBitkileri.includes(b) && <span className={`text-[10px] font-bold uppercase ${on ? 'text-[#bfe6a6]' : 'text-[#2f8f57]'}`}>tarlanız</span>}
+                {tarlaBitkileri.includes(b) && <span className={`text-[10px] font-bold uppercase ${on ? 'text-[#bfe6a6]' : 'text-[#2f8f57]'}`}>{tx("tarlanız")}</span>}
               </button>
             );
           })}
@@ -314,7 +324,7 @@ export function NoksanlikKatalogu({
       {/* Besin filtresi */}
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={() => setBesin('hepsi')} className={`rounded-full px-3 py-1.5 text-xs font-bold ${besin === 'hepsi' ? 'bg-[#2c3d33] text-white' : 'bg-[#ebe5d8] text-[#4f6158]'}`}>
-          Hepsi
+          {tx("Hepsi")}
         </button>
         {besinler
           .filter((s) => kartlar.some((n) => n.sembol === s))
@@ -328,14 +338,14 @@ export function NoksanlikKatalogu({
                 className="rounded-full px-3 py-1.5 text-xs font-bold transition"
                 style={besin === s ? { background: BESIN_RENK[s], color: '#fff' } : { background: '#ebe5d8', color: '#4f6158' }}
               >
-                {n.besin}
+                {tx(n.besin)}
               </button>
             );
           })}
       </div>
 
       <h2 className="mt-8 font-display text-3xl font-medium text-[#17352a]">
-        {kisaAd(bitki)} <span className="text-[#7a877e]">· {gorunen.length} noksanlık</span>
+        {tx(kisaAd(bitki))} <span className="text-[#7a877e]">· {gorunen.length} {tx("noksanlık")}</span>
       </h2>
       <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {gorunen.map((n) => (
@@ -348,15 +358,17 @@ export function NoksanlikKatalogu({
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-[#8a5a2b]">
-                <Bug size={15} /> Noksanlıkla karışan hastalıklar
+                <Bug size={15} /> {tx("Noksanlıkla karışan hastalıklar")}
               </p>
               <h2 className="mt-2 font-display text-3xl font-medium text-[#17352a]">
-                {kisaAd(bitki)} <span className="text-[#7a877e]">· {hastaliklar.length} hastalık</span>
+                {tx(kisaAd(bitki))} <span className="text-[#7a877e]">· {hastaliklar.length} {tx("hastalık")}</span>
               </h2>
             </div>
           </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5b6f65]">
-            Gübreyle düzelmeyen sararma ve lekeler bir hastalık olabilir. Her kartta hastalığın nasıl tanındığı ve benzer noksanlıktan nasıl ayrıldığı yazıyor.
+            {tx(
+              "Gübreyle düzelmeyen sararma ve lekeler bir hastalık olabilir. Her kartta hastalığın nasıl tanındığı ve benzer noksanlıktan nasıl ayrıldığı yazıyor."
+            )}
           </p>
           <ol className="mt-5 grid gap-3 rounded-[24px] border border-[#ecdcbb] bg-[#fbf4e4] p-4 sm:grid-cols-3 sm:p-5">
             {[
@@ -367,8 +379,8 @@ export function NoksanlikKatalogu({
               <li key={t} className="flex gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#8a5a2b] font-display text-sm font-semibold text-white">{i + 1}</span>
                 <span>
-                  <span className="block text-sm font-bold text-[#3f3420]">{t}</span>
-                  <span className="mt-0.5 block text-[13px] leading-5 text-[#5a4a2a]">{d}</span>
+                  <span className="block text-sm font-bold text-[#3f3420]">{tx(t)}</span>
+                  <span className="mt-0.5 block text-[13px] leading-5 text-[#5a4a2a]">{tx(d)}</span>
                 </span>
               </li>
             ))}
@@ -378,13 +390,14 @@ export function NoksanlikKatalogu({
               <HastalikKarti key={h.id} h={h} onAc={() => setSeciliH(h)} />
             ))}
           </div>
-          <p className="mt-4 text-xs leading-5 text-[#7a877e]">{BILGI_NOTU}</p>
+          <p className="mt-4 text-xs leading-5 text-[#7a877e]">{tx(BILGI_NOTU)}</p>
         </section>
       )}
 
       <p className="mt-10 rounded-[20px] bg-[#efe8d8] p-5 text-sm leading-6 text-[#5a4a2a]">
-        Resimler belirtileri tanımaya yardımcı olmak için hazırlanmış örnek görsellerdir. Aynı noksanlık ya da hastalık çeşide, toprağa ve havaya göre farklı görünebilir;
-        birden fazla noksanlık aynı anda da olabilir. Toprak analiziniz bu tahmini doğrulamanın en kolay yoludur.
+        {tx(
+          "Resimler belirtileri tanımaya yardımcı olmak için hazırlanmış örnek görsellerdir. Aynı noksanlık ya da hastalık çeşide, toprağa ve havaya göre farklı görünebilir; birden fazla noksanlık aynı anda da olabilir. Toprak analiziniz bu tahmini doğrulamanın en kolay yoludur."
+        )}
       </p>
 
       {secili && <NoksanlikDetayi n={secili} onKapat={() => setSecili(undefined)} onHastalik={hastaligaGec} />}

@@ -1,7 +1,7 @@
 /**
  * Sonuç ekranında gösterilecek YouTube videoları.
  * "bitki" boş bırakılırsa video her raporda gösterilir; doluysa yalnızca o bitkide (Z-kart adıyla, ör. "Elma").
- * Örnek: { baslik: 'Don önleme: KIANA CLIMATE PLUS', url: 'https://www.youtube.com/watch?v=XXXXXXXXXXX' }
+ * Örnek: { baslik: 'Stres sonrası: AMINO POWER WSP', url: 'https://www.youtube.com/watch?v=XXXXXXXXXXX' }
  */
 export type Video = { baslik: string; url: string; bitki?: string };
 

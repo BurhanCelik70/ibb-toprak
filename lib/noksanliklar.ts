@@ -7,7 +7,7 @@
  * kesin tanı için yaprak (bitki) analizi önerilir.
  */
 import type { ParamKey } from './toprak';
-import { zkartBul } from './igsas';
+import { zkartBul } from './bitki';
 
 export type Noksanlik = {
   id: string;

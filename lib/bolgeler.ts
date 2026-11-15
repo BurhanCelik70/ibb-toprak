@@ -4,9 +4,16 @@
  * Bilgiler genel eğilimdir ("genellikle"); aynı il içinde bile topraklar çok değişebilir.
  */
 
-export type Bolge = 'Marmara' | 'Ege' | 'Akdeniz' | 'İç Anadolu' | 'Karadeniz' | 'Doğu Anadolu' | 'Güneydoğu Anadolu';
+import { BUNDESLAENDER, DE_LAND_NOTIZ, DE_REGION_INFO, DE_REGION_LAENDER, landBul, type DeRegion } from './almanya';
+import type { Dil } from './dil';
+import { dunyaIli, dunyaIlBul, DUNYA_ATLAS } from './dunya';
+import { ES_PROVINCIA_NOTA, ES_REGION_INFO, ES_REGION_PROVINCIAS, PROVINCIAS, provinciaBul, type EsRegion } from './ispanya';
 
-const BOLGE_ILLERI: Record<Bolge, string[]> = {
+export type TrBolge = 'Marmara' | 'Ege' | 'Akdeniz' | 'İç Anadolu' | 'Karadeniz' | 'Doğu Anadolu' | 'Güneydoğu Anadolu';
+/** Türkiye bölgeleri + Almanya'nın 4 büyük bölgesi + İspanya'nın 7 tarım-iklim bölgesi */
+export type Bolge = TrBolge | DeRegion | EsRegion;
+
+const TR_BOLGE_ILLERI: Record<TrBolge, string[]> = {
   Marmara: ['Balıkesir', 'Bilecik', 'Bursa', 'Çanakkale', 'Edirne', 'İstanbul', 'Kırklareli', 'Kocaeli', 'Sakarya', 'Tekirdağ', 'Yalova'],
   Ege: ['Afyonkarahisar', 'Aydın', 'Denizli', 'İzmir', 'Kütahya', 'Manisa', 'Muğla', 'Uşak'],
   Akdeniz: ['Adana', 'Antalya', 'Burdur', 'Hatay', 'Isparta', 'Kahramanmaraş', 'Mersin', 'Osmaniye'],
@@ -19,10 +26,45 @@ const BOLGE_ILLERI: Record<Bolge, string[]> = {
   'Güneydoğu Anadolu': ['Adıyaman', 'Batman', 'Diyarbakır', 'Gaziantep', 'Kilis', 'Mardin', 'Siirt', 'Şanlıurfa', 'Şırnak'],
 };
 
+const BOLGE_ILLERI: Record<Bolge, string[]> = { ...TR_BOLGE_ILLERI, ...DE_REGION_LAENDER, ...ES_REGION_PROVINCIAS };
+
 /** Alfabetik 81 il */
-export const ILLER: string[] = Object.values(BOLGE_ILLERI)
+export const ILLER: string[] = Object.values(TR_BOLGE_ILLERI)
   .flat()
   .sort((a, b) => a.localeCompare(b, 'tr'));
+
+export { BUNDESLAENDER, PROVINCIAS };
+
+/** TR, DE, ES ayrıntılı veriyle; diğerleri dünya ülkesi (ISO kodu, ör. 'AZ'), bölgeleri /api/dunya'dan gelir */
+export type Ulke = string;
+/** Ülke adları Türkçe kaynak metindir; ekranda tx() ile çevrilir */
+export const ULKELER: { k: Ulke; ad: string }[] = [
+  { k: 'TR', ad: 'Türkiye' },
+  { k: 'DE', ad: 'Almanya' },
+  { k: 'ES', ad: 'İspanya' },
+];
+/** Ülkenin il düzeyi birimi (Türkçe kaynak metin; tx() ile çevrilir) */
+export const ULKE_BIRIMI: Record<string, string> = { TR: 'İl', DE: 'Eyalet (Bundesland)', ES: 'İl (provincia)' };
+export const ulkeBirimi = (u: Ulke) => ULKE_BIRIMI[u] ?? 'Bölge / eyalet';
+/** Ayrıntılı verisi olan ülke mi (TR, DE, ES) */
+export const anaUlkeMi = (u: Ulke) => u === 'TR' || u === 'DE' || u === 'ES';
+/** Geçerli bir ülke kodu mu */
+export const ulkeGecerli = (u: string) => anaUlkeMi(u) || !!DUNYA_ATLAS[u];
+/** Arayüz diline göre varsayılan ülke: Almanca → Almanya, İspanyolca → İspanya, diğerleri → Türkiye */
+const dilUlkesi = (dil: Dil): Ulke => (dil === 'de' ? 'DE' : dil === 'es' ? 'ES' : 'TR');
+/** Kayıtlı ilden ülke; il yoksa arayüz diline göre */
+export const ulkeBul = (il: string | null | undefined, dil: Dil = 'tr'): Ulke =>
+  il ? dunyaIli(dunyaIlBul(il))?.ulke ?? (BUNDESLAENDER.includes(il) ? 'DE' : PROVINCIAS.includes(il) ? 'ES' : 'TR') : dilUlkesi(dil);
+/** Ülkeye göre il / eyalet / provincia listesi */
+export const ulkeIlleri = (ulke: Ulke) => (ulke === 'DE' ? BUNDESLAENDER : ulke === 'ES' ? PROVINCIAS : ulke === 'TR' ? ILLER : []);
+/** Arayüz diline göre seçim listesi */
+export const ilListesi = (dil: Dil = 'tr') => ulkeIlleri(dilUlkesi(dil));
+
+/** Kayıtlı il listede yoksa (ör. dil değiştirildi) seçim kutusunda yine görünsün */
+export const ilSecenekleri = (dil: Dil, secili?: string | null) => {
+  const l = ilListesi(dil);
+  return secili && !l.includes(secili) ? [secili, ...l] : l;
+};
 
 export const ilBolgesi = (il?: string | null): Bolge | undefined =>
   il ? (Object.keys(BOLGE_ILLERI) as Bolge[]).find((b) => BOLGE_ILLERI[b].includes(il)) : undefined;
@@ -30,6 +72,8 @@ export const ilBolgesi = (il?: string | null): Bolge | undefined =>
 type BolgeOzellik = { iklim: string; toprak: string; dikkat: string[] };
 
 export const BOLGE_OZELLIKLERI: Record<Bolge, BolgeOzellik> = {
+  ...DE_REGION_INFO,
+  ...ES_REGION_INFO,
   Marmara: {
     iklim: 'Ilıman geçiş iklimi; yağış çoğunlukla kış ve ilkbaharda, yazlar sıcak ve kurak geçebilir.',
     toprak: 'Trakya ve güney Marmara ovalarında genellikle killi-tınlı, pH nötr ile hafif alkali arası topraklar; kuzeyde ormanlık kesimlerde hafif asidik topraklar görülebilir.',
@@ -80,6 +124,8 @@ export const BOLGE_OZELLIKLERI: Record<Bolge, BolgeOzellik> = {
 
 /** Bölge genel bilgisinin ötesinde bilinen il özellikleri */
 const IL_NOTLARI: Record<string, string> = {
+  ...DE_LAND_NOTIZ,
+  ...ES_PROVINCIA_NOTA,
   Konya: 'Kapalı havza; yağış az (yıllık ~300–350 mm), yeraltı suyu hızla düşüyor. Topraklar genellikle kireçli-alkali, organik madde düşük; ova tabanında tuzluluk görülebilir. Tahılda çinko eksikliği yaygın.',
   Karaman: 'Konya kapalı havzasının parçası; kireçli-alkali, organik maddesi düşük topraklar, yarı kurak iklim ve sınırlı su.',
   Aksaray: 'Tuz Gölü havzasına yakın; tuzlu-alkali alanlar görülebilir, yarı kurak iklim.',
@@ -122,7 +168,9 @@ export function bolgeBilgisi(il?: string | null, ilce?: string | null): BolgeBil
 /** Serbest metinde (adres, rapor başlığı) geçen ili bulur. */
 export function ilBul(metin?: string | null): string | undefined {
   if (!metin) return undefined;
+  const d = dunyaIlBul(metin);
+  if (d) return d;
   const t = metin.toLocaleLowerCase('tr-TR');
   // Uzun adları önce dene (ör. "Afyonkarahisar" "Afyon"dan önce)
-  return [...ILLER].sort((a, b) => b.length - a.length).find((il) => t.includes(il.toLocaleLowerCase('tr-TR')));
+  return [...ILLER].sort((a, b) => b.length - a.length).find((il) => t.includes(il.toLocaleLowerCase('tr-TR'))) ?? landBul(metin) ?? provinciaBul(metin);
 }

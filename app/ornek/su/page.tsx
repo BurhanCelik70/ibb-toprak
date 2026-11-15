@@ -1,12 +1,16 @@
+import { ceviriAl } from '@/lib/dilSunucu';
 import Link from 'next/link';
 import { SuKarnesi } from '@/components/su/SuKarnesi';
 import { AppHeader, SiteFooter } from '@/components/site';
 
-export const metadata = {
-  title: 'Örnek su karnesi',
-  alternates: { canonical: '/ornek/su' },
-  description: 'Hesap açmadan sulama suyu karnesinin nasıl göründüğüne bakın: FAO ölçütlerine göre tuzluluk, sodyum, bikarbonat ve size uygun sulama yöntemi.',
-};
+export async function generateMetadata() {
+  const { tx } = await ceviriAl();
+  return {
+    title: tx('Örnek su karnesi'),
+    alternates: { canonical: '/ornek/su' },
+    description: tx('Hesap açmadan sulama suyu karnesinin nasıl göründüğüne bakın: FAO ölçütlerine göre tuzluluk, sodyum, bikarbonat ve size uygun sulama yöntemi.'),
+  };
+}
 
 /** Konya ovasında tipik bir kuyu suyu (örnek değerler) */
 const RAPOR = {
@@ -26,15 +30,18 @@ const YORUM = {
   bitkiNotu: 'Mısır bu tuzlulukta verimini korur ve bu bor düzeyinden etkilenmez.',
 };
 
-export default function OrnekSuSayfasi() {
+export default async function OrnekSuSayfasi() {
+  const { tx } = await ceviriAl();
   return (
     <div className="flex min-h-screen flex-col bg-[#f5f0e6] text-[#1d2a22]">
       <AppHeader />
       <main className="flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto mb-6 flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#e8f3f8] px-5 py-4 text-sm text-[#0b3a52]">
-          <span>Bu bir örnek su karnesidir. Kendi su analizinizi eklemek için ücretsiz hesap açın.</span>
+          <span>{tx(
+            "Bu bir örnek su karnesidir. Kendi su analizinizi eklemek için ücretsiz hesap açın."
+          )}</span>
           <Link href="/giris?sonra=%2Ftarlalar" className="rounded-full bg-[#0f5a73] px-4 py-2 font-bold text-white hover:bg-[#0b3a52]">
-            Ücretsiz başla
+            {tx("Ücretsiz başla")}
           </Link>
         </div>
         <SuKarnesi rapor={RAPOR} tarla={{ ad: 'Örnek Tarla', bitki: 'Mısır (dane)', sulama: 'damla', konum: 'Konya / Karatay' }} tarih="Örnek" yorum={YORUM} />

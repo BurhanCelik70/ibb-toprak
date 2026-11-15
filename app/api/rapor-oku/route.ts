@@ -3,6 +3,7 @@
  * PDF veya fotoğraftaki toprak analiz raporunu okuyup SoilReport JSON'u döndürür.
  * Dönen değerler kullanıcıya ÖZET ekranında onaylatılmalıdır – OCR hata yapabilir.
  */
+import { laborBirimindenIc } from '@/lib/birimler';
 import Anthropic from '@anthropic-ai/sdk';
 import { ilBul } from '@/lib/bolgeler';
 import { NextResponse } from 'next/server';
@@ -24,7 +25,9 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 const MAX_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
-const PROMPT = `Bu belge Türkiye'deki bir laboratuvarın toprak analiz raporu (İBB, il tarım müdürlüğü, üniversite, ziraat odası, özel laboratuvar vb.). Değerleri OKU, hesaplama yapma.
+const PROMPT = `Bu belge bir laboratuvarın toprak analiz raporu. Türkiye'den (İBB, il tarım müdürlüğü, üniversite, özel laboratuvar) ya da yurt dışından
+(Almanya: VDLUFA "Prüfbericht Bodenanalyse"; İspanya: "Informe de análisis de suelo" vb.) olabilir; dili ne olursa olsun aynı anahtarlarla oku.
+Değerleri OKU, hesaplama ve birim çevirme yapma.
 Belgede birden fazla rapor/numune varsa hepsini dizi olarak ver. Okuyamadığın değeri dahil etme, tahmin etme.
 Sayıları nokta ondalık ayırıcı ile ver (7,12 -> 7.12). Her değeri raporda yazan birimle ver ve birimi "birimler" içine yaz.
 
@@ -32,6 +35,15 @@ Sayıları nokta ondalık ayırıcı ile ver (7,12 -> 7.12). Her değeri raporda
 doygunluk (Su ile doygunluk %), ph, ec (EC, µS/cm), tuz (%), kum, silt, kil (%), kirec (Kireç %),
 organikMadde (%), fosfor (Yarayışlı fosfor, P2O5 kg/da), potasyum (Yarayışlı potasyum, K2O kg/da),
 azot (Toplam azot %), demir (Fe), cinko (Zn), mangan (Mn), bakir (Cu), bor (B).
+
+BİRİMLER (çok önemli, sistem buna göre çevirir):
+- fosfor ve potasyumun birimini raporda yazdığı gibi, besinin biçimiyle birlikte yaz: "kg/da P2O5", "mg P2O5/100 g" (Alman CAL),
+  "mg P/100 g", "mg/kg P" (Olsen), "mg/kg K", "mg K2O/100 g" gibi. Almanca "Phosphor (P2O5)" ve "Kalium (K2O)" satırları fosfor ve potasyumdur.
+- ph: CaCl2 ile ölçüldüyse birim "CaCl2", suda ölçüldüyse "H2O" yaz.
+- Almanca "Organische Substanz (Humus)" / İspanyolca "Materia orgánica" = organikMadde. "Bodenart" ya da "Textura" = bunyeSinifi;
+  harfleri raporda nasıl yazıyorsa aynen yaz (ör. "Lehmiger Sand (lS)": küçük L ile). "Kultur / Nutzung" = bitki. "Ort" ya da adres = adres.
+- Oranları (ör. C/N "11 : 1") tek sayı olarak yaz: 11, birimi "oran".
+- Değeri "[Wert]", "[Valor]" gibi boş şablon yeri olanları hiç yazma.
 
 ÖNEMLİ: Tablodaki HER ölçüm satırını al. Yukarıdaki listede olmayan her ölçümü (ör. kalsiyum, magnezyum,
 sodyum, kükürt, nitrat) "ekDegerler" içine yaz. Hiçbir satırı atlama.
@@ -59,8 +71,10 @@ function cleanReport(r: RawReport): SoilReport {
     if (v === undefined) return;
     const unit = typeof r.birimler?.[k] === 'string' ? (r.birimler[k] as string) : undefined;
     const lab = r.labDegerlendirme?.[k];
-    if (unitCompatible(k, unit)) {
-      values[k] = v;
+    // Fosfor, potasyum ve pH raporun birimine göre iç birime çevrilir (Alman CAL mg/100 g, Olsen mg/kg, pH CaCl₂ …)
+    const ic = laborBirimindenIc(k, v, unit);
+    if (ic !== undefined && (k === 'fosfor' || k === 'potasyum' || k === 'ph' || unitCompatible(k, unit))) {
+      values[k] = Math.round(ic * 1000) / 1000;
       if (typeof lab === 'string' && lab.trim()) labDegerlendirme[k] = lab.trim();
     } else {
       ekDegerler.push({ ad: PARAMS[k].label, deger: v, birim: unit, labDegerlendirme: typeof lab === 'string' ? lab : undefined });

@@ -7,6 +7,7 @@
  * ⚠️ Kc'nin dönemlere dağıtımı ve tabloda bulunmayan bitkilerin (yaklaşık: true) katsayıları danışman onayına sunulacaktır.
  */
 import { IL_IKLIM } from './iklim';
+import { DE_ETO } from './almanya';
 import { donemAylari } from './sulama';
 import { TAGEM_BITKI, tagemAylikKc, tagemEto, tagemGunluk } from './tagem';
 import type { ZKart } from './zkartlar';
@@ -58,6 +59,8 @@ function ra(enlem: number, ay: number) {
 
 /** FAO-56 Hargreaves ETo (mm/gün) */
 export function etoAylik(il: string): number[] | undefined {
+  // Almanya: Makkink ETo (güneşlenmeden), Hargreaves nemli iklimde fazla verir
+  if (DE_ETO[il]) return DE_ETO[il];
   const k = IL_IKLIM[il];
   if (!k) return undefined;
   return k.t.map((t, i) => Math.max(0, 0.0023 * (t + 17.8) * Math.sqrt(Math.max(0, k.fark[i])) * ra(k.enlem, i)));

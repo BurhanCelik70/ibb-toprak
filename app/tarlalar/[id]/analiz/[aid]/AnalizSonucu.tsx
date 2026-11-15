@@ -1,4 +1,5 @@
 'use client';
+import { useDil } from '@/components/DilSaglayici';
 import { jsonOku } from '@/lib/dosya';
 import { ChevronLeft, Printer, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { SonucEkrani, type SonucTarla } from '@/components/analiz/Sonuc';
 import { createClient } from '@/lib/supabase/client';
 import type { SoilReport } from '@/lib/toprak';
-import type { CozumPlani } from '@/lib/veri';
+import { dildekiPlan, type CozumPlani } from '@/lib/veri';
 
 export function AnalizSonucu({
   tarlaId,
@@ -26,42 +27,48 @@ export function AnalizSonucu({
   cozum: CozumPlani | null;
   onceki: { rapor: SoilReport; tarih: string } | null;
 }) {
+  const { t: tx, dil } = useDil();
   const router = useRouter();
-  const [ai, setAi] = useState<CozumPlani | null>(cozum);
-  const [aiState, setAiState] = useState<'idle' | 'loading' | 'error'>(cozum ? 'idle' : 'loading');
-  const istendi = useRef(false);
+  // Plan dil başına tutulur: sayfada dil değişince o dilin planı gösterilir; kayıtlı değilse bir kez yazdırılır.
+  // Eski (İGSAŞ dönemi) kayıtlı planlar gösterilmez; sunucu yeni sürümü yazar
+  const [planlar, setPlanlar] = useState<Partial<Record<string, CozumPlani | null>>>({});
+  const [durumlar, setDurumlar] = useState<Partial<Record<string, 'idle' | 'loading' | 'error'>>>({});
+  const kayitli = dildekiPlan(cozum, dil);
+  const ai = dil in planlar ? (planlar[dil] ?? null) : kayitli;
+  const aiState = durumlar[dil] ?? (kayitli ? 'idle' : 'loading');
+  const istenen = useRef(new Set<string>());
 
   const getir = useCallback(
     async (yenile = false) => {
-      setAiState('loading');
-      if (yenile) setAi(null);
+      const d = dil;
+      setDurumlar((x) => ({ ...x, [d]: 'loading' }));
+      if (yenile) setPlanlar((x) => ({ ...x, [d]: null }));
       try {
         const res = await fetch('/api/yorum', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ analizId, yenile }),
+          body: JSON.stringify({ analizId, yenile, dil: d }),
         });
         const json = await jsonOku<CozumPlani & { error?: string }>(res);
         if (!res.ok) throw new Error(json.error);
-        setAi(json);
-        setAiState('idle');
+        setPlanlar((x) => ({ ...x, [d]: json }));
+        setDurumlar((x) => ({ ...x, [d]: 'idle' }));
       } catch {
-        setAiState('error');
+        setDurumlar((x) => ({ ...x, [d]: 'error' }));
       }
     },
-    [analizId],
+    [analizId, dil],
   );
 
   useEffect(() => {
-    // Çözüm planı kayıtlı değilse bir kez oluştur (sonra veritabanından gelir)
-    if (!cozum && !istendi.current) {
-      istendi.current = true;
-      getir();
-    }
-  }, [cozum, getir]);
+    // Bu dilde kayıtlı plan yoksa bir kez oluştur (sonra veritabanından gelir)
+    if (kayitli || istenen.current.has(dil)) return;
+    istenen.current.add(dil);
+    getir();
+  }, [dil, kayitli, getir]);
 
   const sil = async () => {
-    if (!confirm('Bu analiz silinsin mi? Bu işlem geri alınamaz.')) return;
+    if (!confirm(tx("Bu analiz silinsin mi? Bu işlem geri alınamaz."))) return;
     await createClient().from('analizler').delete().eq('id', analizId);
     router.push(`/tarlalar/${tarlaId}`);
     router.refresh();
@@ -80,19 +87,19 @@ export function AnalizSonucu({
       tarih={tarih}
       baslikUstu={
         <Link href={`/tarlalar/${tarlaId}`} className="inline-flex items-center gap-1 text-sm font-semibold text-[#476456] print:hidden">
-          <ChevronLeft size={16} /> {tarla.ad}
+          <ChevronLeft size={16} /> {tx(tarla.ad)}
         </Link>
       }
       eylemler={
         <>
           <button onClick={() => window.print()} className={ikincil}>
-            <Printer size={18} /> Yazdır / PDF kaydet
+            <Printer size={18} />{' '}{tx("Yazdır / PDF kaydet")}
           </button>
           <button onClick={() => getir(true)} disabled={aiState === 'loading'} className={ikincil}>
-            <RefreshCw size={18} /> Çözüm planını yenile
+            <RefreshCw size={18} />{' '}{tx("Çözüm planını yenile")}
           </button>
           <button onClick={sil} className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold text-[#a83422] hover:bg-[#fff5f3] sm:ml-auto">
-            <Trash2 size={18} /> Analizi sil
+            <Trash2 size={18} />{' '}{tx("Analizi sil")}
           </button>
         </>
       }

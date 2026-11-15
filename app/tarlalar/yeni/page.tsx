@@ -1,20 +1,25 @@
+import { ceviriAl } from '@/lib/dilSunucu';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { AppHeader, SiteFooter } from '@/components/site';
 import { TarlaFormu } from '@/components/tarla/TarlaFormu';
 
-export const metadata = { title: 'Yeni tarla' };
+export async function generateMetadata() {
+  const { tx } = await ceviriAl();
+  return { title: tx('Yeni tarla') };
+}
 
-export default function YeniTarla() {
+export default async function YeniTarla() {
+  const { tx } = await ceviriAl();
   return (
     <div className="flex min-h-screen flex-col bg-[#f5f0e6]">
       <AppHeader aktif="tarlalar" />
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-10 sm:px-8">
         <Link href="/tarlalar" className="inline-flex items-center gap-1 text-sm font-semibold text-[#476456]">
-          <ChevronLeft size={16} /> Tarlalarım
+          <ChevronLeft size={16} /> {' '}{tx("Tarlalarım")}
         </Link>
-        <h1 className="mt-3 font-display text-4xl font-medium tracking-[-0.02em]">Yeni tarla</h1>
-        <p className="mt-2 text-[#64766c]">Bu bilgileri bir kez girersiniz; her analizde yeniden sorulmaz.</p>
+        <h1 className="mt-3 font-display text-4xl font-medium tracking-[-0.02em]">{tx("Yeni tarla")}</h1>
+        <p className="mt-2 text-[#64766c]">{tx("Bu bilgileri bir kez girersiniz; her analizde yeniden sorulmaz.")}</p>
         <div className="mt-6">
           <TarlaFormu />
         </div>

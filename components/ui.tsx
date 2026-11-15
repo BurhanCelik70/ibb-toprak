@@ -1,5 +1,6 @@
 'use client';
 /** Küçük, yeniden kullanılabilir arayüz parçaları. */
+import { useTx } from '@/components/DilSaglayici';
 import { AlertTriangle, Check } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -13,7 +14,9 @@ export function Panel({ title, helper, children }: { title: string; helper: stri
   );
 }
 
-export function ChoiceGrid({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+/** Seçenekler kod olarak saklanır; ekranda seçili dile çevrilerek gösterilir. */
+export function ChoiceGrid({ options, value, onChange, etiket }: { options: string[]; value: string; onChange: (v: string) => void; etiket?: (o: string) => string }) {
+  const tx = useTx();
   return (
     <div className="mt-4 grid gap-2 sm:grid-cols-2">
       {options.map((o) => {
@@ -28,7 +31,7 @@ export function ChoiceGrid({ options, value, onChange }: { options: string[]; va
               sel ? 'border-[#38a66d] bg-[#eefaf0]' : 'border-[#dfe9df] bg-white hover:border-[#9aca89]'
             }`}
           >
-            {o}
+            {etiket ? etiket(o) : tx(o)}
             {sel && (
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#238f61] text-white">
                 <Check size={14} />

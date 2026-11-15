@@ -5,7 +5,7 @@
  *  - evre: programdaki her evre için bir resim (1.webp, 2.webp …); evre sayısı Z-karttaki ile aynı olmalı
  * Seti olmayan bitkilerde görsel yerine toprak + büyüyen filiz simgesi gösterilir (yanlış bitki göstermemek için).
  */
-import { zkartBul } from './igsas';
+import { zkartBul } from './bitki';
 
 type GorselSeti = { klasor: string; kare: number; tur?: 'video' | 'evre' };
 

@@ -1,5 +1,5 @@
 /**
- * İGSAŞ Z-kartları (23 bitki) – "İGSAŞ Azərbaycan · dönem dönem infografik seti"
+ * İGSAŞ Z-kartları (25 bitki) – "İGSAŞ Azərbaycan · dönem dönem infografik seti"
  * (Prof. Dr. Metin Turan, Yeditepe Üniversitesi · İGSAŞ & KIANA) PDF'inden çıkarıldı.
  * Kanola kartı sonradan eklendi (taslak): Trakya Tarımsal Araştırma Enstitüsü önerilerine (N 15, P 5-6, K 6-8, S 4 kg/da; azot üçe bölünür) göre
  * İGSAŞ ve KIANA ürünleriyle hazırlandı; Prof. Dr. Metin Turan onayına sunulacak.
@@ -66,7 +66,7 @@ export const ZKARTLAR: ZKart[] = [
               },
               {
                 "urun": "AS 21",
-                "doz": "15-20 kg/da (kirecli toprak)"
+                "doz": "15-20 kg/da (kireçli toprak)"
               }
             ]
           },
@@ -787,7 +787,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "UAN-32",
-                "doz": "12-16 L/da (her sulamaya béliinmiis)"
+                "doz": "12-16 L/da (her sulamaya bölünmüş)"
               },
               {
                 "urun": "NPK 18-18-18",
@@ -852,7 +852,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "N-CALBOR",
-                "doz": "250 cc/da (ikinci bor — PAZARLIKSIZ)"
+                "doz": "250 cc/da (ikinci bor — atlamayın)"
               },
               {
                 "urun": "FLOWER GOLD",
@@ -984,7 +984,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "UAN-32",
-                "doz": "14-18 L/da (her sulamaya béliinmis)"
+                "doz": "14-18 L/da (her sulamaya bölünmüş)"
               },
               {
                 "urun": "NPK 18-18-18",
@@ -1123,7 +1123,7 @@ export const ZKARTLAR: ZKart[] = [
         "evre": "EKİM - ÇIKIŞ",
         "bbch": "00-09",
         "donem": "Nisan-Mayıs",
-        "hedef": "K6k ve ilk kardes taslag; cinko su altinda hizla kilitlenir. SULAMA SUYU iLE « NPK 12-40-12 3-4 kg/da (su ile) * KIANA EARTH PLUS 200 g/da",
+        "hedef": "K6k ve ilk kardes taslag; cinko su altinda hizla kilitlenir.",
         "uygulamalar": [
           {
             "yontem": "Serpme baş gübre",
@@ -1149,14 +1149,14 @@ export const ZKARTLAR: ZKart[] = [
         "evre": "KARDEŞLENME",
         "bbch": "21-29",
         "donem": "Mayıs-Haziran",
-        "hedef": "m?'de salkim sayisl. SULAMA SUYU iLE + UAN-32 12-16 L/da (b6linmis)",
+        "hedef": "m?'de salkim sayisl. SULAMA SUYU iLE + UAN-32 12-16 L/da (bölünmüş)",
         "uygulamalar": [
           {
             "yontem": "Serpme baş gübre",
             "urunler": [
               {
                 "urun": "AS 21",
-                "doz": "20-25 kg/da (su disirtlup serpme)"
+                "doz": "20-25 kg/da (su vermeden önce serpme)"
               }
             ]
           },
@@ -1307,7 +1307,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "UAN-32",
-                "doz": "10-14 L/da (b6linmis)"
+                "doz": "10-14 L/da (bölünmüş)"
               },
               {
                 "urun": "NPK 18-18-18",
@@ -1765,7 +1765,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "UAN-32",
-                "doz": "6-9 L/da (bolunmis)"
+                "doz": "6-9 L/da (bölünmüş)"
               },
               {
                 "urun": "K₂SO₄",
@@ -1898,7 +1898,7 @@ export const ZKARTLAR: ZKart[] = [
               },
               {
                 "urun": "UAN-32",
-                "doz": "8-10 L/da (bolinmis)"
+                "doz": "8-10 L/da (bölünmüş)"
               },
               {
                 "urun": "KIANA EARTH PLUS",
@@ -2800,7 +2800,7 @@ export const ZKARTLAR: ZKart[] = [
             "yontem": "Damla sulama",
             "urunler": [
               {
-                "urun": "K2SOs",
+                "urun": "K₂SO₄",
                 "doz": "3-4 kg/da"
               }
             ]
@@ -3149,7 +3149,7 @@ export const ZKARTLAR: ZKart[] = [
               },
               {
                 "urun": "UAN-32",
-                "doz": "10-14 L/da (b6linmis)"
+                "doz": "10-14 L/da (bölünmüş)"
               }
             ]
           },
@@ -4056,7 +4056,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "UAN-32",
-                "doz": "10-14 L/da (bélinmits)"
+                "doz": "10-14 L/da (bölünmüş)"
               },
               {
                 "urun": "NPK 18-18-18",
@@ -4978,7 +4978,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "UAN-32",
-                "doz": "10-14 L/da (b6élinmis)"
+                "doz": "10-14 L/da (bölünmüş)"
               },
               {
                 "urun": "K₂SO₄",

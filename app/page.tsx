@@ -1,7 +1,11 @@
-import { ArrowRight, CirclePlay, Droplets, GitCompareArrows, MapPinned } from 'lucide-react';
+import { ArrowRight, Droplets, GitCompareArrows, MapPinned } from 'lucide-react';
 import Link from 'next/link';
-import { BuyumeSahnesi } from '@/components/BuyumeSahnesi';
-import { AppHeader, DerinlikCizimi, SiteFooter, ZikzakCizimi } from '@/components/site';
+import { DilSecici } from '@/components/DilSecici';
+import { EbruGiris, YuzenMenu } from '@/components/VideoGiris';
+import { DerinlikCizimi, SiteFooter, ZikzakCizimi } from '@/components/site';
+import { oturumKullanici } from '@/lib/supabase/server';
+import { alanYaz, DILLER, dozCevir, modullerAcik } from '@/lib/dil';
+import { ceviriAl } from '@/lib/dilSunucu';
 import { MARKA } from '@/lib/marka';
 import { SITE_URL } from '@/lib/site';
 
@@ -25,51 +29,77 @@ const YAPILANDIRILMIS_VERI = {
   ],
 };
 
-const VIDEO_LISTESI = {
-  baslik: 'Toprağın uzmanı cevaplıyor',
-  listeId: 'PLKFaLkVfBg00uFvdD9r9bRpSDIznvIuUT',
-  url: 'https://www.youtube.com/playlist?list=PLKFaLkVfBg00uFvdD9r9bRpSDIznvIuUT',
-};
-
-const MODULLER = [
-  { href: '/ornek', resim: '/toprak.jpg', etiket: 'Toprak', baslik: 'Toprak karnesi', metin: 'Laboratuvar raporunuzu yükleyin; kalite indeksi, eksikler, gübre ve sulama programı tek sayfada.', link: 'Örnek raporu gör' },
-  { href: '/ornek/su', resim: '/su/kapak.webp', etiket: 'Su', baslik: 'Sulama suyu karnesi', metin: 'Tuzluluk, sodyum ve bikarbonat FAO ölçütleriyle; suyunuza uygun sulama yöntemi önerisiyle.', link: 'Örnek su karnesi' },
-  { href: '/noksanliklar', resim: '/noksanlik/misir-fe.webp', etiket: 'Katalog', baslik: 'Besin noksanlıkları', metin: '13 bitkide 63 noksanlık resimli: nasıl tanınır, neden olur, ne yapılır.', link: 'Kataloğa göz at' },
-  { href: '/noksanliklar/teshis', resim: '/noksanlik/uzum-fe.webp', etiket: 'Yapay zekâ', baslik: 'Yaprak teşhisi', metin: 'Yaprağın fotoğrafını yükleyin, birkaç soruyu cevaplayın; olası sorun yüzdesiyle ve çözümüyle gelsin.', link: 'Yaprağımı incele' },
-  { href: '/besinler', resim: '/besin/n.webp', etiket: 'Rehber', baslik: 'Besinleri tanıyalım', metin: 'Azottan bora 15 besin: bitkide ne işe yarar, ne zaman verilir; gübre torbası nasıl okunur.', link: 'Besinleri keşfet' },
+const MODUL_YOLLARI = [
+  { href: '/ornek', resim: '/toprak.jpg' },
+  { href: '/ornek/su', resim: '/su/kapak.webp' },
+  { href: '/noksanliklar', resim: '/noksanlik/misir-fe.webp' },
+  { href: '/noksanliklar/teshis', resim: '/noksanlik/uzum-fe.webp' },
+  { href: '/besinler', resim: '/besin/n.webp' },
 ];
 
-const OZELLIKLER = [
-  {
-    i: MapPinned,
-    t: 'Tarlanızı bir kez kaydedin',
-    d: 'Ad, alan, bitki ve sulama yöntemi. Sonraki her analiz o tarlanın altına düşer, bilgileri tekrar girmezsiniz.',
-  },
-  {
-    i: GitCompareArrows,
-    t: 'Neyin değiştiğini görün',
-    d: 'Yeni analizde hangi değer iyileşti, hangisi geriledi; kalite indeksi yıllar içinde nasıl değişti.',
-  },
-  {
-    i: Droplets,
-    t: 'Sulamanıza göre uygulayın',
-    d: 'Damlada gübre hangi saat aralığında, yağmurlamada kaçıncı saatte, pivotta hangi hızla. Tarlanıza düşen toplam miktarla.',
-  },
-];
+const OZELLIK_IKONLARI = [MapPinned, GitCompareArrows, Droplets];
 
-export default function AnaSayfa() {
+/** "**kalın**" işaretli metni <strong> ile yazar */
+const kalin = (metin: string) =>
+  metin.split(/\*\*(.+?)\*\*/).map((parca, i) => (i % 2 ? <strong key={i}>{parca}</strong> : parca));
+
+export default async function AnaSayfa() {
+  const { dil, t } = await ceviriAl();
+  let girisli = false;
+  try {
+    girisli = !!(await oturumKullanici()).kullaniciId;
+  } catch {
+    // Supabase ayarlanmamışsa misafir
+  }
+  const sh = t.sahne;
+  const mn = t.menu;
+  const a = t.ana;
+  const o = a.onizleme;
+  // Su karnesi, noksanlık ve besin rehberi henüz yalnızca Türkçe: Almancada yalnız çevrilmiş modüller gösterilir
+  const MODULLER = MODUL_YOLLARI.map((y, k) => ({ ...y, ...a.moduller[k] })).filter((x) => modullerAcik(dil) || x.href === '/ornek');
+  const OZELLIKLER = a.ozellikler.map((x, k) => ({ ...x, i: OZELLIK_IKONLARI[k] }));
+  const veri = {
+    ...YAPILANDIRILMIS_VERI,
+    '@graph': [{ ...YAPILANDIRILMIS_VERI['@graph'][0], inLanguage: DILLER[dil].locale, description: t.marka.aciklama }, YAPILANDIRILMIS_VERI['@graph'][1]],
+  };
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip bg-[#f5f0e6] text-[#1d2a22]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(YAPILANDIRILMIS_VERI) }} />
-      <AppHeader seffaf />
-      <BuyumeSahnesi />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(veri) }} />
+      <EbruGiris
+        m={{ bolum: sh.bolum, baslik: sh.paneller[0].baslik, metin: sh.paneller[0].metin, asagi: sh.asagi, basla: sh.basla, ornek: sh.ornek }}
+        baslaHref="/tarlalar"
+        ustSag={
+          <>
+            <Link
+              href={girisli ? '/tarlalar' : '/giris'}
+              className="rounded-full border border-white/30 bg-black/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/15"
+            >
+              {girisli ? mn.tarlalar : mn.giris}
+            </Link>
+            <DilSecici dil={dil} seffaf etiket={mn.dil} baslik={mn.dilSec} />
+          </>
+        }
+      />
+      <YuzenMenu
+        etiket={sh.menu}
+        linkler={[
+          { href: '/ornek', ad: mn.ornekRapor },
+          ...(modullerAcik(dil)
+            ? [
+                { href: '/noksanliklar', ad: mn.noksanliklar },
+                { href: '/besinler', ad: mn.besinler },
+              ]
+            : [{ href: '/giris', ad: mn.giris }]),
+        ]}
+        cta={girisli ? { href: '/tarlalar', ad: mn.tarlalar } : { href: '/tarlalar', ad: sh.basla }}
+      />
 
       {/* Modüller */}
-      <section className="px-5 pt-20 sm:px-8 lg:pt-28" aria-labelledby="moduller">
+      <section id="icerik" className="scroll-mt-6 px-5 pt-20 sm:px-8 lg:pt-28" aria-labelledby="moduller">
         <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Neler yapabilirsiniz?</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">{a.modullerUst}</p>
           <h2 id="moduller" className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
-            Toprak, su ve bitki tek uygulamada.
+            {a.modullerBaslik}
           </h2>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {MODULLER.map((m) => (
@@ -96,9 +126,9 @@ export default function AnaSayfa() {
       <section id="tarla-defteri" className="scroll-mt-10 px-5 py-20 sm:px-8 lg:py-28">
         <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.1fr_1fr] lg:gap-20">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Cebinizde tarla defteri</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">{a.defterUst}</p>
             <h2 className="mt-4 font-display text-4xl font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
-              Her tarlanın kendi toprak geçmişi.
+              {a.defterBaslik}
             </h2>
             <ul className="mt-10 divide-y divide-[#1d2a22]/10 border-y border-[#1d2a22]/10">
               {OZELLIKLER.map(({ i: Ikon, t, d }) => (
@@ -119,32 +149,39 @@ export default function AnaSayfa() {
             <div className="relative rounded-[30px] bg-white p-5 shadow-[0_40px_80px_-20px_rgba(18,20,16,0.45)] sm:p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-lg font-bold">Tepe Tarla</div>
-                  <div className="mt-1 text-xs text-[#6d786f]">Mısır · Damla · 12 dekar</div>
+                  <div className="text-lg font-bold">{o.tarla}</div>
+                  <div className="mt-1 text-xs text-[#6d786f]">{o.bitki} · {o.sulama} · {alanYaz(12, dil)}</div>
                 </div>
                 <div className="text-right">
                   <div className="font-display text-4xl font-medium leading-none">64</div>
-                  <div className="mt-1 text-xs font-semibold text-[#3f8f3a]">▲ 8 · İyi</div>
+                  <div className="mt-1 text-xs font-semibold text-[#3f8f3a]">▲ 8 · {o.durum}</div>
                 </div>
               </div>
               <div className="mt-6">
-                <div className="text-xs font-medium text-[#6d786f]">6 saatlik damla sulama</div>
+                <div className="text-xs font-medium text-[#6d786f]">{o.damla}</div>
                 <div className="mt-2 flex h-8 overflow-hidden rounded-xl text-[11px] font-semibold">
-                  <div className="flex w-1/4 items-center justify-center bg-[#e4eef1] text-[#3d5a66]">Su</div>
-                  <div className="flex w-1/2 items-center justify-center bg-[#2f7a4f] text-white">1:30–4:30 gübre</div>
-                  <div className="flex w-1/4 items-center justify-center bg-[#eef4f6] text-[#3d5a66]">Su</div>
+                  <div className="flex w-1/4 items-center justify-center bg-[#e4eef1] text-[#3d5a66]">{o.su}</div>
+                  <div className="flex w-1/2 items-center justify-center bg-[#2f7a4f] text-white">1:30–4:30 {o.gubre}</div>
+                  <div className="flex w-1/4 items-center justify-center bg-[#eef4f6] text-[#3d5a66]">{o.su}</div>
                 </div>
               </div>
               <ul className="mt-5 space-y-1">
                 {[
-                  ['Mg NİTRAT', '2–3 kg/da', '24–36 kg'],
-                  ['KIANA CLIMATE PLUS', '200–300 g/da', '2,4–3,6 kg'],
-                ].map(([u, d, t]) => (
+                  ['UAN-32', 'İGSAŞ', dozCevir('14–18 L/da', dil), '168–216 L'],
+                  ['NPK 18-18-18', 'İGSAŞ', dozCevir('4 kg/da', dil), '48 kg'],
+                ].map(([u, e, d, t]) => (
                   <li key={u} className="flex items-center justify-between gap-3 border-t border-[#1d2a22]/8 py-3 text-sm">
-                    <span className="font-semibold">{u}</span>
+                    <span className="flex flex-wrap items-center gap-2 font-semibold">
+                      <span
+                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${e === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#1C4734] text-white'}`}
+                      >
+                        {e}
+                      </span>
+                      {u}
+                    </span>
                     <span className="text-right">
                       <span className="block text-xs font-semibold text-[#2f7a4f]">{d}</span>
-                      <span className="block text-[11px] text-[#6d786f]">Tarlanız için {t}</span>
+                      <span className="block text-[11px] text-[#6d786f]">{o.tarlaIcin} {t}</span>
                     </span>
                   </li>
                 ))}
@@ -159,24 +196,23 @@ export default function AnaSayfa() {
         <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:py-28">
           <blockquote>
             <p className="font-display text-4xl font-normal leading-[1.1] tracking-[-0.02em] sm:text-5xl">
-              Bir santimetre verimli toprağın oluşması
-              <span className="italic text-[#e2b65c]"> bin yıl sürebilir.</span>
+              {a.toprakSoz1}
+              <span className="italic text-[#e2b65c]">{a.toprakSoz2}</span>
             </p>
             <p className="mt-6 max-w-xl text-base leading-7 text-white/65">
-              Bir mevsimlik yanlış gübreleme ise bu birikimi tuzlanma ve çoraklaşmayla hızla tüketebilir. Toprak analizi, toprağa
-              ihtiyacı olanı, ihtiyacı kadar vermenin en güvenilir yoludur.
+              {a.toprakMetin}
             </p>
           </blockquote>
           <dl className="grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
             <div>
               <dt className="font-display text-3xl">%95</dt>
-              <dd className="mt-1 text-sm leading-6 text-white/60">Gıdamızın yaklaşık %95’i doğrudan ya da dolaylı olarak topraktan gelir.</dd>
+              <dd className="mt-1 text-sm leading-6 text-white/60">{a.gida}</dd>
             </div>
             <div>
-              <dt className="font-display text-3xl">Bir kaşık toprak</dt>
-              <dd className="mt-1 text-sm leading-6 text-white/60">Sağlıklı bir kaşık toprakta dünyadaki insan sayısından fazla canlı yaşar.</dd>
+              <dt className="font-display text-3xl">{a.kasikBaslik}</dt>
+              <dd className="mt-1 text-sm leading-6 text-white/60">{a.kasik}</dd>
             </div>
-            <p className="text-xs text-white/35 sm:col-span-2 lg:col-span-1">Kaynak: BM Gıda ve Tarım Örgütü (FAO)</p>
+            <p className="text-xs text-white/35 sm:col-span-2 lg:col-span-1">{a.kaynak}</p>
           </dl>
         </div>
       </section>
@@ -184,68 +220,39 @@ export default function AnaSayfa() {
       {/* Örnek alma rehberi */}
       <section id="ornek" className="scroll-mt-10 px-5 py-20 sm:px-8 lg:py-28">
         <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Doğru sonuç, doğru örnekle başlar</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">{a.ornekUst}</p>
           <h2 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
-            Toprak örneği nasıl alınır?
+            {a.ornekBaslik}
           </h2>
           <div className="mt-12 grid gap-6 lg:grid-cols-2">
             <div className="rounded-[28px] bg-[#fbf8f2] p-6 sm:p-8">
-              <h3 className="text-lg font-semibold">Nasıl?</h3>
+              <h3 className="text-lg font-semibold">{a.nasil}</h3>
               <div className="mt-5">
-                <ZikzakCizimi />
+                <ZikzakCizimi dil={dil} />
               </div>
               <ol className="mt-6 space-y-3 text-[15px] leading-7 text-[#3f4a42]">
-                <li><span className="font-display text-[#a87a2a]">1.</span> Tarlada zikzak çizerek 8–10 noktadan, küreğin 3–4 cm’lik dilimiyle örnek alın.</li>
-                <li><span className="font-display text-[#a87a2a]">2.</span> Toprakları temiz bir zeminde karıştırın; kesekleri ufalayın, taş ve bitki artıklarını atın.</li>
-                <li><span className="font-display text-[#a87a2a]">3.</span> Karışımdan yaklaşık <strong>2 kg</strong> alıp temiz bir torbaya koyun ve etiketleyin.</li>
+                {a.adimlar.map((m, k) => (
+                  <li key={k}><span className="font-display text-[#a87a2a]">{k + 1}.</span> {kalin(m)}</li>
+                ))}
               </ol>
             </div>
             <div className="grid gap-6">
               <div className="rounded-[28px] bg-[#fbf8f2] p-6 sm:p-8">
-                <h3 className="text-lg font-semibold">Hangi derinlikten?</h3>
+                <h3 className="text-lg font-semibold">{a.derinlik}</h3>
                 <div className="mt-5">
-                  <DerinlikCizimi />
+                  <DerinlikCizimi dil={dil} />
                 </div>
               </div>
               <div className="rounded-[28px] bg-[#fbf8f2] p-6 sm:p-8">
-                <h3 className="text-lg font-semibold">Ne zaman?</h3>
+                <h3 className="text-lg font-semibold">{a.neZaman}</h3>
                 <ul className="mt-3 space-y-2 text-[15px] leading-7 text-[#3f4a42]">
-                  <li><strong>Tek yıllık bitki ve seracılık:</strong> ekim ya da dikimden 1–2 ay önce.</li>
-                  <li><strong>Meyve bahçesi ve bağ:</strong> gübreleme tarihinden 1–2 ay önce.</li>
-                  <li className="text-[#a3402a]">Donmuş ya da çok çamurlu topraktan örnek almayın.</li>
+                  {a.zamanlar.map(([b, m]) => (
+                    <li key={b}><strong>{b}</strong> {m}</li>
+                  ))}
+                  <li className="text-[#a3402a]">{a.donmus}</li>
                 </ul>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Videolar */}
-      <section id="videolar" className="scroll-mt-10 px-5 pb-20 sm:px-8 lg:pb-28">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="font-display text-4xl font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">{VIDEO_LISTESI.baslik}</h2>
-              <p className="mt-3 text-[#5e6a60]">Toprak, gübreleme ve bitki besleme üzerine kısa uzman cevapları.</p>
-            </div>
-            <a
-              href={VIDEO_LISTESI.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#1d2a22]/15 px-5 py-2.5 text-sm font-semibold hover:bg-white"
-            >
-              <CirclePlay size={18} className="text-[#c4302b]" /> YouTube’da tüm liste
-            </a>
-          </div>
-          <div className="mt-10 overflow-hidden rounded-[28px] bg-[#121410] shadow-[0_30px_60px_-20px_rgba(18,20,16,0.4)]">
-            <iframe
-              className="aspect-video w-full"
-              src={`https://www.youtube-nocookie.com/embed/videoseries?list=${VIDEO_LISTESI.listeId}`}
-              title={`${VIDEO_LISTESI.baslik} – video listesi`}
-              loading="lazy"
-              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
           </div>
         </div>
       </section>
@@ -255,18 +262,20 @@ export default function AnaSayfa() {
         <div className="absolute inset-0 bg-[url('/hasat.jpg')] bg-cover bg-[center_30%] opacity-70" aria-hidden />
         <div className="absolute inset-0 bg-gradient-to-r from-[#121410] via-[#121410]/70 to-transparent" aria-hidden />
         <div className="relative mx-auto max-w-6xl px-5 py-24 sm:px-8 lg:py-32">
-          <h2 className="max-w-lg font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">İlk tarlanızı bugün ekleyin.</h2>
-          <p className="mt-5 max-w-md text-white/70">E-posta adresinizle bir dakikada hesap açın. Şifre yok, ücret yok.</p>
+          <h2 className="max-w-lg font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">{a.sonBaslik}</h2>
+          <p className="mt-5 max-w-md text-white/70">{a.sonMetin}</p>
           <Link
             href="/tarlalar"
             className="group mt-9 inline-flex items-center gap-2 rounded-full bg-[#f5f0e6] px-7 py-4 font-semibold text-[#121410] transition hover:bg-white"
           >
-            Ücretsiz başla <ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" />
+            {a.basla} <ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
       </section>
 
       <SiteFooter />
+      {/* Yüzen menü altbilgiyi örtmesin */}
+      <div className="h-24 bg-[#0e100c] print:hidden" aria-hidden />
     </div>
   );
 }

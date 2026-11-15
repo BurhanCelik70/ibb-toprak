@@ -1,11 +1,18 @@
 import Link from 'next/link';
+import { DilSecici } from '@/components/DilSecici';
 import { Logo } from '@/components/site';
+import { sozluk } from '@/lib/ceviri';
+import { ceviriAl, dilAl } from '@/lib/dilSunucu';
 import { GirisFormu } from './GirisFormu';
 
-export const metadata = { title: 'Giriş', robots: { index: false, follow: true } };
+export async function generateMetadata() {
+  return { title: sozluk(await dilAl()).giris.baslik, robots: { index: false, follow: true } };
+}
 
 export default async function GirisSayfasi({ searchParams }: { searchParams: Promise<{ sonra?: string; adim?: string; hata?: string }> }) {
   const { sonra, adim, hata } = await searchParams;
+  const { dil, t } = await ceviriAl();
+  const g = t.giris;
   // Yalnızca site içi yollara dön (açık yönlendirme açığını önler)
   const hedef = sonra && sonra.startsWith('/') && !sonra.startsWith('//') ? sonra : '/tarlalar';
   return (
@@ -18,33 +25,36 @@ export default async function GirisSayfasi({ searchParams }: { searchParams: Pro
       />
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 py-6 sm:px-8">
-        <Link href="/" className="self-start" aria-label="Ana sayfa">
-          <Logo size={36} acik />
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/" aria-label={g.anaSayfa}>
+            <Logo size={36} acik dil={dil} />
+          </Link>
+          <DilSecici dil={dil} seffaf etiket={t.menu.dil} baslik={t.menu.dilSec} />
+        </div>
 
         <div className="flex flex-1 flex-col justify-end gap-10 py-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="hidden max-w-md lg:block">
             <h1 className="font-display text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white">
-              Toprağınız konuşuyor.
-              <span className="block italic text-[#e2b65c]">Dinlemeye hazır mısınız?</span>
+              {g.soz1}
+              <span className="block italic text-[#e2b65c]">{g.soz2}</span>
             </h1>
             <p className="mt-5 text-lg leading-8 text-white/70">
-              Tarlalarınız, analizleriniz ve reçeteleriniz tek yerde. Her yeni analizde ne değiştiğini görün.
+              {g.sozMetin}
             </p>
           </div>
 
           <div className="w-full max-w-md">
-            <GirisFormu sonra={hedef} ilkAdim={adim === 'ad' ? 'ad' : 'eposta'} ilkHata={hata === 'baglanti' ? 'Bağlantının süresi dolmuş ya da daha önce kullanılmış. Yeni kod isteyin.' : null} />
+            <GirisFormu dil={dil} sonra={hedef} ilkAdim={adim === 'ad' ? 'ad' : 'eposta'} ilkHata={hata === 'baglanti' ? g.baglanti : null} />
             <p className="mt-5 text-center text-xs leading-5 text-white/55">
-              Giriş yaparak tarla ve analiz bilgilerinizin hesabınızda saklanmasını kabul etmiş olursunuz.{' '}
-              <Link href="/gizlilik" className="underline hover:text-white">Gizlilik ve KVKK</Link>
+              {g.kabul}{' '}
+              <Link href="/gizlilik" className="underline hover:text-white">{g.gizlilik}</Link>
             </p>
             <div className="mt-6 flex flex-col items-center gap-2 text-sm sm:flex-row sm:justify-center sm:gap-5">
               <Link href="/ornek" className="font-semibold text-[#e2b65c] hover:text-white">
-                Hesap açmadan örnek raporu inceleyin →
+                {g.ornek}
               </Link>
               <Link href="/" className="text-white/70 hover:text-white">
-                ← Ana sayfaya dön
+                {g.geri}
               </Link>
             </div>
           </div>

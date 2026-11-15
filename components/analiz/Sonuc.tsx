@@ -2,16 +2,26 @@
 /**
  * Analiz sonucu: kalite indeksi, analiz tablosu, çözüm planı, karşılaştırma ve sulama reçetesi.
  */
-import { ArrowDownRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Loader2, MapPin, Minus, ShieldCheck, Sprout } from 'lucide-react';
+import { useTx } from '@/components/DilSaglayici';
+import { DILLER, modullerAcik, type Dil } from '@/lib/dil';
+import { aralikMetni, birimGoster, degerGoster, etiketGoster, farkMetni } from '@/lib/birimler';
+import { ArrowDownRight, ArrowUpRight, CalendarDays, CirclePlay, ClipboardList, Droplets, FlaskConical, Gauge, Minus, ShieldCheck, Sprout } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { evreGorseli } from '@/lib/bitkiGorsel';
-import { ORGANIK_MADDE_PROTOKOLU, URUNLER, zkartBul } from '@/lib/igsas';
+import { zkartBul } from '@/lib/bitki';
+import { ORGANIK_MADDE_PROTOKOLU, urunBilgisi } from '@/lib/igsas';
+import { SezonToplami, UrunRozeti, YorumBolumu } from './RaporParcalari';
+import { SuSutunu } from './SuSutunu';
+import { AtlasKarti } from './AtlasKarti';
+import { atlasAdresi, atlasToprak } from '@/lib/atlas';
+import { almanMi } from '@/lib/almanya';
+import { dunyaIli, ilGoster, takvimAyi } from '@/lib/dunya';
 import { SINIFLAR, kaliteIndeksi, type IndeksSonucu } from '@/lib/indeks';
 import { tahilMi } from '@/lib/tahilSulama';
 import { suIhtiyaci } from '@/lib/suIhtiyaci';
 import { TahilSuPlani } from './TahilSuPlani';
 import { ParKarti } from '@/components/ParKarti';
-import { BOLGE_DUZELTME, bolunmusMu, onerilenAralik, sezonTakvimi, sezonTanimi, suBasinaDoz, tarihKisa } from '@/lib/sulamaTakvimi';
+import { bolunmusMu, onerilenAralik, sezonTakvimi, sezonTanimi } from '@/lib/sulamaTakvimi';
 import { karsilastir, ozetle } from '@/lib/karsilastir';
 import {
   KURALLAR,
@@ -29,7 +39,6 @@ import {
   PARAMS,
   classify,
   formatNumber,
-  uygunAralikMetni,
   uygunFark,
   type ParamGroup,
   type ParamKey,
@@ -83,20 +92,22 @@ function RangeBar({ k, value, tone }: { k: ParamKey; value: number; tone: Tone }
 }
 
 function StatusCell({ tone, label, fark, lab }: { tone: Tone; label: string; fark?: string; lab?: boolean }) {
+  const tx = useTx();
   const s = TONE_STYLE[tone];
   return (
     <div>
       <div className={`flex items-center gap-2 font-semibold ${s.text}`}>
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${s.dot}`} />
-        {label}
+        {tx(label)}
       </div>
-      {fark && <div className="mt-0.5 text-xs text-[#51675d]">{fark}</div>}
-      {lab && <div className="mt-0.5 hidden text-[11px] text-[#8a978f] sm:block">Laboratuvar değerlendirmesi</div>}
+      {fark && <div className="mt-0.5 text-xs text-[#51675d]">{tx(fark)}</div>}
+      {lab && <div className="mt-0.5 hidden text-[11px] text-[#8a978f] sm:block">{tx("Laboratuvar değerlendirmesi")}</div>}
     </div>
   );
 }
 
 function AnalysisTable({ report, results }: { report: SoilReport; results: ParamResult[] }) {
+  const tx = useTx();
   const byGroup = GROUP_ORDER.map((g) => ({ g, rows: results.filter((r) => PARAMS[r.key].group === g) })).filter(
     (x) => x.rows.length > 0,
   );
@@ -105,7 +116,7 @@ function AnalysisTable({ report, results }: { report: SoilReport; results: Param
   const groupHeader = (title: string) => (
     <tr className="bg-[#f3f7f2]">
       <th colSpan={4} scope="colgroup" className="px-3 py-2 sm:px-4 text-left text-xs font-bold text-[#476456]">
-        {title}
+        {tx(title)}
       </th>
     </tr>
   );
@@ -115,10 +126,10 @@ function AnalysisTable({ report, results }: { report: SoilReport; results: Param
       <table className="w-full border-collapse text-[13px] sm:text-sm">
         <thead>
           <tr className="border-b border-[#dfe9df] text-left text-xs text-[#6b7d72]">
-            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">Parametre</th>
-            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">Sonuç</th>
-            <th scope="col" className="hidden px-3 py-3 sm:px-4 font-semibold sm:table-cell">Uygun aralık</th>
-            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">Durum ve fark</th>
+            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">{tx("Parametre")}</th>
+            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">{tx("Sonuç")}</th>
+            <th scope="col" className="hidden px-3 py-3 sm:px-4 font-semibold sm:table-cell">{tx("Uygun aralık")}</th>
+            <th scope="col" className="px-3 py-3 sm:px-4 font-semibold">{tx("Durum ve fark")}</th>
           </tr>
         </thead>
         {byGroup.map(({ g, rows }) => (
@@ -126,11 +137,11 @@ function AnalysisTable({ report, results }: { report: SoilReport; results: Param
             {groupHeader(GROUP_LABELS[g])}
             {g === 'yapi' && report.bunyeSinifi && (
               <tr>
-                <th scope="row" className="px-3 py-3 sm:px-4 text-left font-semibold">Bünye sınıfı</th>
-                <td className="px-3 py-3 sm:px-4 font-bold">{report.bunyeSinifi}</td>
+                <th scope="row" className="px-3 py-3 sm:px-4 text-left font-semibold">{tx("Bünye sınıfı")}</th>
+                <td className="px-3 py-3 sm:px-4 font-bold">{tx(report.bunyeSinifi)}</td>
                 <td className="hidden px-3 py-3 sm:px-4 text-[#8a978f] sm:table-cell">—</td>
                 <td className="px-3 py-3 sm:px-4">
-                  <StatusCell tone="bilgi" label="Bilgi" lab={!!report.labDegerlendirme.bunye} />
+                  <StatusCell tone="bilgi" label={tx("Bilgi")} lab={!!report.labDegerlendirme.bunye} />
                 </td>
               </tr>
             )}
@@ -142,25 +153,25 @@ function AnalysisTable({ report, results }: { report: SoilReport; results: Param
               return (
                 <tr key={r.key} className="align-top">
                   <th scope="row" className="px-3 py-3 sm:px-4 text-left font-semibold">
-                    {def.label}
-                    {def.unit && <span className="block text-xs font-normal text-[#8a978f]">{def.unit}</span>}
+                    {tx(etiketGoster(r.key, tx.dil))}
+                    {birimGoster(r.key, tx.dil) && <span className="block text-xs font-normal text-[#8a978f]">{tx(birimGoster(r.key, tx.dil))}</span>}
                   </th>
                   <td className="px-3 py-3 sm:px-4">
-                    <span className="text-base font-bold tabular-nums">{formatNumber(r.value, 4)}</span>
+                    <span className="text-base font-bold tabular-nums">{tx(formatNumber(degerGoster(r.key, r.value, tx.dil), 4))}</span>
                     <RangeBar k={r.key} value={r.value} tone={c.tone} />
                     {def.uygun && (
-                      <span className="mt-1 block text-xs text-[#8a978f] sm:hidden">Uygun: {uygunAralikMetni(r.key)}</span>
+                      <span className="mt-1 block text-xs text-[#8a978f] sm:hidden">{tx("Uygun:")}{' '}{tx(aralikMetni(r.key, tx.dil))}</span>
                     )}
                   </td>
-                  <td className="hidden px-3 py-3 sm:px-4 tabular-nums text-[#51675d] sm:table-cell">{uygunAralikMetni(r.key)}</td>
+                  <td className="hidden px-3 py-3 sm:px-4 tabular-nums text-[#51675d] sm:table-cell">{tx(aralikMetni(r.key, tx.dil))}</td>
                   <td className="px-3 py-3 sm:px-4">
                     {isTexture ? (
-                      <StatusCell tone="bilgi" label="Bilgi" />
+                      <StatusCell tone="bilgi" label={tx("Bilgi")} />
                     ) : (
                       <StatusCell
                         tone={c.tone}
-                        label={c.label}
-                        fark={fark.durum === 'eksik' || fark.durum === 'fazla' ? fark.metin : undefined}
+                        label={tx(c.label)}
+                        fark={fark.durum === 'eksik' || fark.durum === 'fazla' ? tx(farkMetni(r.key, r.value, tx.dil)) : undefined}
                         lab={r.source === 'laboratuvar'}
                       />
                     )}
@@ -172,17 +183,17 @@ function AnalysisTable({ report, results }: { report: SoilReport; results: Param
         ))}
         {ek.length > 0 && (
           <tbody className="divide-y divide-[#edf2ee]">
-            {groupHeader('Diğer ölçümler')}
+            {groupHeader(tx("Diğer ölçümler"))}
             {ek.map((e, i) => (
               <tr key={`ek-${i}`} className="align-top">
                 <th scope="row" className="px-3 py-3 sm:px-4 text-left font-semibold">
-                  {e.ad}
-                  {e.birim && <span className="block text-xs font-normal text-[#8a978f]">{e.birim}</span>}
+                  {tx(e.ad)}
+                  {e.birim && <span className="block text-xs font-normal text-[#8a978f]">{tx(e.birim)}</span>}
                 </th>
-                <td className="px-3 py-3 sm:px-4 text-base font-bold tabular-nums">{formatNumber(e.deger, 4)}</td>
+                <td className="px-3 py-3 sm:px-4 text-base font-bold tabular-nums">{tx(formatNumber(e.deger, 4))}</td>
                 <td className="hidden px-3 py-3 sm:px-4 text-[#8a978f] sm:table-cell">—</td>
                 <td className="px-3 py-3 sm:px-4">
-                  <StatusCell tone="bilgi" label={e.labDegerlendirme || 'Bilgi'} lab={!!e.labDegerlendirme} />
+                  <StatusCell tone="bilgi" label={tx(e.labDegerlendirme) || tx("Bilgi")} lab={!!e.labDegerlendirme} />
                 </td>
               </tr>
             ))}
@@ -212,10 +223,11 @@ function PuanCubugu({ puan }: { puan: number }) {
 
 /** Yarım daire gösterge (0–100). */
 export function IndeksGostergesi({ yuzde, renk, koyu = false }: { yuzde: number; renk: string; koyu?: boolean }) {
+  const tx = useTx();
   const r = 80;
   const c = Math.PI * r;
   return (
-    <svg viewBox="0 0 200 116" className="w-full max-w-[240px]" role="img" aria-label={`Kalite indeksi ${yuzde} / 100`}>
+    <svg viewBox="0 0 200 116" className="w-full max-w-[240px]" role="img" aria-label={tx("Kalite indeksi {a} / 100", { a: yuzde })}>
       <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke={koyu ? 'rgba(255,255,255,.18)' : '#e4ebe5'} strokeWidth="16" strokeLinecap="round" />
       <path
         d="M20 100 A80 80 0 0 1 180 100"
@@ -236,23 +248,24 @@ export function IndeksGostergesi({ yuzde, renk, koyu = false }: { yuzde: number;
 }
 
 export function KaliteIndeksi({ indeks, sade = false }: { indeks: IndeksSonucu; sade?: boolean }) {
+  const tx = useTx();
   const sirali = [...indeks.satirlar].sort((a, b) => a.puan - b.puan);
   if (sade)
     return (
-      <section className="mt-4 rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6" aria-labelledby="tki">
+      <section className="mt-4 rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6" aria-labelledby={tx("tki")}>
         <h3 id="tki" className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[#6d786f]">
-          <Gauge size={16} className="text-[#2f7a4f]" /> Kalite indeksi neye göre hesaplandı?
+          <Gauge size={16} className="text-[#2f7a4f]" />{' '}{tx("Kalite indeksi neye göre hesaplandı?")}
         </h3>
         <p className="mt-1 text-xs text-[#8a968d]">
-          {indeks.satirlar.length} parametrenin 0–5 puan ortalaması: {formatNumber(indeks.ortalama, 1)} / 5 → {indeks.yuzde} / 100
+          {indeks.satirlar.length}{' '}{tx("parametrenin 0–5 puan ortalaması:")}{' '}{tx(formatNumber(indeks.ortalama, 1))} / 5 → {indeks.yuzde} / 100
         </p>
         <ul className="mt-3 grid gap-x-10 md:grid-cols-2">
           {sirali.map((x) => (
             <li key={x.key} className="flex items-center justify-between gap-3 border-b border-[#1d2a22]/6 py-2.5">
               <span className="min-w-0 text-sm">
-                <span className="font-semibold">{x.ad}</span>
+                <span className="font-semibold">{tx(x.ad)}</span>
                 <span className="ml-2 tabular-nums text-xs text-[#8a968d]">
-                  {formatNumber(x.deger, 3)} {x.birim}
+                  {tx(formatNumber(x.deger, 3))} {tx(x.birim)}
                 </span>
               </span>
               <span className="flex shrink-0 items-center gap-3">
@@ -267,33 +280,34 @@ export function KaliteIndeksi({ indeks, sade = false }: { indeks: IndeksSonucu; 
       </section>
     );
   return (
-    <section className="mt-8 overflow-hidden rounded-[28px] border border-[#dfe9df] bg-white" aria-labelledby="tki">
+    <section className="mt-8 overflow-hidden rounded-[28px] border border-[#dfe9df] bg-white" aria-labelledby={tx("tki")}>
       <div className="grid gap-6 p-5 sm:p-8 md:grid-cols-[260px_1fr] md:gap-10">
         <div className="flex flex-col items-center justify-center text-center">
           <h2 id="tki" className="flex items-center gap-2 text-lg font-bold">
             <Gauge size={20} className="text-[#238f61]" />
-            Toprak Kalite İndeksi
+            
+            {tx("Toprak Kalite İndeksi")}
           </h2>
           <div className="mt-3 w-full">
             <IndeksGostergesi yuzde={indeks.yuzde} renk={indeks.renk} />
           </div>
           <div className="mt-1 rounded-full px-4 py-1 text-sm font-bold text-white" style={{ background: indeks.renk }}>
-            {indeks.sinif}
+            {tx(indeks.sinif)}
           </div>
           <p className="mt-3 text-xs leading-5 text-[#75867a]">
-            {indeks.satirlar.length} parametrenin 0–5 puan ortalaması ({formatNumber(indeks.ortalama, 1)} / 5)
+            {indeks.satirlar.length}{' '}{tx("parametrenin 0–5 puan ortalaması (")}{tx(formatNumber(indeks.ortalama, 1))} / 5)
           </p>
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-[#51675d]">Parametre puanları</h3>
+          <h3 className="text-sm font-semibold text-[#51675d]">{tx("Parametre puanları")}</h3>
           <ul className="mt-3 divide-y divide-[#edf2ee]">
             {sirali.map((s) => (
               <li key={s.key} className="flex items-center justify-between gap-3 py-2.5">
                 <span className="min-w-0 text-sm">
-                  <span className="font-semibold">{s.ad}</span>
+                  <span className="font-semibold">{tx(s.ad)}</span>
                   <span className="ml-2 tabular-nums text-xs text-[#8a978f]">
-                    {formatNumber(s.deger, 3)} {s.birim}
+                    {tx(formatNumber(s.deger, 3))} {tx(s.birim)}
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
@@ -312,13 +326,17 @@ export function KaliteIndeksi({ indeks, sade = false }: { indeks: IndeksSonucu; 
 }
 
 function UrunKarti({ u }: { u: UrunOnerisi }) {
+  const tx = useTx();
   return (
     <li className="rounded-2xl border border-[#e1ebdf] bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <span className="font-bold tracking-tight text-[#17352a]">{u.urun}</span>
-        <span className="rounded-full bg-[#edf7ed] px-2.5 py-1 text-xs font-bold text-[#1f7a45]">{u.doz}</span>
+        <span className="flex flex-wrap items-center gap-2 font-bold tracking-tight text-[#17352a]">
+          <UrunRozeti ad={u.urun} />
+          {tx(u.urun)}
+        </span>
+        <span className="rounded-full bg-[#edf7ed] px-2.5 py-1 text-xs font-bold text-[#1f7a45]">{tx.doz(u.doz)}</span>
       </div>
-      <p className="mt-2 text-sm leading-6 text-[#4b5f55]">{u.aciklama}</p>
+      <p className="mt-2 text-sm leading-6 text-[#4b5f55]">{tx(u.aciklama)}</p>
     </li>
   );
 }
@@ -340,121 +358,15 @@ function UrunBolumu({ icon, title, items }: { icon: ReactNode; title: string; it
   );
 }
 
-/** Kapağın hemen altı: kısa özet ve sorun başına "ne, ne kadar, ne zaman" kartları */
-function OncelikliIsler({
-  report,
-  ai,
-  aiState,
-  onRetryAi,
-  ilgi,
-}: {
-  report: SoilReport;
-  ai: CozumPlani | null;
-  aiState: 'idle' | 'loading' | 'error';
-  onRetryAi: () => void;
-  ilgi: { key: ParamKey; ad: string; tone: Tone; etiket: string }[];
-}) {
-  return (
-    <section className="mt-6 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8" aria-labelledby="oncelik">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Bir bilenden tavsiyeler</p>
-      <h2 id="oncelik" className="mt-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
-        Önce bunları yapın
-      </h2>
-      {ilgi.length > 0 && (
-        <div className="mt-4">
-          <p className="text-sm font-semibold text-[#5b6f65]">İlgilenmeniz gerekenler</p>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {ilgi.map((x) => (
-              <li key={x.key} className="flex items-center gap-2 rounded-full bg-[#f7f4ec] px-3 py-1.5 text-sm">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: TON_RENK[x.tone] }} />
-                <span className="font-semibold text-[#17352a]">{x.ad}</span>
-                <span className="text-[#6d786f]">{x.etiket}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {aiState === 'loading' && (
-        <div className="mt-5 flex items-center gap-3 text-[#64766c]">
-          <Loader2 className="animate-spin" size={20} /> Analiz sonuçlarınıza göre öneriler hazırlanıyor…
-        </div>
-      )}
-      {aiState === 'error' && (
-        <div className="mt-5 text-sm text-[#7a4b00]">
-          Öneriler şu anda hazırlanamadı.{' '}
-          <button onClick={onRetryAi} className="font-bold underline">
-            Tekrar dene
-          </button>
-        </div>
-      )}
-
-      {ai && (
-        <>
-          <p className="mt-3 max-w-[70ch] text-base leading-7 text-[#2a3d36]">{ai.ozet}</p>
-
-          {ai.sorunlar?.length > 0 && (
-            <ol className="mt-5 space-y-3">
-              {ai.sorunlar.map((x, i) => (
-                <li key={i} className="flex gap-4 rounded-2xl bg-[#f7f4ec] p-4 sm:p-5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1d2a22] text-sm font-bold text-white">{i + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-[#17352a]">{x.parametre}</h3>
-                    <p className="mt-0.5 text-sm leading-6 text-[#5b6f65]">{x.etki}</p>
-                    <ul className="mt-3 flex flex-wrap gap-2">
-                      {x.urunler.map((u, j) => (
-                        <li key={j} className="rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-[#1d2a22]/8">
-                          <span className="font-semibold text-[#17352a]">{u.urun}</span>
-                          <span className="ml-2 font-bold text-[#1f7a45]">{u.doz}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="mt-2 text-sm text-[#5b6f65]">
-                      <span className="font-semibold text-[#2a3d36]">Ne zaman: </span>
-                      {x.zaman}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-
-          {(ai.bitkiUygunlugu && report.bitki) || ai.bolgeNotu ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {ai.bitkiUygunlugu && report.bitki && (
-                <p className="flex gap-3 rounded-2xl bg-[#eef8ea] p-4 text-sm leading-6">
-                  <Sprout size={18} className="mt-0.5 shrink-0 text-[#2f7a4f]" />
-                  <span>
-                    <span className="font-bold">{report.bitki}: </span>
-                    {ai.bitkiUygunlugu}
-                  </span>
-                </p>
-              )}
-              {ai.bolgeNotu && (
-                <p className="flex gap-3 rounded-2xl bg-[#f6efe2] p-4 text-sm leading-6 text-[#4a3d22]">
-                  <MapPin size={18} className="mt-0.5 shrink-0 text-[#a87a2a]" />
-                  <span>
-                    <span className="font-bold">{report.ilce ? `${report.ilce}: ` : 'Bölgeniz: '}</span>
-                    {ai.bolgeNotu}
-                  </span>
-                </p>
-              )}
-            </div>
-          ) : null}
-        </>
-      )}
-    </section>
-  );
-}
-
 /** Açılır-kapanır detay kutusu (varsayılan kapalı) */
 function Detay({ baslik, alt, children }: { baslik: string; alt?: string; children: ReactNode }) {
+  const tx = useTx();
   return (
     <details className="group rounded-2xl bg-white ring-1 ring-[#1d2a22]/8 open:pb-4 print:open">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
         <span>
-          <span className="block font-semibold text-[#17352a]">{baslik}</span>
-          {alt && <span className="block text-xs text-[#7a877e]">{alt}</span>}
+          <span className="block font-semibold text-[#17352a]">{tx(baslik)}</span>
+          {alt && <span className="block text-xs text-[#7a877e]">{tx(alt)}</span>}
         </span>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f1efe8] text-[#476456] transition group-open:rotate-45">+</span>
       </summary>
@@ -476,16 +388,18 @@ export function SolutionPlan({
   onRetryAi: () => void;
   omDusuk: boolean;
 }) {
+  const tx = useTx();
   // Özet ve "önce bunları yapın" listesi artık OncelikliIsler bileşeninde; burada yalnızca ürün grupları var.
   void report;
   void onRetryAi;
   if (!ai && !(omDusuk && aiState !== 'loading')) return null;
   return (
-    <section className="mt-10 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8" aria-labelledby="cozum">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Sezon boyunca</p>
+    <section className="mt-10 rounded-[28px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-8" aria-labelledby={tx("cozum")}>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">{tx("Sezon boyunca")}</p>
       <h2 id="cozum" className="mt-2 flex items-center gap-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
         <ClipboardList size={26} className="text-[#2f7a4f]" />
-        Ürün önerileri
+        
+        {tx("Ürün önerileri")}
       </h2>
 
       {!ai && omDusuk && <OrganikMaddeProtokolu />}
@@ -493,19 +407,19 @@ export function SolutionPlan({
       {ai && (
         <div className="mt-5 space-y-9">
           {omDusuk && <OrganikMaddeProtokolu />}
-          <UrunBolumu icon={<Sprout size={20} />} title="Kök gelişimi ve toprak canlılığı" items={ai.kokGelisimi} />
-          <UrunBolumu icon={<ShieldCheck size={20} />} title="İklim stresine karşı koruma (don, sıcak, kuraklık)" items={ai.iklimKoruma} />
-          <UrunBolumu icon={<FlaskConical size={20} />} title="Toprağınıza göre gübreleme" items={ai.gubreleme} />
+          <UrunBolumu icon={<Sprout size={20} />} title={tx("Kök gelişimi ve toprak canlılığı")} items={ai.kokGelisimi} />
+          <UrunBolumu icon={<ShieldCheck size={20} />} title={tx("İklim stresine karşı koruma (don, sıcak, kuraklık)")} items={ai.iklimKoruma} />
+          <UrunBolumu icon={<FlaskConical size={20} />} title={tx("Toprağınıza göre gübreleme")} items={ai.gubreleme} />
           {ai.sulamaNotlari && ai.sulamaNotlari.length > 0 && (
             <div>
               <h3 className="flex items-center gap-2 font-bold">
-                <Droplets size={20} className="text-[#2f7f9a]" /> Sulama yönteminize göre
+                <Droplets size={20} className="text-[#2f7f9a]" />{' '}{tx("Sulama yönteminize göre")}
               </h3>
               <ul className="mt-3 space-y-2 text-sm leading-6 text-[#3e5248]">
                 {ai.sulamaNotlari.map((t, i) => (
                   <li key={i} className="flex gap-2">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2f7f9a]" />
-                    {t}
+                    {tx(t)}
                   </li>
                 ))}
               </ul>
@@ -519,15 +433,16 @@ export function SolutionPlan({
 
 /** Organik madde düşükse sabit protokol (yapay zekadan bağımsız, her zaman doğru doz). */
 function OrganikMaddeProtokolu() {
+  const tx = useTx();
   return (
     <div className="mt-5 rounded-[24px] border border-[#e6dcc4] bg-[#fdf9ef] p-5 sm:p-6">
-      <h3 className="font-bold text-[#5c4410]">Organik madde düşük: uygulama protokolü</h3>
+      <h3 className="font-bold text-[#5c4410]">{tx("Organik madde düşük: uygulama protokolü")}</h3>
       <ul className="mt-3 divide-y divide-[#efe5cd] text-sm">
         {ORGANIK_MADDE_PROTOKOLU.map((p) => (
           <li key={p.urun} className="grid gap-1 py-2.5 sm:grid-cols-[1.3fr_0.8fr_1.5fr] sm:items-baseline sm:gap-4">
-            <span className="font-bold text-[#3f300b]">{p.urun}</span>
-            <span className="font-semibold tabular-nums text-[#1f7a45]">{p.doz}</span>
-            <span className="text-[#5b4a22]">{p.uygulama}</span>
+            <span className="font-bold text-[#3f300b]">{tx(p.urun)}</span>
+            <span className="font-semibold tabular-nums text-[#1f7a45]">{tx.doz(p.doz)}</span>
+            <span className="text-[#5b4a22]">{tx(p.uygulama)}</span>
           </li>
         ))}
       </ul>
@@ -536,13 +451,15 @@ function OrganikMaddeProtokolu() {
 }
 
 function Videolar({ bitki }: { bitki?: string }) {
+  const tx = useTx();
   const list = VIDEOLAR.filter((v) => !v.bitki || v.bitki === bitki);
   if (!list.length) return null;
   return (
-    <section className="mt-10 print:hidden" aria-labelledby="video">
+    <section className="mt-10 print:hidden" aria-labelledby={tx("video")}>
       <h2 id="video" className="flex items-center gap-2 text-xl font-bold">
         <CirclePlay size={22} className="text-[#238f61]" />
-        Uygulama videoları
+        
+        {tx("Uygulama videoları")}
       </h2>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {list.map((v) => {
@@ -553,13 +470,13 @@ function Videolar({ bitki }: { bitki?: string }) {
                 <iframe
                   className="aspect-video w-full"
                   src={`https://www.youtube-nocookie.com/embed/${id}`}
-                  title={v.baslik}
+                  title={tx(v.baslik)}
                   loading="lazy"
                   allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               ) : null}
-              <figcaption className="px-4 py-3 text-sm font-semibold">{v.baslik}</figcaption>
+              <figcaption className="px-4 py-3 text-sm font-semibold">{tx(v.baslik)}</figcaption>
             </figure>
           );
         })}
@@ -629,40 +546,39 @@ type ProgramAdimi = {
   bosMesaj?: string;
 };
 
-/** Ürünün markası ve kısa görevi (katalogdan). KIANA ile başlayanlar KIANA, katalogdaki diğerleri İGSAŞ. */
-function urunBilgisi(ad: string) {
-  const k = URUNLER.find((u) => u.ad.toLocaleLowerCase('tr-TR') === ad.toLocaleLowerCase('tr-TR'));
-  const marka = /^kiana/i.test(ad) ? 'KIANA' : k ? 'İGSAŞ' : null;
-  return { marka, rol: k?.rol };
-}
-
 function ProgramUrunKarti({ u, alan, pencereSaat, pivotSure }: { u: ProgramUrunu; alan?: number | null; pencereSaat?: number; pivotSure?: number }) {
-  const { marka, rol } = urunBilgisi(u.urun);
+  const tx = useTx();
+  const { besin, rol } = urunBilgisi(u.urun);
   const top = toplamMiktar(u.doz, alan);
-  const hiz = pivotSure ? pivotEnjeksiyon(u.doz, alan, pivotSure) : pencereSaat ? pencereHizi(u.doz, alan, pencereSaat) : undefined;
+  // Saf besin miktarı gübre miktarı değildir; enjeksiyon hızı yalnızca ürünler için hesaplanır.
+  const hiz = besin ? undefined : pivotSure ? pivotEnjeksiyon(u.doz, alan, pivotSure) : pencereSaat ? pencereHizi(u.doz, alan, pencereSaat) : undefined;
   return (
     <li className="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-[#1d2a22]/8">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        {marka && (
-          <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${marka === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#e4eef5] text-[#2c5566]'}`}>{marka}</span>
-        )}
-        <span className="font-semibold text-[#17352a]">{u.urun}</span>
-        <span className="font-bold text-[#1f7a45]">{u.doz}</span>
+        <UrunRozeti ad={u.urun} />
+        <span className="font-semibold text-[#17352a]">{tx(u.urun)}</span>
+        <span className="font-bold text-[#1f7a45]">{tx.doz(u.doz)}</span>
       </div>
-      {rol && <p className="mt-0.5 text-xs text-[#6b7d72]">{rol}</p>}
+      {rol && <p className="mt-0.5 text-xs text-[#6b7d72]">{tx(rol)}</p>}
       {(top || hiz) && (
         <p className="mt-1 text-xs font-medium text-[#3e5248]">
-          {top && <>Tarlanız için <span className="font-semibold">{top}</span></>}
+          {top && <>{tx("Tarlanız için")}{' '}<span className="font-semibold">{tx(top)}{besin ? tx(" saf besin") : ''}</span></>}
           {top && hiz ? ' · ' : ''}
-          {hiz && <>enjeksiyon <span className="font-semibold">{hiz}</span></>}
+          {hiz && <>{tx("enjeksiyon")}{' '}<span className="font-semibold">{tx(hiz)}</span></>}
         </p>
       )}
     </li>
   );
 }
 
+const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+/** Ay adı: Almancada tarayıcının ay adları kullanılır (sözlükte "Ekim" ekim/aussaat anlamına da gelir) */
+const ayAdi = (i: number, dil: string) => (dil !== 'tr' && dil in DILLER ? new Date(2000, i, 1).toLocaleDateString(DILLER[dil as Dil].locale, { month: 'long' }) : AY_ADLARI[i]);
+const tarihUzun = (d: Date, tx?: { dil: string }) => `${d.getDate()}${tx?.dil === 'de' ? '.' : ''} ${ayAdi(d.getMonth(), tx?.dil ?? 'tr')}`;
+
 /** Sezon boyu sulama takvimi: kaçıncı su, yaklaşık tarih, gübreli/boş ve gübreli sularda ne verileceği */
 function SezonTakvimiKarti({ yontem, zkart, alan, il }: { yontem: SulamaYontemi; zkart?: ReturnType<typeof zkartBul>; alan?: number | null; il?: string | null }) {
+  const tx = useTx();
   const tanim = sezonTanimi(zkart?.bitki);
   const { gun: varsayilan, bolge } = onerilenAralik(zkart?.bitki, yontem, il);
   const [aralikGun, setAralikGun] = useState(varsayilan);
@@ -687,152 +603,171 @@ function SezonTakvimiKarti({ yontem, zkart, alan, il }: { yontem: SulamaYontemi;
   if (tk.goller)
     return (
       <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Sezon boyu sulama</p>
-        <h4 className="mt-1 font-display text-2xl font-medium">Sürekli göllendirme</h4>
-        <p className="mt-2 text-sm leading-6 text-[#4b5f55]">{tk.not}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">{tx("Sezon boyu sulama")}</p>
+        <h4 className="mt-1 font-display text-2xl font-medium">{tx("Sürekli göllendirme")}</h4>
+        <p className="mt-2 text-sm leading-6 text-[#4b5f55]">{tx(tk.not)}</p>
       </div>
     );
 
   const toplam = tk.sular.length;
   const gubreli = tk.sular.filter((x) => x.gubreli).length;
   const kritik = !!tanim?.kritikEvreler && yontem !== 'damla';
+  void alan;
+
+  // Zaman şeridi: dönem başları (dönem adındaki ilk aydan) ve suların tarihleri aynı eksende
+  const yil = tk.sular[0]?.tarih.getFullYear() ?? new Date().getFullYear();
+  const ilkAyi = (donem: string) => {
+    const k = donem.toLocaleLowerCase('tr-TR');
+    const i = AY_ADLARI.findIndex((a) => k.includes(a.toLocaleLowerCase('tr-TR')));
+    return i < 0 ? undefined : i;
+  };
+  const aylar0 = zkart.evreler.map((e) => ilkAyi(e.donem));
+  const ilkAy = aylar0.find((a) => a !== undefined) ?? tk.sular[0]?.tarih.getMonth() ?? 3;
+  const evreBas = aylar0.map((a) => (a === undefined ? undefined : new Date(yil, a < ilkAy ? a + 12 : a, 1)));
+  const bas = evreBas.find(Boolean) ?? tk.sular[0]?.tarih ?? new Date(yil, ilkAy, 1);
+  const sonSu = tk.sular[tk.sular.length - 1]?.tarih;
+  const sonEvre = [...evreBas].reverse().find(Boolean);
+  const bitAday = new Date(Math.max(sonSu ? sonSu.getTime() + 10 * 864e5 : 0, sonEvre ? new Date(sonEvre.getFullYear(), sonEvre.getMonth() + 1, 1).getTime() : 0));
+  const bit = new Date(bitAday.getFullYear(), bitAday.getMonth() + 1, 1);
+  const yuzde = (d: Date) => Math.min(100, Math.max(0, ((d.getTime() - bas.getTime()) / (bit.getTime() - bas.getTime())) * 100));
+  const aySinirlari: Date[] = [];
+  for (let d = new Date(bas.getFullYear(), bas.getMonth(), 1); d < bit; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) aySinirlari.push(d);
+  const ortalama = tk.sular.length > 1 && sonSu ? Math.round((sonSu.getTime() - tk.sular[0].tarih.getTime()) / 864e5 / (tk.sular.length - 1)) : undefined;
 
   return (
-    <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Sezon boyu sulama takvimi</p>
-      <h4 className="mt-1 font-display text-2xl font-medium">
-        Yaklaşık {toplam} su · <span className="text-[#1f7a45]">{gubreli} gübreli</span>, {toplam - gubreli} boş
-      </h4>
-      {kritik ? (
-        <p className="mt-1 text-sm text-[#5b6f65]">Tahılda su, kritik dönemlerde verilir.</p>
-      ) : (
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#4b5f55]">
-          <label htmlFor="aralik">Sıcak aylarda kaç günde bir sularsınız?</label>
-          <select
-            id="aralik"
-            value={aralikGun}
-            onChange={(e) => setAralikGun(Number(e.target.value))}
-            className="rounded-xl border border-[#d6e2d9] bg-[#f8faf7] px-3 py-1.5 font-semibold text-[#17352a] print:hidden"
-          >
-            {Array.from({ length: 19 }, (_, i) => i + 2).map((g) => (
-              <option key={g} value={g}>
-                {g} günde bir{g === varsayilan ? ' (önerilen)' : ''}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-[#7a877e]">Serin aylarda aralık kendiliğinden uzar.</span>
+    <div className="overflow-hidden rounded-[24px] bg-white ring-1 ring-[#1d2a22]/8">
+      {/* Özet */}
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 p-5 sm:p-6">
+        <div className="flex items-end gap-4">
+          <p className="font-display text-6xl font-medium leading-none tracking-[-0.03em] text-[#17352a]">{toplam}</p>
+          <div className="pb-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">{tx("Sezonda su")}</p>
+            <p className="mt-1 text-sm text-[#4b5f55]">
+              <span className="font-semibold text-[#1f7a45]">{gubreli}{' '}{tx("gübreli")}</span> · {toplam - gubreli}{' '}{tx("yalnızca su")}
+              {ortalama ? <>{' '}{tx("· ortalama")}{' '}{ortalama}{' '}{tx("günde bir")}</> : null}
+            </p>
+          </div>
         </div>
-      )}
-      {bolge && !kritik && (
-        <p className="mt-2 rounded-xl bg-[#f6efe2] px-3 py-2 text-xs leading-5 text-[#4a3d22]">
-          <span className="font-semibold">{il ? `${il} · ` : ''}{bolge}:</span> {BOLGE_DUZELTME[bolge].not}
-        </p>
-      )}
-      <p className="mt-1 text-xs text-[#7a877e]">Toprağınız ağır (killi) ise aralık biraz uzar, hafif (kumlu) ise kısalır; yağış olursa o su atlanır.</p>
-
-      <div className="mt-3 flex flex-wrap gap-4 text-xs text-[#5b6f65]">
-        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#2f8f57]" /> Gübreli su</span>
-        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border-2 border-[#8fb8cc] bg-white" /> Boş su (yalnızca su)</span>
+        {!kritik && (
+          <label className="flex items-center gap-2 text-sm text-[#5b6f65]">
+            
+            {tx("Sıcak aylarda")}
+            <select
+              value={aralikGun}
+              onChange={(e) => setAralikGun(Number(e.target.value))}
+              className="rounded-full border-0 bg-[#f1efe8] px-3 py-1.5 font-semibold text-[#17352a] print:hidden"
+            >
+              {Array.from({ length: 19 }, (_, i) => i + 2).map((g) => (
+                <option key={g} value={g}>
+                  {g}{' '}{tx("günde bir")}{g === varsayilan ? tx(" (önerilen)") : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
-      <ol className="mt-4 space-y-4">
-        {tk.evreler.map((ev) => {
-          const urunler = evreUrunleri(ev.evre);
-          if (ev.sular.length === 0 && urunler.length === 0) return null;
-          return (
-            <li key={ev.evre} className="rounded-2xl bg-[#f8f7f2] p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-semibold text-[#17352a]">
-                  {ev.evre + 1}. {ev.ad}
-                  <span className="ml-2 text-xs font-normal text-[#7a877e]">{zkart.evreler[ev.evre].donem}</span>
-                </p>
-                <p className="text-xs text-[#6b7d72]">
-                  {ev.sular.length ? `${ev.sular.length} su · ${ev.gubreliSayisi} gübreli` : 'Bu dönemde sulama yok'}
-                </p>
-              </div>
-              {ev.sular.length > 0 && (
-                <ul className="mt-3 flex flex-wrap gap-1.5">
-                  {ev.sular.map((x) => (
-                    <li
-                      key={x.no}
-                      title={x.gubreli ? 'Gübreli su' : 'Boş su'}
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${x.gubreli ? 'bg-[#2f8f57] text-white' : 'border border-[#bcd6e2] bg-white text-[#2c5566]'}`}
-                    >
-                      {x.no}. su · {tarihKisa(x.tarih)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {urunler.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs font-semibold text-[#3e5248]">
-                    {ev.sular.length === 0
-                      ? ev.evre === 0
-                        ? suylaMi
-                          ? 'Bu dönemde genelde yağış yeterli; gübreler ekimle ya da çıkış suyuyla verilir:'
-                          : 'Bu dönemin gübreleri ekimle verilir:'
-                        : 'Bu dönemde genelde yağış yeterli; sulama gerekirse bu gübreleri o suyla, gerekmezse sezonun ilk suyuyla verin:'
-                      : suylaMi
-                        ? `Gübreli sularda (${ev.gubreliSayisi} su) verilecekler:`
-                        : 'Dönemin ilk suyundan hemen önce serpilecekler:'}
-                  </p>
-                  <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-                    {urunler.map((u, j) => {
-                      const { marka } = urunBilgisi(u.urun);
-                      const bas = ev.gubreliSayisi > 1 ? suBasinaDoz(u.doz, ev.gubreliSayisi) : undefined;
-                      const top = toplamMiktar(u.doz, alan);
-                      return (
-                        <li key={j} className="rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-[#1d2a22]/8">
-                          <div className="flex flex-wrap items-center gap-x-2">
-                            {marka && (
-                              <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${marka === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#e4eef5] text-[#2c5566]'}`}>{marka}</span>
-                            )}
-                            <span className="font-semibold text-[#17352a]">{u.urun}</span>
-                          </div>
-                          <p className="mt-0.5 text-xs text-[#3e5248]">
-                            Dönem dozu <span className="font-semibold">{u.doz}</span>
-                            {bas && (
-                              <>
-                                {' '}→ her gübreli suda <span className="font-semibold text-[#1f7a45]">≈ {bas}</span>
-                              </>
-                            )}
-                          </p>
-                          {top && <p className="text-xs text-[#6b7d72]">Tarlanız için dönemde toplam {top}</p>}
-                        </li>
-                      );
-                    })}
-                  </ul>
+      {/* Sezon film şeridi: dönem fotoğrafları yan yana, sular yukarıdan iner */}
+      <div className="overflow-x-auto">
+        <div className="relative h-[240px] min-w-[720px] bg-[#0d120f] sm:h-[270px]">
+          {zkart.evreler.map((e, i) => {
+            const b0 = evreBas[i];
+            if (!b0) return null;
+            const sonraki = evreBas.slice(i + 1).find(Boolean) ?? bit;
+            const sol = yuzde(b0);
+            const gen = yuzde(sonraki) - sol;
+            const g = evreGorseli(zkart.bitki, i, zkart.evreler.length);
+            return (
+              <div key={i} className="absolute inset-y-0 overflow-hidden border-r border-black/40" style={{ left: `${sol}%`, width: `${gen}%` }}>
+                {g ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={g} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-80" />
+                ) : (
+                  <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-bottom opacity-60" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/80" />
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60">{tx(e.donem)}</p>
+                  <p className="line-clamp-2 font-display text-[15px] font-medium leading-tight text-white">{tx(e.evre)}</p>
                 </div>
-              )}
-            </li>
-          );
-        })}
-      </ol>
+              </div>
+            );
+          })}
 
-      <p className="mt-4 text-xs leading-5 text-[#7a877e]">
-        {tk.not ? `${tk.not} ` : ''}Tarihler ve su sayısı yaklaşıktır; her sulamayı toprak nemine bakarak verin (kök bölgesinde toprak avuçta top olmuyorsa sulama zamanı gelmiştir). Dönem dozu o dönemin gübreli sularına bölünerek gösterilmiştir.
-      </p>
+          {/* Sular */}
+          {tk.sular.map((x, i) => (
+            <div
+              key={x.no}
+              className="group absolute top-0 flex -translate-x-1/2 flex-col items-center"
+              style={{ left: `${yuzde(x.tarih)}%`, height: '58%' }}
+              title={tx("{a}. su · {b} civarı{c}", { a: x.no, b: tarihUzun(x.tarih, tx), c: x.gubreli ? tx(' · gübreli') : '' })}
+            >
+              <span
+                className="w-[2px] flex-1 origin-top rounded-full [animation:suIn_.9s_cubic-bezier(.3,.7,.3,1)_both]"
+                style={{
+                  animationDelay: `${i * 70}ms`,
+                  background: x.gubreli
+                    ? 'linear-gradient(to bottom, rgba(95,208,138,0), #5fd08a)'
+                    : 'linear-gradient(to bottom, rgba(169,220,243,0), rgba(214,240,252,.95))',
+                }}
+              />
+              <svg viewBox="0 0 24 30" className="-mt-1 h-5 w-4 [animation:fadeIn_.6s_ease_both]" style={{ animationDelay: `${i * 70 + 500}ms` }} aria-hidden>
+                <path
+                  d="M12 1.5C8.4 7.4 3 12.8 3 18.6a9 9 0 0 0 18 0C21 12.8 15.6 7.4 12 1.5Z"
+                  fill={x.gubreli ? '#5fd08a' : '#e3f4fc'}
+                  style={{ filter: x.gubreli ? 'drop-shadow(0 0 6px rgba(95,208,138,.9))' : 'drop-shadow(0 0 4px rgba(214,240,252,.6))' }}
+                />
+              </svg>
+              <span className="pointer-events-none mt-1 whitespace-nowrap rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
+                {tx(tarihUzun(x.tarih, tx))}
+              </span>
+            </div>
+          ))}
+
+          {/* Ay çizgileri */}
+          {aySinirlari.slice(1).map((d) => (
+            <span key={d.getTime()} className="pointer-events-none absolute top-2 text-[10px] font-semibold uppercase tracking-wider text-white/45" style={{ left: `calc(${yuzde(d)}% + 6px)` }}>
+              {tx(ayAdi(d.getMonth(), tx.dil).slice(0, 3))}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-5 py-3.5 text-xs text-[#6b7d72] sm:px-6">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#2f9a58] shadow-[0_0_6px_#5fd08a]" />{' '}{tx("gübreli su")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#bfe3f4] ring-1 ring-[#8fbcd2]" />{' '}{tx("yalnızca su")}
+        </span>
+        <span className="text-[#8a968e]">
+          {tx("Tarihler yaklaşık; yağış olursa o su atlanır.")}
+        </span>
+      </div>
     </div>
   );
 }
 
-/** Bir sulamada adım adım ne yapılacağı: gerçek saatlerle, kadranlarla, markalı ürünlerle ve yapraktan uygulamayla */
+/** Bir sulamada adım adım ne yapılacağı: gerçek saatlerle, kadranlarla, İGSAŞ ürünleri ve yapraktan uygulamayla */
 function SulamaProgrami({
   yontem,
   sure,
   zkart,
   alan,
   ai,
+  il,
 }: {
   yontem: SulamaYontemi;
   sure?: number;
   zkart?: ReturnType<typeof zkartBul>;
   alan?: number | null;
   ai?: CozumPlani | null;
+  il?: string | null;
 }) {
+  const tx = useTx();
   const fertigasyon = (g: string) => g === 'Damla sulama' || g === 'Yağmurlama';
   const evreler = zkart?.evreler ?? [];
-  const simdi = zkart ? simdikiEvreler(zkart) : [];
+  const simdi = zkart ? simdikiEvreler(zkart, takvimAyi(il)) : [];
   const ilkUygun = (() => {
     const s = simdi.find((i) => evreUygulamalari(evreler[i], yontem).length > 0);
     if (s !== undefined) return s;
@@ -859,8 +794,8 @@ function SulamaProgrami({
       bas: saatEkle(baslangic, -30),
       bit: baslangic,
       tur: 'gubre',
-      baslik: 'Sulamadan önce serpin',
-      aciklama: 'Bu gübreler suyla verilmez. Sulamadan hemen önce toprağa serpin; ardından gelen su gübreyi kök bölgesine indirir.',
+      baslik: tx("Sulamadan önce serpin"),
+      aciklama: tx("Bu gübreler suyla verilmez. Sulamadan hemen önce toprağa serpin; ardından gelen su gübreyi kök bölgesine indirir."),
       liste: topragaUrunler,
     });
   }
@@ -875,54 +810,54 @@ function SulamaProgrami({
           bas,
           bit,
           tur: d.tur,
-          baslik: d.tur === 'su' ? 'Sadece su verin' : d.tur === 'gubre' ? 'Gübreyi enjekte edin' : 'Temiz suyla bitirin',
+          baslik: d.tur === 'su' ? tx("Sadece su verin") : d.tur === 'gubre' ? tx("Gübreyi enjekte edin") : tx("Temiz suyla bitirin"),
           aciklama:
             d.tur === 'gubre'
-              ? `Aşağıdaki gübreleri tanka hazırlayın ve ${bas}–${bit} arasında, ${formatNumber(pencere, 1)} saatte eşit hızla enjekte edin. Kalsiyumlu gübreleri sülfatlı ve fosfatlı olanlarla aynı tanka koymayın.`
+              ? tx("Aşağıdaki besinleri ve ürünleri tanka hazırlayın ve {a}–{b} arasında, {c} saatte eşit hızla enjekte edin. Kalsiyumlu gübreleri sülfatlı ve fosfatlı olanlarla aynı tanka koymayın.", { a: bas, b: bit, c: formatNumber(pencere, 1) })
               : d.aciklama,
           liste: d.tur === 'gubre' ? suUrunleri : undefined,
           pencereSaat: d.tur === 'gubre' ? pencere : undefined,
-          bosMesaj: d.tur === 'gubre' ? 'Bu dönemde suyla verilecek gübre yok; sadece sulama yapın.' : undefined,
+          bosMesaj: d.tur === 'gubre' ? tx("Bu dönemde suyla verilecek gübre yok; sadece sulama yapın.") : undefined,
         } as ProgramAdimi;
       }),
     );
   } else if (yontem === 'pivot' && sure) {
     adimlar.push(
-      { bas: baslangic, bit: saatEkle(baslangic, 15), tur: 'su', baslik: 'Pivotu çalıştırın', aciklama: 'Hat dolsun ve tüm nozullardan su gelsin; tur hızını ayarlayın.' },
+      { bas: baslangic, bit: saatEkle(baslangic, 15), tur: 'su', baslik: tx("Pivotu çalıştırın"), aciklama: tx("Hat dolsun ve tüm nozullardan su gelsin; tur hızını ayarlayın.") },
       {
         bas: saatEkle(baslangic, 15),
         bit: bitis,
         tur: 'gubre',
-        baslik: 'Tur boyunca sabit enjeksiyon',
-        aciklama: 'Gübreyi tur boyunca aynı hızla enjekte edin; böylece tarlanın her yerine eşit düşer.',
+        baslik: tx("Tur boyunca sabit enjeksiyon"),
+        aciklama: tx("Gübreyi tur boyunca aynı hızla enjekte edin; böylece tarlanın her yerine eşit düşer."),
         liste: suUrunleri,
-        bosMesaj: 'Bu dönemde suyla verilecek gübre yok; sadece sulama yapın.',
+        bosMesaj: tx("Bu dönemde suyla verilecek gübre yok; sadece sulama yapın."),
       },
-      { tur: 'temiz', baslik: 'Hattı yıkayın', aciklama: 'Tur bitince enjektörü kapatın, birkaç dakika temiz su vererek hattı yıkayın.' },
+      { tur: 'temiz', baslik: tx("Hattı yıkayın"), aciklama: tx("Tur bitince enjektörü kapatın, birkaç dakika temiz su vererek hattı yıkayın.") },
     );
   } else if (yontem === 'salma') {
     adimlar.push(
       {
         tur: 'gubre',
-        baslik: 'Gübreyi serpin',
-        aciklama: 'Taban gübresini ekimde toprağa karıştırın; baş gübreyi karık diplerine ya da tava yüzeyine eşit serpin.',
+        baslik: tx("Gübreyi serpin"),
+        aciklama: tx("Taban gübresini ekimde toprağa karıştırın; baş gübreyi karık diplerine ya da tava yüzeyine eşit serpin."),
         liste: topragaUrunler,
-        bosMesaj: 'Bu dönemde toprağa verilecek gübre yok.',
+        bosMesaj: tx("Bu dönemde toprağa verilecek gübre yok."),
       },
-      { tur: 'su', baslik: 'Hemen sulayın', aciklama: 'Gübreyi serptikten sonra aynı gün suyu salın; su gübreyi kök bölgesine taşır.' },
-      { tur: 'temiz', baslik: 'Su göllenmesin', aciklama: 'Karık sonunda biriken suyu açın; uzun süre göllenen su gübreyi derine yıkar.' },
+      { tur: 'su', baslik: tx("Hemen sulayın"), aciklama: tx("Gübreyi serptikten sonra aynı gün suyu salın; su gübreyi kök bölgesine taşır.") },
+      { tur: 'temiz', baslik: tx("Su göllenmesin"), aciklama: tx("Karık sonunda biriken suyu açın; uzun süre göllenen su gübreyi derine yıkar.") },
     );
   } else if (yontem === 'kuru') {
     adimlar.push(
-      { tur: 'su', baslik: 'Hava tahminine bakın', aciklama: 'Önümüzdeki 1–2 gün içinde yağış beklenen bir zaman seçin.' },
+      { tur: 'su', baslik: tx("Hava tahminine bakın"), aciklama: tx("Önümüzdeki 1–2 gün içinde yağış beklenen bir zaman seçin.") },
       {
         tur: 'gubre',
-        baslik: 'Gübreyi doğru zamanda verin',
-        aciklama: 'Taban gübresini ekimle birlikte toprağa verin; baş gübreyi yağmurdan hemen önce serpin ki yağış toprağa işlesin.',
+        baslik: tx("Gübreyi doğru zamanda verin"),
+        aciklama: tx("Taban gübresini ekimle birlikte toprağa verin; baş gübreyi yağmurdan hemen önce serpin ki yağış toprağa işlesin."),
         liste: topragaUrunler,
-        bosMesaj: 'Bu dönemde toprağa verilecek gübre yok.',
+        bosMesaj: tx("Bu dönemde toprağa verilecek gübre yok."),
       },
-      { tur: 'temiz', baslik: 'Kuru toprağa vermeyin', aciklama: 'Yağış gelmezse gübre toprak yüzeyinde kalır ve azot kaybolur.' },
+      { tur: 'temiz', baslik: tx("Kuru toprağa vermeyin"), aciklama: tx("Yağış gelmezse gübre toprak yüzeyinde kalır ve azot kaybolur.") },
     );
   }
 
@@ -932,22 +867,16 @@ function SulamaProgrami({
     adimlar.push({
       bas: ayniGun ? '18:00' : '07:00',
       bit: ayniGun ? '20:00' : '09:00',
-      zamanNotu: suyla && sure ? (ayniGun ? 'aynı gün akşam' : 'ertesi sabah') : 'serin saat',
+      zamanNotu: suyla && sure ? (ayniGun ? tx("aynı gün akşam") : tx("ertesi sabah")) : tx("serin saat"),
       tur: 'temiz',
-      baslik: 'Yapraktan uygulama: pülverizatör ya da drone',
+      baslik: tx("Yapraktan uygulama: pülverizatör ya da drone"),
       aciklama:
-        'Sulamadan sonra yapraklar kuruyunca, rüzgârsız ve serin bir saatte püskürtün. Drone ile uygulama da önerilir: daha az su kullanılır, geniş tarlada hızlı ve eşit dağılır; ürün dozu aynı kalır.',
+        tx("Sulamadan sonra yapraklar kuruyunca, rüzgârsız ve serin bir saatte püskürtün. Drone ile uygulama da önerilir: daha az su kullanılır, geniş tarlada hızlı ve eşit dağılır; ürün dozu aynı kalır."),
       liste: yaprakUrunleri,
     });
   }
 
-  // Analize göre ek öneriler (yapay zekâ planından; programda zaten geçenler çıkarılır)
-  const programdakiler = new Set(adimlar.flatMap((x) => x.liste ?? []).map((u) => u.urun.toLocaleLowerCase('tr-TR')));
-  const ekler = ai
-    ? [...(ai.kokGelisimi ?? []), ...(ai.iklimKoruma ?? []), ...(ai.gubreleme ?? [])].filter(
-        (u, i, arr) => !programdakiler.has(u.urun.toLocaleLowerCase('tr-TR')) && arr.findIndex((x) => x.urun === u.urun) === i,
-      )
-    : [];
+  void ai;
 
   if (adimlar.length === 0) return null;
 
@@ -955,21 +884,22 @@ function SulamaProgrami({
     <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Adım adım sulama programı</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">{tx("Adım adım sulama programı")}</p>
           <h4 className="mt-1 font-display text-2xl font-medium">
-            {yontem === 'pivot' && sure ? `Bir tur · ${formatNumber(sure, 1)} saat` : sure && dilimler ? `Bir sulama · ${formatNumber(sure, 1)} saat` : 'Bir uygulama'}
+            {yontem === 'pivot' && sure ? tx("Bir tur · {a} saat", { a: formatNumber(sure, 1) }) : tx(sure && dilimler ? tx("Bir sulama · {a} saat", { a: formatNumber(sure, 1) }) : tx("Bir uygulama"))}
           </h4>
         </div>
         {suyla && sure && (
           <label className="flex items-center gap-2 text-sm text-[#4b5f55]">
-            Sulamaya başlama saati
+            
+            {tx("Sulamaya başlama saati")}
             <select
               value={baslangic}
               onChange={(e) => setBaslangic(e.target.value)}
               className="rounded-xl border border-[#d6e2d9] bg-[#f8faf7] px-3 py-1.5 font-semibold text-[#17352a] print:hidden"
             >
               {BASLANGIC_SAATLERI.map((t) => (
-                <option key={t}>{t}</option>
+                <option key={t}>{tx(t)}</option>
               ))}
             </select>
           </label>
@@ -977,7 +907,7 @@ function SulamaProgrami({
       </div>
 
       {evreler.length > 1 && (
-        <div className="mt-4 flex flex-wrap gap-2 print:hidden" role="tablist" aria-label="Dönem">
+        <div className="mt-4 flex flex-wrap gap-2 print:hidden" role="tablist" aria-label={tx("Dönem")}>
           {evreler.map((e, i) => (
             <button
               key={i}
@@ -987,20 +917,37 @@ function SulamaProgrami({
               onClick={() => setEvreNo(i)}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${i === evreNo ? 'bg-[#1d2a22] text-white' : 'bg-[#f1efe8] text-[#476456] hover:bg-[#e7e3d8]'}`}
             >
-              {i + 1}. {e.evre}
-              {simdi.includes(i) ? ' · şu an' : ''}
+              {i + 1}. {tx(e.evre)}
+              {simdi.includes(i) ? tx(" · şu an") : ''}
             </button>
           ))}
         </div>
       )}
       {evre && (
-        <p className="mt-3 text-sm text-[#5b6f65]">
-          <span className="font-semibold text-[#17352a]">{evre.evre}</span> · {evre.donem}
-        </p>
+        <div className="relative mt-4 aspect-[21/8] overflow-hidden rounded-[20px] bg-[#1d2a22]">
+          {(() => {
+            const g = zkart ? evreGorseli(zkart.bitki, evreNo, evreler.length) : undefined;
+            return g ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={g} src={g} alt="" className="absolute inset-0 h-full w-full object-cover [animation:fadeIn_.5s_ease]" />
+            ) : (
+              <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-bottom opacity-80" />
+            );
+          })()}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-2 p-4 text-white sm:p-5">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">{evreNo + 1}{tx(". dönem ·")}{' '}{tx(evre.donem)}</p>
+              <p className="font-display text-2xl font-medium leading-tight sm:text-3xl">{tx(evre.evre)}</p>
+            </div>
+            {simdi.includes(evreNo) && <span className="rounded-full bg-[#e2b65c] px-2.5 py-1 text-[11px] font-bold text-[#121410]">{tx("Şu an bu dönem")}</span>}
+          </div>
+        </div>
       )}
       {suyla && (
         <p className="mt-2 rounded-xl bg-[#f1f7fa] px-3 py-2 text-xs leading-5 text-[#2c5566]">
-          Bu program <span className="font-semibold">gübreli bir su</span> içindir. Takvimdeki boş sularda gübre adımında da yalnızca su verin.
+          
+          {tx("Bu program")}{' '}<span className="font-semibold">{tx("gübreli bir su")}</span>{' '}{tx("içindir. Takvimdeki boş sularda gübre adımında da yalnızca su verin.")}
         </p>
       )}
 
@@ -1012,7 +959,7 @@ function SulamaProgrami({
             style={{ background: x.liste && x.tur === 'gubre' ? '#eef7ef' : x.tur === 'su' ? '#f1f7fa' : x.liste ? '#f4f1fa' : '#f7f6f1' }}
           >
             {x.bas && x.bit ? (
-              <SaatKadrani bas={x.bas} bit={x.bit} renk={x.liste && x.tur === 'temiz' ? '#9b87c9' : DILIM_RENK[x.tur]} />
+              <SaatKadrani bas={x.bas} bit={x.bit} renk={x.liste && x.tur === 'temiz' ? '#9b87c9' : tx(DILIM_RENK[x.tur])} />
             ) : (
               <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white font-display text-2xl text-[#17352a] ring-1 ring-[#d9e4dc]">
                 {i + 1}
@@ -1020,13 +967,13 @@ function SulamaProgrami({
             )}
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6b7d72]">
-                {i + 1}. adım{x.zamanNotu ? ` · ${x.zamanNotu}` : ''}
+                {i + 1}{tx(". adım")}{x.zamanNotu ? tx(` · ${x.zamanNotu}`) : ''}
               </p>
               <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 font-semibold text-[#17352a]">
-                {x.bas && x.bit && <span className="font-display text-xl tabular-nums">{x.bas} – {x.bit}</span>}
-                <span>{x.baslik}</span>
+                {x.bas && x.bit && <span className="font-display text-xl tabular-nums">{tx(x.bas)} – {tx(x.bit)}</span>}
+                <span>{tx(x.baslik)}</span>
               </p>
-              <p className="mt-1 text-sm leading-6 text-[#4b5f55]">{x.aciklama}</p>
+              <p className="mt-1 text-sm leading-6 text-[#4b5f55]">{tx(x.aciklama)}</p>
               {x.liste &&
                 (x.liste.length > 0 ? (
                   <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -1035,155 +982,134 @@ function SulamaProgrami({
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-[#6b7d72]">{x.bosMesaj ?? (evre ? '' : 'Bitki seçilmediği için ürün listesi yok.')}</p>
+                  <p className="mt-2 text-sm text-[#6b7d72]">{tx(x.bosMesaj) ?? (evre ? '' : tx("Bitki seçilmediği için ürün listesi yok."))}</p>
                 ))}
             </div>
           </li>
         ))}
       </ol>
 
-      {ekler.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-[#e6dcc4] bg-[#fdf9ef] p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a87a2a]">Analizinize göre ek öneri</p>
-          <p className="mt-1 text-sm text-[#5b4a22]">Toprak analizinize göre bu programa eklenmesi önerilen ürünler:</p>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {ekler.map((u, j) => {
-              const { marka } = urunBilgisi(u.urun);
-              return (
-                <li key={j} className="rounded-xl bg-white px-3 py-2.5 text-sm ring-1 ring-[#1d2a22]/8">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    {marka && (
-                      <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${marka === 'KIANA' ? 'bg-[#e6f4e4] text-[#1f6f4a]' : 'bg-[#e4eef5] text-[#2c5566]'}`}>{marka}</span>
-                    )}
-                    <span className="font-semibold text-[#17352a]">{u.urun}</span>
-                    <span className="font-bold text-[#1f7a45]">{u.doz}</span>
-                  </div>
-                  {u.aciklama && <p className="mt-0.5 text-xs leading-5 text-[#6b7d72]">{u.aciklama}</p>}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
 
 export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: CozumPlani | null; report?: SoilReport | null }) {
+  const tx = useTx();
   const zkart = zkartBul(tarla.bitki ?? undefined);
   const tahil = tahilMi(zkart?.bitki);
   const suI = zkart ? suIhtiyaci(zkart, tarla.il, tarla.ilce) : undefined;
   const mm = (x: number) => Math.round(x).toLocaleString('tr-TR');
   const y = SULAMA_YONTEMLERI[tarla.sulama];
   const sure = tarla.sulama_suresi_saat ?? y.varsayilanSure;
-  const simdi = zkart ? simdikiEvreler(zkart) : [];
-  const fertigasyon = (g: string) => g === 'Damla sulama' || g === 'Yağmurlama';
+  const simdi = zkart ? simdikiEvreler(zkart, takvimAyi(tarla.il)) : [];
+  // Su takvimi, bitkinin su tüketimi (ETc) ve dönem su kartları rapordan çıkarıldı: çiftçi suyu tarlada görüyor,
+  // rapor doğrudan ne verileceğini göstersin. Geri açmak için true yapın.
+  const SU_BOLUMU = false as boolean;
 
   return (
-    <section className="mt-10" aria-labelledby="recete">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Tohumdan hasada</p>
+    <section className="mt-10" aria-labelledby={tx("recete")}>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">{tx("Tohumdan hasada")}</p>
       <h2 id="recete" className="mt-2 flex items-center gap-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
         <CalendarDays size={26} className="text-[#2f7a4f]" />
-        Dönem dönem uygulama reçetesi
+        
+        {tx("Dönem dönem uygulama reçetesi")}
       </h2>
-      <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
-        <span className="rounded-full bg-[#e8f3e6] px-3 py-1 text-[#1f6f4a]">{tarla.bitki ?? 'Bitki seçilmedi'}</span>
-        <span className="rounded-full bg-[#e3f0f6] px-3 py-1 text-[#2c5566]">{y.ad}</span>
-        {tarla.alan_dekar ? (
-          <span className="rounded-full bg-[#f3efe6] px-3 py-1 text-[#6b5520]">{formatNumber(tarla.alan_dekar, 1)} dekar</span>
-        ) : null}
-      </div>
+      <details className="mt-3 max-w-[75ch] text-xs leading-5 text-[#4a3d22]">
+        <summary className="cursor-pointer font-semibold text-[#8a6a2a]">{tx("İGSAŞ ve KIANA etiketleri ne demek?")}</summary>
+        <p className="mt-2 rounded-xl bg-[#f6efe2] px-3 py-2">
+        <span className="font-semibold">İGSAŞ</span>{' '}{tx("etiketli satırlar İstanbul Gübre Sanayii’nin taban, damla ve yaprak gübreleridir (DAP, NPK, UAN-32, KNO₃ …).")}{' '}
+        <span className="font-semibold">KIANA</span>{' '}{tx("etiketli ürünler kök bölgesi mikroorganizmaları, stres koruması ve su tutma desteğidir.")}{' '}
+        {tx("Dozlar dekar başınadır ve Prof. Dr. Metin Turan’ın İGSAŞ dönem programından (Z-kart) gelir.")}
+      </p>
+      </details>
 
       <div className="mt-5 space-y-5">
-        {/* Sulama sisteminiz: resim + gübrenin bu sistemde nasıl verileceği */}
-        <div className="grid overflow-hidden rounded-[24px] bg-white ring-1 ring-[#1d2a22]/8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-          <div className="relative aspect-video md:aspect-auto md:min-h-[220px]">
+        {/* Sulama sisteminiz: tek satır; ayrıntı isteyene açılır */}
+        <details className="group rounded-2xl bg-white ring-1 ring-[#1d2a22]/8">
+          <summary className="flex cursor-pointer list-none items-center gap-3 p-3 pr-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={y.gorsel} alt={y.ad} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-          </div>
-          <div className="p-5 sm:p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f7f9a]">Sulama sisteminiz</p>
-            <h3 className="mt-1 font-display text-2xl font-medium">{y.ad}</h3>
-            <p className="mt-3 text-sm leading-6 text-[#3e5248]">{y.tarif}</p>
-            {sure && y.sureEtiketi && (
-              <p className="mt-3 text-xs text-[#6b7d72]">
-                {y.sureEtiketi}: <span className="font-semibold text-[#2a3d36]">{formatNumber(sure, 1)} saat</span>
-              </p>
-            )}
-          </div>
-        </div>
+            <img src={y.gorsel} alt="" loading="lazy" className="h-12 w-16 shrink-0 rounded-xl object-cover" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f7f9a]">{tx("Sulama sisteminiz")}</span>
+              <span className="block font-bold text-[#17352a]">
+                {tx(y.ad)}
+                {sure && y.sureEtiketi ? <span className="font-medium text-[#6b7d72]"> · {tx(formatNumber(sure, 1))}{' '}{tx("saat")}</span> : null}
+              </span>
+            </span>
+            <span className="text-xs font-semibold text-[#2f7f9a] group-open:hidden">{tx("Nasıl uygulanır?")}</span>
+          </summary>
+          <p className="border-t border-[#1d2a22]/8 px-4 py-3 text-sm leading-6 text-[#3e5248]">{tx(y.tarif)}</p>
+        </details>
 
         {zkart && tahil ? (
           <TahilSuPlani key={`th-${tarla.sulama}-${zkart.bitki}`} zkart={zkart} yontem={tarla.sulama} sure={sure} alan={tarla.alan_dekar} report={report} />
         ) : (
           <>
-            <SezonTakvimiKarti key={`tk-${tarla.sulama}-${zkart?.bitki ?? ""}-${tarla.il ?? ""}`} yontem={tarla.sulama} zkart={zkart} alan={tarla.alan_dekar} il={tarla.il} />
+            {SU_BOLUMU && <SezonTakvimiKarti key={`tk-${tarla.sulama}-${zkart?.bitki ?? ""}-${tarla.il ?? ""}`} yontem={tarla.sulama} zkart={zkart} alan={tarla.alan_dekar} il={tarla.il} />}
 
-            <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} ai={ai} />
+            {zkart && sure && (tarla.sulama === 'damla' || tarla.sulama === 'yagmurlama') ? (
+              <SuSutunu key={`su-${tarla.sulama}-${zkart.bitki}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} il={tarla.il} />
+            ) : (
+              <SulamaProgrami key={`${tarla.sulama}-${zkart?.bitki ?? ''}`} yontem={tarla.sulama} sure={sure} zkart={zkart} alan={tarla.alan_dekar} ai={ai} il={tarla.il} />
+            )}
           </>
         )}
 
         {!zkart && (
           <p className="rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 text-sm text-[#4b5f55]">
-            {tarla.bitki ? `"${tarla.bitki}" için dönem dönem program (Z-kart) henüz yok.` : 'Tarlanıza bitki ekleyin.'} Genel sulama kuralları
-            aşağıdadır.
+            {tarla.bitki ? tx("\"{a}\" için dönem dönem program (Z-kart) henüz yok.", { a: tarla.bitki }) : tx("Tarlanıza bitki ekleyin.")}{' '}{tx("Genel sulama kuralları aşağıdadır.")}
           </p>
         )}
 
-        {zkart && tahil && (
-          <p className="text-sm leading-6 text-[#5b6f65]">
-            Aşağıdaki dönem kartları İGSAŞ programının genel (sulanmayan tarla) dozlarıdır. Sulu tarlada yukarıdaki su planını esas alın; o plan toprak
-            analizinize ve seçtiğiniz su sayısına göre ayarlandı.
-          </p>
-        )}
-        {zkart && suI && (
+        {SU_BOLUMU && zkart && suI && (
           <div className="rounded-2xl border border-[#cfe3ee] bg-[#f1f8fb] px-4 py-4 text-sm text-[#2c5566] sm:px-5">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2f7f9a]">Bitkinin su tüketimi · Evapotranspirasyon (ETc)</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2f7f9a]">{tx("Bitkinin su tüketimi · Evapotranspirasyon (ETc)")}</p>
               {suI.etoKaynak.tagem && (
                 <span className="rounded-full bg-[#1f6f8f] px-2.5 py-0.5 text-[11px] font-bold text-white">
-                  TAGEM-SUET ·{' '}
-                  {suI.etoKaynak.ilce ? `${suI.etoKaynak.ilce} → ${suI.etoKaynak.istasyonlar[0]} istasyonu` : `${suI.etoKaynak.istasyonlar.length} MGM istasyonu`}
+                  
+                  {tx("TAGEM-SUET ·")}{' '}
+                  {suI.etoKaynak.ilce ? tx("{a} → {b} istasyonu", { a: suI.etoKaynak.ilce, b: suI.etoKaynak.istasyonlar[0] }) : tx("{a} MGM istasyonu", { a: suI.etoKaynak.istasyonlar.length })}
                 </span>
               )}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
               <span className="flex items-center gap-2 font-semibold text-[#17435a]">
-                <Droplets size={18} className="text-[#1e88c7]" /> Sezonda ETc ≈ {mm(suI.sezon.toplam)} mm
+                <Droplets size={18} className="text-[#1e88c7]" />{' '}{tx("Sezonda ETc ≈")}{' '}{tx(mm(suI.sezon.toplam))}{' '}{tx("mm")}
               </span>
-              <span>Etkili yağışla karşılanan ≈ {mm(suI.sezon.yagis)} mm</span>
-              <span className="font-semibold text-[#17435a]">Sulamayla verilmesi gereken ≈ {mm(suI.sezon.sulama)} mm</span>
+              <span>{tx("Etkili yağışla karşılanan ≈")}{' '}{tx(mm(suI.sezon.yagis))}{' '}{tx("mm")}</span>
+              <span className="font-semibold text-[#17435a]">{tx("Sulamayla verilmesi gereken ≈")}{' '}{tx(mm(suI.sezon.sulama))}{' '}{tx("mm")}</span>
             </div>
             <div className="mt-3 grid gap-2 text-xs leading-5 sm:grid-cols-3">
               <p className="rounded-xl bg-white px-3 py-2 ring-1 ring-[#d6e9f2]">
-                <b className="text-[#17435a]">Transpirasyon:</b> bitkinin terlemesi. Kökün aldığı su, yapraktaki gözeneklerden (stoma) buhar olarak çıkar;
-                gözenek açıkken fotosentez için CO₂ girer.
+                <b className="text-[#17435a]">{tx("Transpirasyon:")}</b>{' '}{tx("bitkinin terlemesi. Kökün aldığı su, yapraktaki gözeneklerden (stoma) buhar olarak çıkar; gözenek açıkken fotosentez için CO₂ girer.")}
               </p>
               <p className="rounded-xl bg-white px-3 py-2 ring-1 ring-[#d6e9f2]">
-                <b className="text-[#17435a]">Evaporasyon:</b> toprak yüzeyinden doğrudan buharlaşma. İkisinin toplamı{' '}
-                <b className="text-[#17435a]">evapotranspirasyon</b>dur.
+                <b className="text-[#17435a]">{tx("Evaporasyon:")}</b>{' '}{tx("toprak yüzeyinden doğrudan buharlaşma. İkisinin toplamı")}{' '}
+                <b className="text-[#17435a]">{tx("evapotranspirasyon")}</b>{tx("dur.")}
               </p>
               <p className="rounded-xl bg-white px-3 py-2 ring-1 ring-[#d6e9f2]">
-                <b className="text-[#17435a]">ETc = ETo × Kc.</b> ETo iklimin buharlaştırma gücü, Kc bitkinin o evredeki katsayısı. Yaprak alanı büyüdükçe
-                Kc ve terleme artar.
+                <b className="text-[#17435a]">{tx("ETc = ETo × Kc.")}</b>{' '}{tx("ETo iklimin buharlaştırma gücü, Kc bitkinin o evredeki katsayısı. Yaprak alanı büyüdükçe Kc ve terleme artar.")}
               </p>
             </div>
             <p className="mt-2 text-[11px] leading-4 text-[#5b7a88]">
               {suI.etoKaynak.tagem
-                ? suI.etoKaynak.ilce
-                  ? `ETo: TAGEM-SUET, Standart Penman-Monteith; ${suI.etoKaynak.ilce} için en yakın MGM istasyonu ${suI.etoKaynak.istasyonlar[0]} (30 yıllık ortalama).`
-                  : `ETo: TAGEM-SUET, Standart Penman-Monteith (MGM ${suI.etoKaynak.istasyonlar.join(', ')} istasyonları ortalaması, 30 yıl).`
-                : `ETo: FAO-56 Hargreaves, ${suI.il} için NASA POWER 2001–2025 iklim ortalaması.`}{' '}
-              {suI.kcTagem ? 'Kc: TAGEM-SUET bitki verileri (TAGEM 2017 rehberi), FAO-56 dört dönemli Kc eğrisi.' : 'Kc: FAO-56 Tablo 12.'} Etkili yağış:
-              USDA-SCS. 1 mm = dekara 1 m³ su.
-              {suI.yaklasik ? ' Bu bitkinin katsayısı FAO tablosunda yok; yaklaşık değer kullanıldı.' : ''} Yağışlı ya da kurak yıllarda değişir.
+                ? tx(suI.etoKaynak.ilce
+                  ? tx("ETo: TAGEM-SUET, Standart Penman-Monteith; {a} için en yakın MGM istasyonu {b} (30 yıllık ortalama).", { a: suI.etoKaynak.ilce, b: suI.etoKaynak.istasyonlar[0] })
+                  : tx("ETo: TAGEM-SUET, Standart Penman-Monteith (MGM {a} istasyonları ortalaması, 30 yıl).", { a: suI.etoKaynak.istasyonlar.join(', ') }))
+                : almanMi(suI.il)
+                  ? tx("ETo: Makkink eşitliği (DWD'nin çim referansı), {a} için DWD 1991–2020 iklim normalleri ve güneşlenme süresi.", { a: suI.il })
+                  : dunyaIli(suI.il)
+                    ? tx("ETo: FAO-56 Hargreaves, {a} için NASA POWER uydu iklim ortalaması (bölge merkezi, yaklaşık).", { a: ilGoster(suI.il, tx.dil) })
+                    : tx("ETo: FAO-56 Hargreaves, {a} için NASA POWER 2001–2025 iklim ortalaması.", { a: suI.il })}{' '}
+              {suI.kcTagem ? tx("Kc: TAGEM-SUET bitki verileri (TAGEM 2017 rehberi), FAO-56 dört dönemli Kc eğrisi.") : tx("Kc: FAO-56 Tablo 12.")}{' '}{tx("Etkili yağış: USDA-SCS. 1 mm = dekara 1 m³ su.")}
+              {suI.yaklasik ? tx(" Bu bitkinin katsayısı FAO tablosunda yok; yaklaşık değer kullanıldı.") : ''}{' '}{tx("Yağışlı ya da kurak yıllarda değişir.")}
             </p>
           </div>
         )}
-        {zkart && (
+        {SU_BOLUMU && zkart && (
           <ol className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {zkart.evreler.map((e, i) => {
-              const gruplar = evreUygulamalari(e, tarla.sulama);
               const suAn = simdi.includes(i);
               return (
                 <li
@@ -1216,10 +1142,10 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f5f0e6] font-display text-base font-semibold text-[#121410]">
                         {i + 1}
                       </span>
-                      <span className="flex-1 font-display text-lg font-medium leading-6">{e.evre}</span>
+                      <span className="flex-1 font-display text-lg font-medium leading-6">{tx(e.evre)}</span>
                     </div>
                     {suAn && (
-                      <span className="absolute right-3 top-3 rounded-full bg-[#e2b65c] px-2.5 py-1 text-[11px] font-bold text-[#121410] shadow">Şu an bu dönem</span>
+                      <span className="absolute right-3 top-3 rounded-full bg-[#e2b65c] px-2.5 py-1 text-[11px] font-bold text-[#121410] shadow">{tx("Şu an bu dönem")}</span>
                     )}
                   </div>
                   {suI && suI.evreler[i] && (
@@ -1230,61 +1156,24 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
                       </svg>
                       <div className="min-w-0 text-[#17435a]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#2f7f9a]">
-                          Evapotranspirasyon (ETc) · Kc {suI.evreler[i].kc.toLocaleString('tr-TR', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                          
+                          {tx("Evapotranspirasyon (ETc) · Kc")}{' '}{tx(suI.evreler[i].kc.toLocaleString('tr-TR', { maximumFractionDigits: 2, minimumFractionDigits: 2 }))}
                         </p>
                         <p className="text-sm font-bold leading-5">
-                          Günde ≈ {suI.evreler[i].gunluk.toLocaleString('tr-TR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })} mm
-                          <span className="font-semibold text-[#2c5566]"> · dönemde ≈ {mm(suI.evreler[i].toplam)} mm</span>
+                          
+                          {tx("Günde ≈")}{' '}{tx(suI.evreler[i].gunluk.toLocaleString('tr-TR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }))}{' '}{tx("mm")}
+                          <span className="font-semibold text-[#2c5566]">{' '}{tx("· dönemde ≈")}{' '}{tx(mm(suI.evreler[i].toplam))}{' '}{tx("mm")}</span>
                         </p>
                         <p className="text-[11px] leading-4 text-[#4a6b7a]">
                           {suI.evreler[i].sulama < 5
-                            ? `Yağış ≈ ${mm(suI.evreler[i].yagis)} mm · ortalama yılda yağış yeterli`
-                            : `Yağış ≈ ${mm(suI.evreler[i].yagis)} mm → sulamayla ≈ ${mm(suI.evreler[i].sulama)} mm`}
+                            ? tx("Yağış ≈ {a} mm · ortalama yılda yağış yeterli", { a: mm(suI.evreler[i].yagis) })
+                            : tx("Yağış ≈ {a} mm → sulamayla ≈ {b} mm", { a: mm(suI.evreler[i].yagis), b: mm(suI.evreler[i].sulama) })}
                         </p>
                       </div>
                     </div>
                   )}
-                  <div className="flex-1 px-4 py-3">
-                    <div className="text-xs text-[#7b8c82]">{[e.bbch && `BBCH ${e.bbch}`, e.donem].filter(Boolean).join(' · ')}</div>
-                    {gruplar.length === 0 ? (
-                      <p className="mt-3 text-sm text-[#7b8c82]">Bu dönemde uygulama yok.</p>
-                    ) : (
-                      gruplar.map((g) => (
-                        <div key={g.yontem} className="mt-3">
-                          <div className="flex items-center gap-2 text-xs font-bold text-[#2f7f9a]">
-                            {g.yontem}
-                            {fertigasyon(g.yontem) && tarla.sulama !== 'salma' && tarla.sulama !== 'kuru' && (
-                              <span className="rounded-full bg-[#e6f4ec] px-2 py-0.5 text-[10px] font-semibold text-[#1f7a45]">
-                                {tarla.sulama === 'pivot' ? 'tur boyunca' : 'gübre penceresinde'}
-                              </span>
-                            )}
-                          </div>
-                          {g.not && <p className="mt-1 text-[11px] leading-4 text-[#8a6d2c]">{g.not}</p>}
-                          <ul className="mt-1 space-y-1.5">
-                            {g.urunler.map((u, j) => {
-                              const toplam = toplamMiktar(u.doz, tarla.alan_dekar);
-                              const enj =
-                                tarla.sulama === 'pivot' && fertigasyon(g.yontem) ? pivotEnjeksiyon(u.doz, tarla.alan_dekar, sure) : undefined;
-                              return (
-                                <li key={j} className="text-sm">
-                                  <div className="flex items-baseline justify-between gap-3">
-                                    <span className="font-semibold text-[#17352a]">{u.urun}</span>
-                                    <span className="text-right text-xs font-bold tabular-nums text-[#1f7a45]">{u.doz}</span>
-                                  </div>
-                                  {(toplam || enj) && (
-                                    <div className="text-right text-[11px] text-[#6b7d72]">
-                                      {toplam && <>Tarlanız için {toplam}</>}
-                                      {toplam && enj && ' · '}
-                                      {enj}
-                                    </div>
-                                  )}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      ))
-                    )}
+                  <div className="px-4 py-3">
+                    <div className="text-xs text-[#7b8c82]">{tx([e.bbch && `BBCH ${e.bbch}`, tx(e.donem)].filter(Boolean).join(' · '))}</div>
                   </div>
                 </li>
               );
@@ -1292,19 +1181,21 @@ export function SulamaRecetesi({ tarla, ai, report }: { tarla: SonucTarla; ai?: 
           </ol>
         )}
 
+        {SU_BOLUMU && (
         <div className="rounded-2xl border border-[#e1e9df] bg-[#f8fbf7] p-4 sm:p-5">
           <h4 className="flex items-center gap-2 font-bold text-[#17352a]">
-            <Droplets size={18} className="text-[#2f7f9a]" /> {y.ad}: dikkat edilecekler
+            <Droplets size={18} className="text-[#2f7f9a]" /> {tx(y.ad)}{tx(": dikkat edilecekler")}
           </h4>
           <ul className="mt-2 space-y-1.5 text-sm leading-6 text-[#3e5248]">
             {KURALLAR[tarla.sulama].map((k) => (
               <li key={k} className="flex gap-2">
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#2f7f9a]" />
-                {k}
+                {tx(k)}
               </li>
             ))}
           </ul>
         </div>
+        )}
       </div>
     </section>
   );
@@ -1325,44 +1216,46 @@ export function Karsilastirma({
   onceTarih: string;
   simdiTarih: string;
 }) {
+  const tx = useTx();
   const d = karsilastir(once, simdi);
   if (!d.length) return null;
   const o = ozetle(d);
   const ia = kaliteIndeksi(once)?.yuzde;
   const ib = kaliteIndeksi(simdi)?.yuzde;
   const SONUC = {
-    iyilesti: { ad: 'İyileşti', cls: 'bg-[#e6f4ec] text-[#1f7a45]' },
-    kotulesti: { ad: 'Kötüleşti', cls: 'bg-[#fdecea] text-[#a83422]' },
-    ayni: { ad: 'Değişmedi', cls: 'bg-[#eef1ef] text-[#5b6f65]' },
-    uygun: { ad: 'Uygun kaldı', cls: 'bg-[#eef7e9] text-[#3c7a2c]' },
-    bilgi: { ad: 'Değişti', cls: 'bg-[#e8eff4] text-[#3d6478]' },
+    iyilesti: { ad: tx("İyileşti"), cls: 'bg-[#e6f4ec] text-[#1f7a45]' },
+    kotulesti: { ad: tx("Kötüleşti"), cls: 'bg-[#fdecea] text-[#a83422]' },
+    ayni: { ad: tx("Değişmedi"), cls: 'bg-[#eef1ef] text-[#5b6f65]' },
+    uygun: { ad: tx("Uygun kaldı"), cls: 'bg-[#eef7e9] text-[#3c7a2c]' },
+    bilgi: { ad: tx("Değişti"), cls: 'bg-[#e8eff4] text-[#3d6478]' },
   } as const;
 
   return (
-    <section className="mt-10" aria-labelledby="karsilastirma">
-      <h2 id="karsilastirma" className="text-xl font-bold">Önceki analizle karşılaştırma</h2>
+    <section className="mt-10" aria-labelledby={tx("karsilastirma")}>
+      <h2 id="karsilastirma" className="text-xl font-bold">{tx("Önceki analizle karşılaştırma")}</h2>
       <p className="mt-1 text-sm text-[#64766c]">
-        {onceTarih} → {simdiTarih}
+        {tx(onceTarih)} → {tx(simdiTarih)}
       </p>
       <div className="mt-4 flex flex-wrap gap-2 text-sm font-semibold">
         {ia !== undefined && ib !== undefined && (
           <span className="rounded-full border border-[#dfe9df] bg-white px-3 py-1.5">
-            Kalite indeksi {ia} → <span className={ib > ia ? 'text-[#1f7a45]' : ib < ia ? 'text-[#a83422]' : ''}>{ib}</span>
+            
+            {tx("Kalite indeksi")}{' '}{ia} → <span className={ib > ia ? 'text-[#1f7a45]' : tx(ib < ia ? 'text-[#a83422]' : '')}>{ib}</span>
           </span>
         )}
-        <span className="rounded-full bg-[#e6f4ec] px-3 py-1.5 text-[#1f7a45]">{o.iyilesen} iyileşti</span>
-        <span className="rounded-full bg-[#fdecea] px-3 py-1.5 text-[#a83422]">{o.kotulesen} kötüleşti</span>
-        <span className="rounded-full bg-[#eef1ef] px-3 py-1.5 text-[#5b6f65]">{o.ayni} değişmedi</span>
-        {o.uygun > 0 && <span className="rounded-full bg-[#eef7e9] px-3 py-1.5 text-[#3c7a2c]">{o.uygun} uygun kaldı</span>}
+        <span className="rounded-full bg-[#e6f4ec] px-3 py-1.5 text-[#1f7a45]">{o.iyilesen}{' '}{tx("iyileşti")}</span>
+        <span className="rounded-full bg-[#fdecea] px-3 py-1.5 text-[#a83422]">{o.kotulesen}{' '}{tx("kötüleşti")}</span>
+        <span className="rounded-full bg-[#eef1ef] px-3 py-1.5 text-[#5b6f65]">{o.ayni}{' '}{tx("değişmedi")}</span>
+        {o.uygun > 0 && <span className="rounded-full bg-[#eef7e9] px-3 py-1.5 text-[#3c7a2c]">{o.uygun}{' '}{tx("uygun kaldı")}</span>}
       </div>
       <div className="mt-4 overflow-hidden rounded-[22px] border border-[#dfe9df] bg-white">
         <table className="w-full text-[13px] sm:text-sm">
           <thead>
             <tr className="border-b border-[#dfe9df] text-left text-xs text-[#6b7d72]">
-              <th scope="col" className="px-3 py-3 font-semibold sm:px-4">Parametre</th>
-              <th scope="col" className="px-3 py-3 text-right font-semibold sm:px-4">Önce</th>
-              <th scope="col" className="px-3 py-3 text-right font-semibold sm:px-4">Şimdi</th>
-              <th scope="col" className="px-3 py-3 font-semibold sm:px-4">Durum</th>
+              <th scope="col" className="px-3 py-3 font-semibold sm:px-4">{tx("Parametre")}</th>
+              <th scope="col" className="px-3 py-3 text-right font-semibold sm:px-4">{tx("Önce")}</th>
+              <th scope="col" className="px-3 py-3 text-right font-semibold sm:px-4">{tx("Şimdi")}</th>
+              <th scope="col" className="px-3 py-3 font-semibold sm:px-4">{tx("Durum")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#edf2ee]">
@@ -1371,18 +1264,18 @@ export function Karsilastirma({
               return (
                 <tr key={x.key}>
                   <th scope="row" className="px-3 py-2.5 text-left font-semibold sm:px-4">
-                    {x.ad}
-                    {x.birim && <span className="block text-xs font-normal text-[#8a978f]">{x.birim}</span>}
+                    {tx(etiketGoster(x.key, tx.dil))}
+                    {birimGoster(x.key, tx.dil) && <span className="block text-xs font-normal text-[#8a978f]">{tx(birimGoster(x.key, tx.dil))}</span>}
                   </th>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-[#6b7d72] sm:px-4">{formatNumber(x.once, 3)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[#6b7d72] sm:px-4">{tx(formatNumber(degerGoster(x.key, x.once, tx.dil), 3))}</td>
                   <td className="px-3 py-2.5 text-right font-bold tabular-nums sm:px-4">
                     <span className="inline-flex items-center gap-1">
                       <Ikon size={14} className="text-[#6b7d72]" />
-                      {formatNumber(x.simdi, 3)}
+                      {tx(formatNumber(degerGoster(x.key, x.simdi, tx.dil), 3))}
                     </span>
                   </td>
                   <td className="px-3 py-2.5 sm:px-4">
-                    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ${SONUC[x.sonuc].cls}`}>{SONUC[x.sonuc].ad}</span>
+                    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ${SONUC[x.sonuc].cls}`}>{tx(SONUC[x.sonuc].ad)}</span>
                   </td>
                 </tr>
               );
@@ -1396,6 +1289,7 @@ export function Karsilastirma({
 
 /** Kalite indeksinin analizler boyunca seyri (en az 2 nokta). */
 export function IndeksSeyri({ noktalar }: { noktalar: { tarih: string; indeks: number }[] }) {
+  const tx = useTx();
   if (noktalar.length < 2) return null;
   const W = 560;
   const H = 180;
@@ -1405,8 +1299,8 @@ export function IndeksSeyri({ noktalar }: { noktalar: { tarih: string; indeks: n
   const yol = noktalar.map((n, i) => `${i ? 'L' : 'M'}${x(i)},${y(n.indeks)}`).join(' ');
   return (
     <figure className="rounded-[22px] border border-[#dfe9df] bg-white p-4 sm:p-5">
-      <figcaption className="text-sm font-bold text-[#17352a]">Kalite indeksi seyri</figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" role="img" aria-label="Kalite indeksinin analizler boyunca değişimi">
+      <figcaption className="text-sm font-bold text-[#17352a]">{tx("Kalite indeksi seyri")}</figcaption>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" role="img" aria-label={tx("Kalite indeksinin analizler boyunca değişimi")}>
         {[0, 20, 40, 60, 80, 100].map((v) => (
           <g key={v}>
             <line x1={P.l} x2={W - P.r} y1={y(v)} y2={y(v)} stroke="#edf2ee" />
@@ -1423,7 +1317,7 @@ export function IndeksSeyri({ noktalar }: { noktalar: { tarih: string; indeks: n
               {n.indeks}
             </text>
             <text x={x(i)} y={H - 12} textAnchor="middle" fontSize="11" fill="#6b7d72">
-              {n.tarih}
+              {tx(n.tarih)}
             </text>
           </g>
         ))}
@@ -1451,6 +1345,7 @@ const SINIF_ACIKLAMA: Record<string, string> = {
 
 /** Toprak karnesi göstergesi: 5 renkli dilim, ibre ve puan. İbre açılışta 0'dan değere döner. */
 function KarneGostergesi({ yuzde, sinif, renk }: { yuzde: number; sinif: string; renk: string }) {
+  const tx = useTx();
   const [gosterilen, setGosterilen] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setGosterilen(yuzde), 150);
@@ -1470,7 +1365,7 @@ function KarneGostergesi({ yuzde, sinif, renk }: { yuzde: number; sinif: string;
   const ibreAci = (Math.min(100, Math.max(0, gosterilen)) / 100) * 180;
   return (
     <div className="relative w-full max-w-[340px]">
-      <svg viewBox="0 0 300 172" className="w-full" role="img" aria-label={`Toprak kalite indeksi ${yuzde} / 100, ${sinif}`}>
+      <svg viewBox="0 0 300 172" className="w-full" role="img" aria-label={tx("Toprak kalite indeksi {a} / 100, {b}", { a: yuzde, b: tx(sinif) })}>
         {dilimler.map((d, i) => (
           <path
             key={d.ad}
@@ -1501,7 +1396,7 @@ function KarneGostergesi({ yuzde, sinif, renk }: { yuzde: number; sinif: string;
           <span className="ml-1 font-sans text-lg font-normal text-white/50">/100</span>
         </div>
         <span className="mt-3 inline-block rounded-full px-4 py-1 text-sm font-bold text-white" style={{ background: renk }}>
-          {sinif}
+          {tx(sinif)}
         </span>
       </div>
     </div>
@@ -1522,6 +1417,7 @@ function RaporKapagi({
   /** Laboratuvar sınıflandırmasında dikkat/sorun çıkan anahtarlar: güçlü yan olarak gösterilmez */
   sorunlu?: string[];
 }) {
+  const tx = useTx();
   const bilgiler = [tarih, report.raporNo && `Rapor ${report.raporNo}`, tarla.konum, tarla.bitki, SULAMA_YONTEMLERI[tarla.sulama]?.ad].filter(Boolean);
   const sirali = indeks ? [...indeks.satirlar].sort((a, b) => b.puan - a.puan) : [];
   const guclu = sirali.filter((x) => x.puan >= 4 && !sorunlu.includes(x.key)).slice(0, 3);
@@ -1533,12 +1429,12 @@ function RaporKapagi({
       <div className="absolute inset-0 bg-gradient-to-b from-[#121410]/80 via-[#121410]/60 to-[#121410]/95" aria-hidden />
 
       <div className="relative p-6 sm:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">Toprak karnesi</p>
-        <h1 className="mt-3 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">{tarla.ad}</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">{tx("Toprak karnesi")}</p>
+        <h1 className="mt-3 font-display text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-6xl">{tx(tarla.ad)}</h1>
         <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
           {bilgiler.map((b) => (
             <span key={b as string} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
-              {b}
+              {tx(b)}
             </span>
           ))}
         </div>
@@ -1546,19 +1442,19 @@ function RaporKapagi({
         {indeks ? (
           <div className="mt-8 grid items-center gap-8 md:grid-cols-[1fr_1.1fr] md:gap-12">
             <div className="flex flex-col items-center">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/55">Toprak kalite indeksi</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/55">{tx("Toprak kalite indeksi")}</p>
               <KarneGostergesi yuzde={indeks.yuzde} sinif={indeks.sinif} renk={indeks.renk} />
             </div>
             <div>
-              <p className="font-display text-2xl leading-snug sm:text-3xl">{SINIF_ACIKLAMA[indeks.sinif] ?? ''}</p>
+              <p className="font-display text-2xl leading-snug sm:text-3xl">{tx(SINIF_ACIKLAMA[indeks.sinif] ?? '')}</p>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 {guclu.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8fd18f]">Güçlü yanları</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8fd18f]">{tx("Güçlü yanları")}</p>
                     <ul className="mt-2 space-y-1.5">
                       {guclu.map((x) => (
                         <li key={x.key} className="flex items-center justify-between gap-3 text-sm">
-                          <span>{x.ad}</span>
+                          <span>{tx(x.ad)}</span>
                           <PuanNoktalari puan={x.puan} />
                         </li>
                       ))}
@@ -1567,11 +1463,11 @@ function RaporKapagi({
                 )}
                 {zayif.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#f0a58f]">Geliştirilmesi gerekenler</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#f0a58f]">{tx("Geliştirilmesi gerekenler")}</p>
                     <ul className="mt-2 space-y-1.5">
                       {zayif.map((x) => (
                         <li key={x.key} className="flex items-center justify-between gap-3 text-sm">
-                          <span>{x.ad}</span>
+                          <span>{tx(x.ad)}</span>
                           <PuanNoktalari puan={x.puan} />
                         </li>
                       ))}
@@ -1582,7 +1478,7 @@ function RaporKapagi({
             </div>
           </div>
         ) : (
-          <p className="mt-6 max-w-md text-lg leading-7 text-white/80">Analiz değerleriniz aşağıda.</p>
+          <p className="mt-6 max-w-md text-lg leading-7 text-white/80">{tx("Analiz değerleriniz aşağıda.")}</p>
         )}
       </div>
 
@@ -1590,19 +1486,19 @@ function RaporKapagi({
         <div className="relative grid grid-cols-3 border-t border-white/10 bg-[#121410]/70 backdrop-blur">
           {indeks.gruplar.map((g) => (
             <div key={g.grup} className="border-white/10 px-3 py-5 text-center [&:not(:first-child)]:border-l sm:px-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">{g.ad}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">{tx(g.ad)}</p>
               {g.yuzde !== null ? (
                 <>
                   <p className="mt-1 font-display text-3xl tabular-nums">{g.yuzde}</p>
                   <div className="mx-auto mt-2 h-1.5 max-w-[120px] overflow-hidden rounded-full bg-white/15">
                     <div className="h-full rounded-full bg-[#e2b65c]" style={{ width: `${g.yuzde}%` }} />
                   </div>
-                  <p className="mt-1.5 text-[11px] text-white/45">{g.adet} ölçüm</p>
+                  <p className="mt-1.5 text-[11px] text-white/45">{g.adet}{' '}{tx("ölçüm")}</p>
                 </>
               ) : (
                 <>
                   <p className="mt-1 font-display text-3xl text-white/30">–</p>
-                  <p className="mt-1.5 text-[11px] leading-4 text-white/45">Ölçülmedi</p>
+                  <p className="mt-1.5 text-[11px] leading-4 text-white/45">{tx("Ölçülmedi")}</p>
                 </>
               )}
             </div>
@@ -1627,13 +1523,14 @@ function PuanNoktalari({ puan }: { puan: number }) {
 
 /** 0–14 pH skalası, değerin üstünde işaret */
 function PhSkalasi({ deger, etiket }: { deger: number; etiket: string }) {
+  const tx = useTx();
   const renkler = ['#d7301f', '#ef6548', '#fc8d59', '#fdbb84', '#f6d55c', '#c2d65a', '#7fc45a', '#3fae6a', '#2a9d8f', '#2b8cbe', '#3f6fb5', '#5b54a8', '#7a3f9d', '#8e2c86', '#6e1f6b'];
   const pct = Math.min(100, Math.max(0, (deger / 14) * 100));
   return (
     <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8">
       <div className="flex items-baseline justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">Asitlik (pH)</h3>
-        <span className="font-display text-3xl">{formatNumber(deger, 2)}</span>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">{tx.dil === 'de' ? 'Bodenreaktion (pH CaCl₂)' : tx("Asitlik (pH)")}</h3>
+        <span className="font-display text-3xl">{tx(formatNumber(degerGoster('ph', deger, tx.dil), 2))}</span>
       </div>
       <div className="relative mt-6">
         <div className="absolute -top-4 -translate-x-1/2" style={{ left: `${pct}%` }}>
@@ -1645,29 +1542,30 @@ function PhSkalasi({ deger, etiket }: { deger: number; etiket: string }) {
           ))}
         </div>
         <div className="mt-1 flex justify-between text-[10px] tabular-nums text-[#8a968d]">
-          <span>0 asidik</span>
-          <span>7 nötr</span>
-          <span>14 bazik</span>
+          <span>{tx("0 asidik")}</span>
+          <span>{tx("7 nötr")}</span>
+          <span>{tx("14 bazik")}</span>
         </div>
       </div>
-      <p className="mt-3 text-sm font-semibold text-[#1d2a22]">{etiket}</p>
-      <p className="text-xs text-[#6d786f]">Uygun: {uygunAralikMetni('ph')}</p>
+      <p className="mt-3 text-sm font-semibold text-[#1d2a22]">{tx(etiket)}</p>
+      <p className="text-xs text-[#6d786f]">{tx("Uygun:")}{' '}{tx(aralikMetni('ph', tx.dil))}</p>
     </div>
   );
 }
 
 /** Kum / silt / kil yığılmış çubuk */
 function BunyeCubugu({ kum, silt, kil, sinif }: { kum?: number; silt?: number; kil?: number; sinif?: string }) {
+  const tx = useTx();
   const parcalar = [
-    { ad: 'Kum', v: kum, renk: '#d9b98c' },
-    { ad: 'Silt', v: silt, renk: '#a77f55' },
-    { ad: 'Kil', v: kil, renk: '#6b4a2f' },
+    { ad: tx("Kum"), v: kum, renk: '#d9b98c' },
+    { ad: tx("Silt"), v: silt, renk: '#a77f55' },
+    { ad: tx("Kil"), v: kil, renk: '#6b4a2f' },
   ].filter((p) => p.v !== undefined) as { ad: string; v: number; renk: string }[];
   const toplam = parcalar.reduce((t, p) => t + p.v, 0) || 1;
   return (
     <div className="rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">Toprağın yapısı (bünye)</h3>
-      <p className="mt-1 font-display text-2xl leading-tight">{sinif ?? 'Bünye'}</p>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">{tx("Toprağın yapısı (bünye)")}</h3>
+      <p className="mt-1 font-display text-2xl leading-tight">{tx(sinif) ?? tx("Bünye")}</p>
       <div className="mt-4 flex h-10 overflow-hidden rounded-xl">
         {parcalar.map((p) => (
           <span
@@ -1675,14 +1573,14 @@ function BunyeCubugu({ kum, silt, kil, sinif }: { kum?: number; silt?: number; k
             className="flex items-center justify-center text-[11px] font-bold text-white"
             style={{ width: `${(p.v / toplam) * 100}%`, background: p.renk }}
           >
-            {p.v / toplam > 0.12 && `%${formatNumber(p.v, 0)}`}
+            {p.v / toplam > 0.12 && tx('%{a}', { a: formatNumber(p.v, 0) })}
           </span>
         ))}
       </div>
       <div className="mt-2 flex flex-wrap gap-3 text-xs text-[#5e6a60]">
         {parcalar.map((p) => (
           <span key={p.ad} className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: p.renk }} /> {p.ad} %{formatNumber(p.v, 1)}
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: p.renk }} /> {tx(p.ad)} {tx('%{a}', { a: formatNumber(p.v, 1) })}
           </span>
         ))}
       </div>
@@ -1692,6 +1590,7 @@ function BunyeCubugu({ kum, silt, kil, sinif }: { kum?: number; silt?: number; k
 
 /** Uygun aralığı gösteren yatay çubuk (kalın) */
 function DegerCubugu({ r }: { r: ParamResult }) {
+  const tx = useTx();
   const def = PARAMS[r.key];
   const u = def.uygun;
   const tone = r.classification?.tone ?? 'bilgi';
@@ -1701,9 +1600,9 @@ function DegerCubugu({ r }: { r: ParamResult }) {
   return (
     <li>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-semibold uppercase tracking-wide text-[#3f4a42]">{def.label}</span>
+        <span className="text-sm font-semibold uppercase tracking-wide text-[#3f4a42]">{tx(etiketGoster(r.key, tx.dil))}</span>
         <span className="text-sm tabular-nums">
-          <span className="font-bold">{formatNumber(r.value, 3)}</span> <span className="text-xs text-[#8a968d]">{def.unit}</span>
+          <span className="font-bold">{tx(formatNumber(degerGoster(r.key, r.value, tx.dil), 3))}</span> <span className="text-xs text-[#8a968d]">{tx(birimGoster(r.key, tx.dil))}</span>
         </span>
       </div>
       <div className="relative mt-1.5 h-3.5 overflow-hidden rounded-full bg-[#ece6da]">
@@ -1712,38 +1611,39 @@ function DegerCubugu({ r }: { r: ParamResult }) {
       </div>
       <div className="mt-1 flex justify-between text-[11px] text-[#8a968d]">
         <span style={{ color: tone === 'iyi' ? '#2f7a4f' : tone === 'sorun' ? '#b4432f' : tone === 'dikkat' ? '#9a6b12' : undefined }} className="font-semibold">
-          {r.classification?.label}
+          {tx(r.classification?.label)}
         </span>
-        {u && <span>Uygun: {uygunAralikMetni(r.key)}</span>}
+        {u && <span>{tx("Uygun:")}{' '}{tx(aralikMetni(r.key, tx.dil))}</span>}
       </div>
     </li>
   );
 }
 
 function Gostergeler({ report, results }: { report: SoilReport; results: ParamResult[] }) {
+  const tx = useTx();
   const ph = results.find((r) => r.key === 'ph');
   const v = report.values;
   const bunyeVar = v.kum !== undefined || v.silt !== undefined || v.kil !== undefined;
   const cubuklar = results.filter((r) => !['ph', 'kum', 'silt', 'kil', 'doygunluk'].includes(r.key) && r.classification);
   if (!ph && !bunyeVar && cubuklar.length === 0) return null;
   return (
-    <section className="mt-10" aria-labelledby="gostergeler">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">Bir bakışta</p>
-      <h2 id="gostergeler" className="mt-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">Toprağınızın durumu</h2>
+    <section className="mt-10" aria-labelledby={tx("gostergeler")}>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a87a2a]">{tx("Bir bakışta")}</p>
+      <h2 id="gostergeler" className="mt-2 font-display text-3xl font-medium tracking-[-0.01em] sm:text-4xl">{tx("Toprağınızın durumu")}</h2>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {ph?.classification && <PhSkalasi deger={ph.value} etiket={ph.classification.label} />}
+        {ph?.classification && <PhSkalasi deger={ph.value} etiket={tx(ph.classification.label)} />}
         {bunyeVar && <BunyeCubugu kum={v.kum} silt={v.silt} kil={v.kil} sinif={report.bunyeSinifi} />}
       </div>
       {cubuklar.length > 0 && (
         <div className="mt-4 rounded-[24px] bg-white p-5 ring-1 ring-[#1d2a22]/8 sm:p-6">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">Besin ve kimyasal durum</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-[#6d786f]">{tx("Besin ve kimyasal durum")}</h3>
           <ul className="mt-4 grid gap-x-10 gap-y-5 md:grid-cols-2">
             {cubuklar.map((r) => (
               <DegerCubugu key={r.key} r={r} />
             ))}
           </ul>
           <p className="mt-4 flex items-center gap-2 text-[11px] text-[#8a968d]">
-            <span className="h-2.5 w-5 rounded-full bg-[#cfe6c6]" /> Açık yeşil alan: uygun aralık
+            <span className="h-2.5 w-5 rounded-full bg-[#cfe6c6]" />{' '}{tx("Açık yeşil alan: uygun aralık")}
           </p>
         </div>
       )}
@@ -1776,6 +1676,7 @@ export function SonucEkrani({
   eylemler?: ReactNode;
   tarih?: string;
 }) {
+  const tx = useTx();
   const results = classify(report);
     const ilgi = results
     .filter((r) => r.classification?.tone === 'sorun' || r.classification?.tone === 'dikkat')
@@ -1789,46 +1690,58 @@ export function SonucEkrani({
       {baslikUstu && <div className="mb-4">{baslikUstu}</div>}
       <RaporKapagi report={report} tarla={tarla} tarih={tarih} indeks={indeks} sorunlu={ilgi.map((x) => x.key)} />
 
-      {/* 1) Ne yapmalı? */}
-      <OncelikliIsler report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} ilgi={ilgi} />
+      {/* 1) Yapay zekâ yorumu: özet ve öncelikli adımlar */}
+      <YorumBolumu report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} ilgi={ilgi} />
 
-      {/* 2) Dönem dönem program */}
-      <SulamaRecetesi tarla={tarla} ai={ai} report={report} />
+      {/* 2) Eksiklikler: bitkide görülebilecek noksanlıklar (resimli) */}
+      {/* Noksanlık kataloğu henüz yalnızca Türkçe: Almancada çevirisi gelene kadar gösterilmez */}
+      {modullerAcik(tx.dil) && <RaporNoksanliklari report={report} bitki={tarla.bitki} />}
 
-      <ParKarti il={tarla.il} bitki={tarla.bitki} className="mt-10" />
+      {/* 3) Isı · ışık · gelişim + dönem gübresi: hocanın atlası (3B GDD, PAR, fotosentez, NDVI); atlasta olmayan bitkide il PAR kartı */}
+      {atlasAdresi({ bitki: tarla.bitki }).bitkiVar ? (
+        <AtlasKarti bitki={tarla.bitki} il={tarla.il} sulama={tarla.sulama} report={report} alan={tarla.alan_dekar} className="mt-10" />
+      ) : (
+        <ParKarti il={tarla.il} bitki={tarla.bitki} className="mt-10" />
+      )}
 
-      {/* Bitkide görülebilecek noksanlıklar (resimli) */}
-      <RaporNoksanliklari report={report} bitki={tarla.bitki} />
+      {/* 4) Sezon toplamı: alınacak İGSAŞ ürünleri */}
+      <SezonToplami zkart={zkartBul(tarla.bitki ?? undefined)} yontem={tarla.sulama} alan={tarla.alan_dekar} ai={ai} toprak={atlasToprak(report)} />
+
+      {/* 5) Dönem dönem program */}
+      {/* Toprak analizi raporunda dönem reçetesi gösterilmez: dönem gübresi 3B atlasın altındaki panelde zaten var.
+          Atlasta olmayan bitkide o panel çıkmadığı için reçete burada kalır. (Tarla sayfasında reçete durur.) */}
+      {!atlasAdresi({ bitki: tarla.bitki }).bitkiVar && <SulamaRecetesi tarla={tarla} ai={ai} report={report} />}
 
       {/* 3) Değerler: tek görünüm */}
       <Gostergeler report={report} results={results} />
 
       {onceki && <Karsilastirma once={onceki.rapor} simdi={report} onceTarih={onceki.tarih} simdiTarih={onceki.simdiTarih} />}
 
-      {/* 4) Diğer ürün önerileri */}
-      <SolutionPlan report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} omDusuk={omDusuk} />
+      {/* Yorum gelmediyse organik madde protokolü (yapay zekâdan bağımsız) */}
+      {!ai && <SolutionPlan report={report} ai={ai} aiState={aiState} onRetryAi={onRetryAi} omDusuk={omDusuk} />}
 
-      <Videolar bitki={zkartBul(tarla.bitki ?? undefined)?.bitki} />
+      {tx.dil === 'tr' && <Videolar bitki={zkartBul(tarla.bitki ?? undefined)?.bitki} />}
 
       {/* 5) Teknik detaylar: varsayılan kapalı */}
-      <section className="mt-10 space-y-3" aria-labelledby="detaylar">
+      <section className="mt-10 space-y-3" aria-labelledby={tx("detaylar")}>
         <h2 id="detaylar" className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7a877e]">
-          Detaylar
+          
+          {tx("Detaylar")}
         </h2>
-        <Detay baslik="Laboratuvar tablosu" alt="Tüm ölçümler, uygun aralıklar ve farklar">
+        <Detay baslik={tx("Laboratuvar tablosu")} alt={tx("Tüm ölçümler, uygun aralıklar ve farklar")}>
           <AnalysisTable report={report} results={results} />
         </Detay>
         {indeks && (
-          <Detay baslik="Kalite indeksi nasıl hesaplandı?" alt={`${indeks.satirlar.length} ölçümün 0–5 puan ortalaması → ${indeks.yuzde}/100`}>
+          <Detay baslik={tx("Kalite indeksi nasıl hesaplandı?")} alt={tx("{a} ölçümün 0–5 puan ortalaması → {b}/100", { a: indeks.satirlar.length, b: indeks.yuzde })}>
             <KaliteIndeksi indeks={indeks} sade />
           </Detay>
         )}
-        <Detay baslik="Bu değerler ne anlama geliyor?">
+        <Detay baslik={tx("Bu değerler ne anlama geliyor?")}>
           <dl className="space-y-3 px-2 text-sm">
             {results.map((r) => (
               <div key={r.key}>
-                <dt className="font-semibold">{PARAMS[r.key].label}</dt>
-                <dd className="text-[#5b6f65]">{PARAMS[r.key].why}</dd>
+                <dt className="font-semibold">{tx(PARAMS[r.key].label)}</dt>
+                <dd className="text-[#5b6f65]">{tx(PARAMS[r.key].why)}</dd>
               </div>
             ))}
           </dl>

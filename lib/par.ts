@@ -5,10 +5,12 @@
  * DLI (günlük ışık toplamı, mol/m²/gün) = MJ/m²/gün × 4,57.
  * Tarlanın bulunduğu ilin ortalamasıdır; yamaç, gölge ve bulutluluk tarla ölçeğinde farklılık yapabilir.
  */
-import { zkartBul } from './igsas';
+import { zkartBul } from './bitki';
+import { DE_PAR } from './almanya';
+import { ES_PAR } from './ispanya';
 
 /** Ocak → Aralık, MJ/m²/gün */
-export const IL_PAR: Record<string, number[]> = {
+const TR_PAR: Record<string, number[]> = {
   'Adana': [3.29, 4.53, 6.42, 8.25, 9.92, 11.69, 12.07, 10.8, 8.82, 6.26, 4.32, 3.17],
   'Adıyaman': [3.3, 4.5, 6.79, 8.87, 10.83, 12.78, 12.64, 11.25, 9.16, 6.3, 4.31, 3.14],
   'Afyonkarahisar': [3.29, 4.65, 6.5, 8.47, 10.2, 11.8, 12.4, 11.02, 8.74, 6.07, 4.15, 2.96],
@@ -92,7 +94,13 @@ export const IL_PAR: Record<string, number[]> = {
   'Zonguldak': [2.35, 3.56, 5.51, 7.81, 9.8, 11.54, 11.8, 10.34, 7.59, 4.93, 3.16, 2.19],
 };
 
+/** 81 il + 16 Bundesland + 50 provincia */
+export const IL_PAR: Record<string, number[]> = { ...TR_PAR, ...DE_PAR, ...ES_PAR };
+
 export const PAR_KAYNAK = 'NASA POWER · 2001–2025 iklim ortalaması';
+export const PAR_KAYNAK_DE = 'DWD 1991–2020 iklim normalleri · güneşlenme süresinden Ångström tahmini';
+export const PAR_KAYNAK_DUNYA = 'NASA POWER uydu verisi · uzun yıllar aylık iklim ortalaması';
+export const PAR_KAYNAK_ES = 'AEMET 1981–2010 iklim normalleri · güneşlenme süresinden Ångström tahmini';
 export const AY_KISA = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 /** MJ/m²/gün PAR → mol/m²/gün (DLI) */
@@ -100,7 +108,11 @@ export const dli = (mj: number) => mj * 4.57;
 const ort = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 /** Türkiye (81 il) yıllık ortalaması, MJ/m²/gün */
-export const TURKIYE_PAR = ort(Object.values(IL_PAR).map(ort));
+export const TURKIYE_PAR = ort(Object.values(TR_PAR).map(ort));
+/** Almanya (16 eyalet) yıllık ortalaması, MJ/m²/gün */
+export const ALMANYA_PAR = ort(Object.values(DE_PAR).map(ort));
+/** İspanya (50 il) yıllık ortalaması, MJ/m²/gün */
+export const ISPANYA_PAR = ort(Object.values(ES_PAR).map(ort));
 
 /** Z-karttaki dönemlerden bitkinin tarlada olduğu aylar (0–11) */
 function sezonAylari(bitki?: string | null): number[] | undefined {
@@ -130,10 +142,14 @@ export type ParOzeti = {
   il: string;
   aylik: number[];
   yillik: number;
-  /** Türkiye ortalamasına göre fark (%) */
+  /** Ülke ortalamasına (Türkiye, Almanya ya da İspanya) göre fark (%) */
   farkYuzde: number;
-  /** 81 il içinde sıra (1 = en çok ışık) */
+  /** Ülkedeki il/eyalet içinde sıra (1 = en çok ışık) */
   sira: number;
+  /** DUNYA: diğer ülkeler (NASA POWER'dan; ülke içi karşılaştırma yapılmaz, sira ve farkYuzde 0) */
+  ulke: 'TR' | 'DE' | 'ES' | 'DUNYA';
+  /** Karşılaştırılan il/eyalet sayısı */
+  adet: number;
   sezon?: { aylar: number[]; ortalama: number; etiket: string };
 };
 
@@ -141,13 +157,19 @@ export function parOzeti(il?: string | null, bitki?: string | null): ParOzeti | 
   if (!il || !IL_PAR[il]) return undefined;
   const aylik = IL_PAR[il];
   const yillik = ort(aylik);
-  const sirali = Object.entries(IL_PAR)
+  const aylar0 = sezonAylari(bitki);
+  const sezon0 = aylar0
+    ? { aylar: aylar0, ortalama: ort(aylar0.map((m) => aylik[m])), etiket: `${AYLAR[aylar0[0]]}–${AYLAR[aylar0[aylar0.length - 1]]}` }
+    : undefined;
+  // Dünya ili "Bölge (ISO)" biçimindedir (lib/dunya.ts)
+  if (/ \([A-Z]{2}\)$/.test(il)) return { il, aylik, yillik, farkYuzde: 0, sira: 0, ulke: 'DUNYA', adet: 0, sezon: sezon0 };
+  const ulke: 'TR' | 'DE' | 'ES' = DE_PAR[il] ? 'DE' : ES_PAR[il] ? 'ES' : 'TR';
+  const grup = ulke === 'DE' ? DE_PAR : ulke === 'ES' ? ES_PAR : TR_PAR;
+  const sirali = Object.entries(grup)
     .map(([k, v]) => [k, ort(v)] as const)
     .sort((a, b) => b[1] - a[1]);
   const sira = sirali.findIndex(([k]) => k === il) + 1;
-  const aylar = sezonAylari(bitki);
-  const sezon = aylar
-    ? { aylar, ortalama: ort(aylar.map((m) => aylik[m])), etiket: `${AYLAR[aylar[0]]}–${AYLAR[aylar[aylar.length - 1]]}` }
-    : undefined;
-  return { il, aylik, yillik, farkYuzde: Math.round(((yillik - TURKIYE_PAR) / TURKIYE_PAR) * 100), sira, sezon };
+  const sezon = sezon0;
+  const ref = ulke === 'DE' ? ALMANYA_PAR : ulke === 'ES' ? ISPANYA_PAR : TURKIYE_PAR;
+  return { il, aylik, yillik, farkYuzde: Math.round(((yillik - ref) / ref) * 100), sira, ulke, adet: sirali.length, sezon };
 }

@@ -7,6 +7,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import { dunyaBolgeBilgisi } from '@/lib/dunyaIklim';
 import { bolgeBilgisi } from '@/lib/bolgeler';
 import { HASTALIKLAR } from '@/lib/hastaliklar';
 import { suDegerlendir } from '@/lib/su';
@@ -24,7 +25,7 @@ const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 const MAX_BYTES = 4 * 1024 * 1024;
 
 const SYSTEM = `Sen Türkiye'de tarla, bahçe ve serada 20 yıl çalışmış, bitki besleme ve bitki koruma konusunda uzman bir ziraat mühendisisin.
-"Tarım Ticareti ve İşletmeciliği 4.0" uygulamasında çiftçinin gönderdiği yaprak / bitki fotoğraflarına ve cevaplarına bakarak OLASILIKLI bir ön teşhis yapıyorsun.
+"İGSAŞ Toprak Asistanı" uygulamasında çiftçinin gönderdiği yaprak / bitki fotoğraflarına ve cevaplarına bakarak OLASILIKLI bir ön teşhis yapıyorsun.
 
 NASIL DÜŞÜN (sırayla):
 1. Fotoğraf uygun mu? Bitki ve belirti net görünüyor mu? Bitki değilse, çok bulanık/karanlıksa ya da belirti seçilmiyorsa gorselUygun=false yap,
@@ -63,6 +64,14 @@ YAZIM:
   (hastalıklı yaprakları toplayın, sulamayı yaprağı ıslatmadan yapın, ekim nöbeti vb.) ve "il/ilçe tarım müdürlüğünüze ya da ziraat mühendisinize danışın" de.
 - Sade Türkçe, kısa cümleler, "siz" hitabı. Korkutma. "Bu öneri bağlayıcı değildir" gibi kalıp cümleler yazma.
 Cevabını YALNIZCA teshis aracını çağırarak ver.`;
+
+/** Almanca ve İspanyolca arayüzde metinler o dilde yazılır; olasılıkların "ad" alanı katalogla eşleşsin diye Türkçe kalır */
+const DIL_TALIMATI: Record<string, string> = {
+  ar: `\n\nDİL: ozet, gorselNotu, gorulenBitki, neden, ipuclari, kontrol ve yapilacaklar alanlarını sade ARAPÇA (fasih, anlaşılır) yaz; rakamları Latin rakamıyla (0-9) yaz. Olasılıkların "ad" alanı tur "besin" ve "hastalik" ise yukarıdaki kurallara göre TÜRKÇE kalsın (uygulama onu katalogla eşleştirip çeviriyor); tur "zararli", "abiyotik" ya da "saglikli" ise "ad" alanını da Arapça yaz. "il/ilçe tarım müdürlüğü" yerine "جهة الإرشاد الزراعي المحلية" de.`,
+  en: `\n\nDİL: ozet, gorselNotu, gorulenBitki, neden, ipuclari, kontrol ve yapilacaklar alanlarını İNGİLİZCE yaz (sade, British English). Olasılıkların "ad" alanı tur "besin" ve "hastalik" ise yukarıdaki kurallara göre TÜRKÇE kalsın (uygulama onu katalogla eşleştirip çeviriyor); tur "zararli", "abiyotik" ya da "saglikli" ise "ad" alanını da bu dilde yaz. "il/ilçe tarım müdürlüğü" yerine "your local agricultural advisory service" de.`,
+  de: `\n\nDİL: ozet, gorselNotu, gorulenBitki, neden, ipuclari, kontrol ve yapilacaklar alanlarını ALMANCA yaz (Sie-Form, sade). Olasılıkların "ad" alanı tur "besin" ve "hastalik" ise yukarıdaki kurallara göre TÜRKÇE kalsın (uygulama onu katalogla eşleştirip çeviriyor); tur "zararli", "abiyotik" ya da "saglikli" ise "ad" alanını da bu dilde yaz. "il/ilçe tarım müdürlüğü" yerine "Pflanzenschutzberatung" de.`,
+  es: `\n\nDİL: ozet, gorselNotu, gorulenBitki, neden, ipuclari, kontrol ve yapilacaklar alanlarını İSPANYOLCA yaz ("usted", sade). Olasılıkların "ad" alanı tur "besin" ve "hastalik" ise yukarıdaki kurallara göre TÜRKÇE kalsın (uygulama onu katalogla eşleştirip çeviriyor); tur "zararli", "abiyotik" ya da "saglikli" ise "ad" alanını da bu dilde yaz. "il/ilçe tarım müdürlüğü" yerine "oficina comarcal agraria" de.`,
+};
 
 const TOOL: Anthropic.Tool = {
   name: 'teshis',
@@ -108,6 +117,8 @@ export async function POST(req: Request) {
     if (!kullaniciId) return NextResponse.json({ error: 'Teşhis için giriş yapın.' }, { status: 401 });
 
     const form = await req.formData();
+    const dil = String(form.get('dil') ?? 'tr');
+    const sistem = SYSTEM + (DIL_TALIMATI[dil] ?? '');
     const fotolar = form.getAll('foto').filter((f): f is File => f instanceof File).slice(0, 3);
     if (!fotolar.length) return NextResponse.json({ error: 'En az bir fotoğraf ekleyin.' }, { status: 400 });
     const cevaplar = JSON.parse(String(form.get('cevaplar') ?? '{}')) as TeshisCevaplari;
@@ -135,7 +146,7 @@ export async function POST(req: Request) {
         tarlaBilgisi = {
           il: tarla.il,
           ilce: tarla.ilce,
-          bolge: bolgeBilgisi(tarla.il, tarla.ilce) ?? undefined,
+          bolge: bolgeBilgisi(tarla.il, tarla.ilce) ?? (await dunyaBolgeBilgisi(tarla.il, tarla.ilce)) ?? undefined,
           sulama: SULAMA_YONTEMLERI[tarla.sulama].ad,
           sonToprakAnalizi: analiz ? { tarih: analiz.analiz_tarihi, ...buildAiPayload(analiz.rapor) } : 'yok',
           sonSuAnalizi: sv ? { sinif: sv.sinif, genel: sv.genel.baslik, bulgular: sv.bulgular.map((b) => `${b.baslik}: ${b.deger} (${b.durum})`) } : 'yok',
@@ -156,12 +167,12 @@ export async function POST(req: Request) {
     };
 
     const icerik: Anthropic.ContentBlockParam[] = [...resimler, { type: 'text', text: `Çiftçinin cevapları:\n${JSON.stringify(metin, null, 1)}` }];
-    let msg = await client.messages.create({ model: MODEL, max_tokens: 3000, system: SYSTEM, tools: [TOOL], tool_choice: { type: 'auto' }, messages: [{ role: 'user', content: icerik }] });
+    let msg = await client.messages.create({ model: MODEL, max_tokens: 3000, system: sistem, tools: [TOOL], tool_choice: { type: 'auto' }, messages: [{ role: 'user', content: icerik }] });
     if (!msg.content.some((b) => b.type === 'tool_use')) {
       msg = await client.messages.create({
         model: MODEL,
         max_tokens: 3000,
-        system: SYSTEM,
+        system: sistem,
         tools: [TOOL],
         tool_choice: { type: 'auto' },
         messages: [{ role: 'user', content: icerik }, { role: 'assistant', content: msg.content }, { role: 'user', content: 'Lütfen cevabı teshis aracını çağırarak ver.' }],

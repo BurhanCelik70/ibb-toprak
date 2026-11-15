@@ -3,6 +3,11 @@
  * Sunucu bileşenleridir (hook yok).
  */
 import Link from 'next/link';
+import { DilSecici } from '@/components/DilSecici';
+import { dilAl } from '@/lib/dilSunucu';
+import { sozluk } from '@/lib/ceviri';
+import { ceviriFonk } from '@/lib/i18n';
+import { modullerAcik, type Dil } from '@/lib/dil';
 import { MARKA } from '@/lib/marka';
 import { oturumKullanici } from '@/lib/supabase/server';
 
@@ -12,8 +17,9 @@ export function LogoIsareti({ size = 40 }: { size?: number }) {
   return <img src="/logo.png" width={size} height={size} alt="" aria-hidden className="shrink-0 drop-shadow-[0_2px_6px_rgba(0,0,0,.25)]" />;
 }
 
-export function Logo({ size = 40, yazi = true, acik = false, mobildeGizle = false }: { size?: number; yazi?: boolean; acik?: boolean; mobildeGizle?: boolean }) {
-  const [ust, alt] = MARKA.logoSatirlari;
+export function Logo({ size = 40, yazi = true, acik = false, mobildeGizle = false, dil = 'tr' }: { size?: number; yazi?: boolean; acik?: boolean; mobildeGizle?: boolean; dil?: Dil }) {
+  const [ust, trAlt] = MARKA.logoSatirlari;
+  const alt = dil === 'tr' ? trAlt : sozluk(dil).marka.logoAlt;
   return (
     <span className="flex items-center gap-2 sm:gap-2.5">
       <LogoIsareti size={size} />
@@ -37,6 +43,9 @@ export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' 
   } catch {
     // Supabase ayarlanmamışsa misafir gibi davran
   }
+  const dil = await dilAl();
+  const m = sozluk(dil).menu;
+  const ceviriVar = modullerAcik(dil);
   const link = (href: string, ad: string, on: boolean) => (
     <Link
       href={href}
@@ -56,62 +65,66 @@ export async function AppHeader({ aktif, seffaf = false }: { aktif?: 'tarlalar' 
       }
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
-        <Link href="/" aria-label={`${MARKA.ad} ana sayfa`}>
-          <Logo size={36} acik={seffaf} mobildeGizle={girisli} />
+        <Link href="/" aria-label={`${ceviriFonk(dil)(MARKA.ad)} ${m.anaSayfa}`}>
+          <Logo size={36} acik={seffaf} mobildeGizle={girisli} dil={dil} />
         </Link>
         <nav className="flex items-center gap-0.5 sm:gap-1">
           {girisli ? (
             <>
-              {link('/tarlalar', 'Tarlalarım', aktif === 'tarlalar')}
-              {link('/noksanliklar', 'Noksanlıklar', aktif === 'noksanlik')}
-              <span className="hidden sm:contents">{link('/besinler', 'Besinler', aktif === 'besin')}</span>
-              {link('/hesap', 'Hesabım', aktif === 'hesap')}
+              {link('/tarlalar', m.tarlalar, aktif === 'tarlalar')}
+              {/* Noksanlık ve besin rehberi henüz yalnızca Türkçe: Almancada bağlantıları gizli */}
+              {ceviriVar && link('/noksanliklar', m.noksanliklar, aktif === 'noksanlik')}
+              {ceviriVar && <span className="hidden sm:contents">{link('/besinler', m.besinler, aktif === 'besin')}</span>}
+              {link('/hesap', m.hesap, aktif === 'hesap')}
             </>
           ) : (
             <>
-              <Link href="/ornek" className={`whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] sm:px-3 sm:text-sm font-semibold ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek rapor</Link>
-              <Link href="/noksanliklar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold sm:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Noksanlıklar</Link>
-              <Link href="/besinler" className={`hidden rounded-full px-3 py-2 text-sm font-semibold sm:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Besinler</Link>
-              <Link href="/#ornek" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Örnek alma</Link>
-              <Link href="/#videolar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>Videolar</Link>
+              <Link href="/ornek" className={`hidden whitespace-nowrap rounded-full min-[420px]:block px-2.5 py-2 text-[13px] sm:px-3 sm:text-sm font-semibold ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>{m.ornekRapor}</Link>
+              {ceviriVar && <Link href="/noksanliklar" className={`hidden rounded-full px-3 py-2 text-sm font-semibold sm:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>{m.noksanliklar}</Link>}
+              {ceviriVar && <Link href="/besinler" className={`hidden rounded-full px-3 py-2 text-sm font-semibold sm:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>{m.besinler}</Link>}
+              <Link href="/#ornek" className={`hidden rounded-full px-3 py-2 text-sm font-semibold md:block ${seffaf ? 'text-white/80 hover:text-white' : 'text-[#3e5248] hover:bg-[#f0f5f1]'}`}>{m.ornekAlma}</Link>
               <Link
                 href="/giris"
                 className={`ml-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold ${seffaf ? 'border border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20' : 'bg-[#238f61] text-white hover:bg-[#1d7d54]'}`}
               >
-                Giriş yap
+                {m.giris}
               </Link>
             </>
           )}
+          <DilSecici dil={dil} seffaf={seffaf} etiket={m.dil} baslik={m.dilSec} />
         </nav>
       </div>
     </header>
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const dil = await dilAl();
+  const { altBilgi: a, marka } = sozluk(dil);
+  const tx = ceviriFonk(dil);
   return (
     <footer className="mt-auto bg-[#0e100c] text-white/70 print:hidden">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-start sm:justify-between sm:px-8">
         <div className="max-w-sm">
           <span className="flex items-center gap-2.5 text-lg font-extrabold text-white">
-            <LogoIsareti size={32} /> <span className="leading-tight">{MARKA.ad}</span>
+            <LogoIsareti size={32} /> <span className="leading-tight">{tx(MARKA.ad)}</span>
           </span>
           {MARKA.isbirligi && <p className="mt-1.5 pl-[42px] text-xs font-semibold leading-5 text-[#9bdd68]">{MARKA.isbirligi}</p>}
-          <p className="mt-3 text-sm leading-6">{MARKA.slogan}.</p>
+          <p className="mt-3 text-sm leading-6">{marka.slogan}.</p>
         </div>
         <div className="text-sm leading-7">
-          <Link href="/tarlalar" className="block hover:text-white">Tarlalarım</Link>
-          <Link href="/noksanliklar" className="block hover:text-white">Besin noksanlıkları</Link>
-          <Link href="/besinler" className="block hover:text-white">Besinleri tanıyalım</Link>
-          <Link href="/gizlilik" className="block hover:text-white">Gizlilik ve KVKK</Link>
+          <Link href="/tarlalar" className="block hover:text-white">{a.tarlalar}</Link>
+          {modullerAcik(dil) && <Link href="/noksanliklar" className="block hover:text-white">{a.noksanliklar}</Link>}
+          {modullerAcik(dil) && <Link href="/besinler" className="block hover:text-white">{a.besinler}</Link>}
+          <Link href="/gizlilik" className="block hover:text-white">{a.gizlilik}</Link>
         </div>
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <span>
-            <span className="font-semibold text-white/80">{MARKA.kurum}</span> · {MARKA.ekip.join(' · ')}
+            <span className="font-semibold text-white/80">{tx(MARKA.kurum)}</span> · {MARKA.ekip.map((e) => tx(e)).join(' · ')}
           </span>
-          <span className="text-white/40">© {new Date().getFullYear()} {MARKA.ad}</span>
+          <span className="text-white/40">© {new Date().getFullYear()} {tx(MARKA.ad)}</span>
         </div>
       </div>
     </footer>
@@ -119,12 +132,12 @@ export function SiteFooter() {
 }
 
 /** Tarlada zikzak örnek alma noktaları (broşürdeki çizimin sade hâli). */
-export function ZikzakCizimi() {
+export function ZikzakCizimi({ dil = 'tr' }: { dil?: Dil }) {
   const pts = [
     [40, 150], [80, 50], [120, 150], [160, 50], [200, 150], [240, 50], [280, 150], [320, 50], [360, 150], [400, 50],
   ];
   return (
-    <svg viewBox="0 0 440 200" className="w-full" role="img" aria-label="Tarlada zikzak çizerek 10 noktadan örnek alma">
+    <svg viewBox="0 0 440 200" className="w-full" role="img" aria-label={sozluk(dil).cizim.zikzak}>
       <rect x="10" y="20" width="420" height="160" rx="18" fill="#e9f3e3" stroke="#bcd8b0" />
       {Array.from({ length: 9 }).map((_, i) => (
         <line key={i} x1="10" x2="430" y1={36 + i * 16} y2={36 + i * 16} stroke="#d5e8cc" strokeWidth="1" />
@@ -143,15 +156,16 @@ export function ZikzakCizimi() {
 }
 
 /** Örnek alma derinlikleri. */
-export function DerinlikCizimi() {
+export function DerinlikCizimi({ dil = 'tr' }: { dil?: Dil }) {
+  const c = sozluk(dil).cizim;
   const katman = [
-    { h: 'h-14', renk: '#8b6a45', etiket: '0–30 cm', not: 'Tarla, sera ve tek yıllık bitkiler' },
-    { h: 'h-14', renk: '#a6845c', etiket: '30–60 cm', not: 'Meyve bahçesi ve bağ (0–30 cm ile birlikte)' },
-    { h: 'h-11', renk: '#c2a47e', etiket: '60–90 cm', not: 'Meyve bahçesi kurulumu öncesi' },
-    { h: 'h-9', renk: '#d6bf9f', etiket: '90–120 cm', not: 'Meyve bahçesi kurulumu öncesi' },
+    { h: 'h-14', renk: '#8b6a45', etiket: '0–30 cm', not: c.katmanlar[0] },
+    { h: 'h-14', renk: '#a6845c', etiket: '30–60 cm', not: c.katmanlar[1] },
+    { h: 'h-11', renk: '#c2a47e', etiket: '60–90 cm', not: c.katmanlar[2] },
+    { h: 'h-9', renk: '#d6bf9f', etiket: '90–120 cm', not: c.katmanlar[3] },
   ];
   return (
-    <div className="flex gap-4" role="img" aria-label="Bitkiye göre toprak örneği alma derinlikleri">
+    <div className="flex gap-4" role="img" aria-label={c.derinlik}>
       <div className="w-20 shrink-0 overflow-hidden rounded-xl sm:w-28">
         <div className="h-2.5 bg-[#5aa832]" />
         {katman.map((k) => (

@@ -4,9 +4,12 @@
  *  - t: ortalama sıcaklık (°C, T2M) · fark: gündüz-gece sıcaklık farkı (°C, T2M_RANGE) · yagis: yağış (mm/gün, PRECTOTCORR)
  * Mersin için tarım alanını temsil etmesi amacıyla Tarsus ovası koordinatı kullanıldı (il merkezi hücresi dağlık kesime düşüyor).
  */
+import { DE_IKLIM } from './almanya';
+import { ES_IKLIM } from './ispanya';
+
 export type IlIklimi = { enlem: number; t: number[]; fark: number[]; yagis: number[] };
 
-export const IL_IKLIM: Record<string, IlIklimi> = {
+const TR_IKLIM: Record<string, IlIklimi> = {
   'Adana': { enlem: 37, t: [7.88, 9.72, 13.27, 17.24, 22.14, 26.61, 30.07, 30.3, 27.31, 22.31, 15.22, 9.84], fark: [9.92, 10.35, 11.11, 11.8, 12.41, 12.97, 13.5, 12.7, 12.59, 12.21, 11.84, 10.21], yagis: [3.46, 3.04, 2.2, 1.59, 1.5, 0.75, 0.21, 0.32, 0.93, 1.26, 2.07, 3.63] },
   'Adıyaman': { enlem: 37.76, t: [-2.68, -0.72, 4.02, 8.76, 14.23, 20.26, 24.43, 24.73, 19.86, 13.26, 5.3, -0.09], fark: [7.95, 8.4, 9.99, 11.72, 12.82, 15.52, 17.25, 16.56, 14.96, 12.05, 9.94, 7.87], yagis: [2.13, 1.91, 1.57, 1.63, 1.15, 0.32, 0.07, 0.06, 0.28, 1.14, 1.56, 1.99] },
   'Afyonkarahisar': { enlem: 38.76, t: [-1.21, 0.72, 4.47, 8.74, 13.85, 18.1, 21.32, 21.42, 17.26, 11.58, 5.52, 0.8], fark: [8.41, 9.82, 11.95, 12.96, 13.21, 14.14, 15.92, 15.5, 14.31, 12.34, 11.04, 8.91], yagis: [1.73, 1.53, 1.22, 1.44, 1.56, 1.31, 0.49, 0.44, 0.69, 1.35, 1.03, 1.65] },
@@ -89,3 +92,6 @@ export const IL_IKLIM: Record<string, IlIklimi> = {
   'Yozgat': { enlem: 39.82, t: [-2.06, 0.07, 3.83, 8.26, 13.39, 17.67, 20.9, 21.43, 17.47, 11.83, 4.91, -0.09], fark: [8.23, 9.45, 11.15, 12.56, 12.72, 13.91, 15.81, 15.89, 14.54, 12.25, 11.01, 8.52], yagis: [1.86, 1.48, 1.74, 1.55, 1.99, 1.64, 0.4, 0.36, 0.75, 0.99, 1.52, 1.77] },
   'Zonguldak': { enlem: 41.45, t: [5.48, 6.01, 7.84, 11.16, 16.04, 20.45, 23.08, 23.7, 20.63, 16.27, 11.86, 7.58], fark: [4.56, 5.36, 6.17, 6.77, 6.38, 6.01, 6.15, 6.36, 6.04, 5.47, 5.17, 4.63], yagis: [3.39, 2.87, 2.53, 1.66, 1.69, 2, 1.49, 1.55, 2.81, 3.13, 3.2, 4] },
 };
+
+/** 81 il + 16 Bundesland (Almanya verileri: lib/almanya.ts) */
+export const IL_IKLIM: Record<string, IlIklimi> = { ...TR_IKLIM, ...DE_IKLIM, ...ES_IKLIM };

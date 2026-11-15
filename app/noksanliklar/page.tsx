@@ -1,13 +1,17 @@
+import { ceviriAl } from '@/lib/dilSunucu';
 import { NoksanlikKatalogu } from '@/components/noksanlik/Katalog';
 import { AppHeader, SiteFooter } from '@/components/site';
 import { BITKI_SIRASI, katalogBitkisi } from '@/lib/noksanliklar';
 import { oturumKullanici } from '@/lib/supabase/server';
 
-export const metadata = {
-  title: 'Bitki besin noksanlıkları ve hastalıkları',
-  alternates: { canonical: '/noksanliklar' },
-  description: 'Mısır, buğday, şeker pancarı, ayçiçeği, pamuk ve diğer bitkilerde azot, fosfor, potasyum, çinko, demir, bor noksanlıklarının ve noksanlıkla karışan hastalıkların resimli kataloğu.',
-};
+export async function generateMetadata() {
+  const { tx } = await ceviriAl();
+  return {
+    title: tx('Bitki besin noksanlıkları ve hastalıkları'),
+    alternates: { canonical: '/noksanliklar' },
+    description: tx('Mısır, buğday, şeker pancarı, ayçiçeği, pamuk ve diğer bitkilerde azot, fosfor, potasyum, çinko, demir, bor noksanlıklarının ve noksanlıkla karışan hastalıkların resimli kataloğu.'),
+  };
+}
 
 export default async function NoksanlikSayfasi({ searchParams }: { searchParams: Promise<{ bitki?: string; n?: string; h?: string }> }) {
   const sp = await searchParams;

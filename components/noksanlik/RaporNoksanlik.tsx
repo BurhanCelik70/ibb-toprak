@@ -1,4 +1,5 @@
 'use client';
+import { useTx } from '@/components/DilSaglayici';
 /**
  * Raporda: tarladaki bitki için toprak analizine göre öne çıkan noksanlık kartları.
  * Ölçülüp düşük çıkan besinler önce; kireçli / yüksek pH'lı toprakta demir-çinko-mangan-bor riski ayrıca belirtilir.
@@ -13,6 +14,7 @@ import { NoksanlikDetayi, NoksanlikKarti } from './Katalog';
 const KIREC_RISKI: ParamKey[] = ['demir', 'cinko', 'mangan', 'bor'];
 
 export function RaporNoksanliklari({ report, bitki }: { report: SoilReport; bitki: string | null }) {
+  const tx = useTx();
   const [secili, setSecili] = useState<Noksanlik>();
   const kb = katalogBitkisi(bitki);
   if (!kb) return null;
@@ -40,22 +42,22 @@ export function RaporNoksanliklari({ report, bitki }: { report: SoilReport; bitk
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#7a877e]">
-            <Leaf size={15} /> Yaprağınıza bakın
+            <Leaf size={15} /> {tx("Yaprağınıza bakın")}
           </p>
           <h2 id="noksanlik-baslik" className="mt-1 font-display text-3xl font-medium text-[#17352a]">
-            {sec.length ? 'Görülebilecek besin noksanlıkları' : 'Besin noksanlıklarını tanıyın'}
+            {sec.length ? tx('Görülebilecek besin noksanlıkları') : tx('Besin noksanlıklarını tanıyın')}
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-[#5b6f65]">
             {sec.length
-              ? `Analizinize göre ${kisa} bu belirtilere dikkat edin. Kartlara dokunarak nasıl tanınacağını ve ne yapılacağını görün.`
-              : `Analizinizde belirgin bir besin eksikliği görünmüyor. Yine de ${kisa} sık görülen noksanlıkların resimlerine göz atabilirsiniz.`}
+              ? tx("Analizinize göre {a} bu belirtilere dikkat edin. Kartlara dokunarak nasıl tanınacağını ve ne yapılacağını görün.", { a: tx(kisa) })
+              : tx("Analizinizde belirgin bir besin eksikliği görünmüyor. Yine de {a} sık görülen noksanlıkların resimlerine göz atabilirsiniz.", { a: tx(kisa) })}
           </p>
         </div>
         <Link
           href={`/noksanliklar?bitki=${encodeURIComponent(kb)}`}
           className="inline-flex items-center gap-2 rounded-full border border-[#cfc6b2] bg-white px-4 py-2 text-sm font-semibold text-[#17352a] hover:border-[#238f61] print:hidden"
         >
-          Tüm katalog ({kartlar.length}) <ArrowRight size={16} />
+          {tx("Tüm katalog (")}{kartlar.length}) <ArrowRight size={16} />
         </Link>
       </div>
       {sec.length > 0 && (
@@ -63,7 +65,7 @@ export function RaporNoksanliklari({ report, bitki }: { report: SoilReport; bitk
           {sec.map(({ n, neden }) => (
             <div key={n.id} className="flex flex-col">
               <span className={`mb-2 self-start rounded-full px-3 py-1 text-xs font-bold ${neden.startsWith('Toprağınızda') ? 'bg-[#fbe3dd] text-[#a5402c]' : 'bg-[#f6ecd2] text-[#7a5a1c]'}`}>
-                {neden}
+                {tx(neden)}
               </span>
               <NoksanlikKarti n={n} onAc={() => setSecili(n)} />
             </div>

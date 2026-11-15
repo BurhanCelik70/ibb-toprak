@@ -3,11 +3,14 @@ import { AppHeader, SiteFooter } from '@/components/site';
 import { oturumKullanici } from '@/lib/supabase/server';
 import { tarihYaz, type SuAnalizi, type Tarla } from '@/lib/veri';
 import { SuSonucu } from './SuSonucu';
+import { ilGoster } from '@/lib/dunya';
+import { ceviriAl } from '@/lib/dilSunucu';
 
 export const metadata = { title: 'Su karnesi' };
 
 export default async function SuSayfasi({ params }: { params: Promise<{ id: string; sid: string }> }) {
   const { id, sid } = await params;
+  const { tx } = await ceviriAl();
   const { supabase } = await oturumKullanici();
   const [{ data: tarla }, { data: su }] = await Promise.all([
     supabase.from('tarlalar').select('*').eq('id', id).maybeSingle<Tarla>(),
@@ -21,7 +24,7 @@ export default async function SuSayfasi({ params }: { params: Promise<{ id: stri
         <SuSonucu
           tarlaId={tarla.id}
           suId={su.id}
-          tarla={{ ad: tarla.ad, bitki: tarla.bitki, sulama: tarla.sulama, konum: [tarla.ilce, tarla.il].filter(Boolean).join(', ') || null }}
+          tarla={{ ad: tarla.ad, bitki: tarla.bitki, sulama: tarla.sulama, konum: [tarla.ilce, ilGoster(tarla.il, tx.dil)].filter(Boolean).join(', ') || null }}
           rapor={su.rapor}
           tarih={tarihYaz(su.analiz_tarihi)}
           yorum={su.yorum}

@@ -1,16 +1,21 @@
+import { ceviriAl } from '@/lib/dilSunucu';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { YaprakTeshisi } from '@/components/noksanlik/Teshis';
 import { AppHeader, SiteFooter } from '@/components/site';
 import { oturumKullanici } from '@/lib/supabase/server';
 
-export const metadata = {
-  title: 'Yaprak teşhisi',
-  alternates: { canonical: '/noksanliklar/teshis' },
-  description: 'Yaprağınızın fotoğrafını yükleyin, birkaç soruyu cevaplayın; olası besin noksanlığını, hastalığı ya da stresi ve ne yapmanız gerektiğini söyleyelim.',
-};
+export async function generateMetadata() {
+  const { tx } = await ceviriAl();
+  return {
+    title: tx('Yaprak teşhisi'),
+    alternates: { canonical: '/noksanliklar/teshis' },
+    description: tx('Yaprağınızın fotoğrafını yükleyin, birkaç soruyu cevaplayın; olası besin noksanlığını, hastalığı ya da stresi ve ne yapmanız gerektiğini söyleyelim.'),
+  };
+}
 
 export default async function TeshisSayfasi() {
+  const { tx } = await ceviriAl();
   let girisli = false;
   let tarlalar: { id: string; ad: string; bitki: string | null }[] = [];
   try {
@@ -28,13 +33,15 @@ export default async function TeshisSayfasi() {
       <AppHeader aktif="noksanlik" />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <Link href="/noksanliklar" className="inline-flex items-center gap-1 text-sm font-semibold text-[#476456]">
-          <ChevronLeft size={16} /> Noksanlık kataloğu
+          <ChevronLeft size={16} /> {tx("Noksanlık kataloğu")}
         </Link>
         <header className="mt-3 mb-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2f8f57]">Yapay zekâ ile ön teşhis</p>
-          <h1 className="mt-1 font-display text-4xl font-medium tracking-[-0.02em] text-[#17352a] sm:text-5xl">Yaprağınızda ne var?</h1>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2f8f57]">{tx("Yapay zekâ ile ön teşhis")}</p>
+          <h1 className="mt-1 font-display text-4xl font-medium tracking-[-0.02em] text-[#17352a] sm:text-5xl">{tx("Yaprağınızda ne var?")}</h1>
           <p className="mt-3 max-w-2xl text-[15px] leading-7 text-[#4f6158]">
-            Fotoğrafı yükleyin, 8 kısa soruyu cevaplayın. Olası sorunları yüzdeleriyle, nedenleriyle ve gidermek için etken maddeyle birlikte gösterelim.
+            {tx(
+              "Fotoğrafı yükleyin, 8 kısa soruyu cevaplayın. Olası sorunları yüzdeleriyle, nedenleriyle ve gidermek için etken maddeyle birlikte gösterelim."
+            )}
           </p>
         </header>
         <YaprakTeshisi girisli={girisli} tarlalar={tarlalar} />

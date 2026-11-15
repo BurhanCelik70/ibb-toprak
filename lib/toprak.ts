@@ -335,6 +335,9 @@ export function parseNumber(input: unknown): number | undefined {
   if (input === null || input === undefined) return undefined;
   if (typeof input === 'number') return Number.isFinite(input) ? input : undefined;
   if (typeof input !== 'string') return undefined;
+  // Oran ("11 : 1", "11:1") → ilk sayı; yoksa rakamlar birleşip 111 olur
+  const oran = /^\s*(\d+(?:[.,]\d+)?)\s*:\s*1\s*$/.exec(input);
+  if (oran) return Number(oran[1].replace(',', '.'));
   // Birim ve boşlukları at: "658 µS/cm" -> "658", "%1,64" -> "1,64"
   const s = input.replace(/[^\d.,-]/g, '');
   if (!s || s === '-') return undefined;

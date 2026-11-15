@@ -1,4 +1,5 @@
 'use client';
+import { useTx } from '@/components/DilSaglayici';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Sihirbaz, type SihirbazTarla } from '@/components/analiz/Sihirbaz';
@@ -21,6 +22,7 @@ function tarihCoz(s?: string): string {
 }
 
 export function YeniAnaliz({ tarlaId, tarla }: { tarlaId: string; tarla: SihirbazTarla }) {
+  const tx = useTx();
   const router = useRouter();
   const [kaydediliyor, setKaydediliyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function YeniAnaliz({ tarlaId, tarla }: { tarlaId: string; tarla: Sihirba
       .single();
     if (error || !data) {
       setKaydediliyor(false);
-      setHata('Analiz kaydedilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.');
+      setHata(tx("Analiz kaydedilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin."));
       return;
     }
     router.push(`/tarlalar/${tarlaId}/analiz/${data.id}`);
