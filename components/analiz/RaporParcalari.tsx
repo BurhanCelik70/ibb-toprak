@@ -587,7 +587,7 @@ export function SezonToplami({
       </h2>
       <p className="mt-2 max-w-[70ch] text-sm leading-6 text-[#5b6f65]">
         
-        {hoca ? tx("Prof. Dr. Metin Turan'ın atlas programındaki bütün dönemlerin toplamı") : tx("Programdaki bütün dönemlerin toplamı")}{alan ? tx(", {a} dekarlık tarlanız için", { a: tx.alan(alan) }) : ''}{tx(". Alışverişi buna göre planlayabilirsiniz.")}
+        {hoca ? tx("Prof. Dr. Metin Turan'ın atlas programındaki bütün dönemlerin toplamı") : tx("Programdaki bütün dönemlerin toplamı")}{alan ? tx(", {a} dekarlık tarlanız için", { a: String(alan).replace(".", ",") }) : ''}{tx(". Alışverişi buna göre planlayabilirsiniz.")}
         {hoca && toprak && TOPRAK_TIPI[toprak] ? <>{' '}{tx("Dozlar toprak tipinize göre ayarlandı:")}{' '}<span className="font-semibold text-[#2a3d36]">{tx(TOPRAK_TIPI[toprak])}</span>.</> : null}
       </p>
 
