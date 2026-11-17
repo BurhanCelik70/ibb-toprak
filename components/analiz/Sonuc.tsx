@@ -1343,59 +1343,98 @@ const SINIF_ACIKLAMA: Record<string, string> = {
   'Çok zayıf': 'Toprağınız ciddi destek istiyor. Önerileri öncelikle uygulayın.',
 };
 
-/** Toprak karnesi göstergesi: 5 renkli dilim, ibre ve puan. İbre açılışta 0'dan değere döner. */
-function KarneGostergesi({ yuzde, sinif, renk }: { yuzde: number; sinif: string; renk: string }) {
+/**
+ * Toprak karnesi göstergesi (İGSAŞ): tek parça yay, bakırdan altına ve İGSAŞ yeşiline geçen renk; değere kadar dolu,
+ * kalanı ince iz. Altın ibre açılışta 0'dan değere döner. Puan büyük serif yazıyla.
+ */
+function KarneGostergesi({ yuzde, sinif }: { yuzde: number; sinif: string; renk?: string }) {
   const tx = useTx();
   const [gosterilen, setGosterilen] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setGosterilen(yuzde), 150);
     return () => clearTimeout(t);
   }, [yuzde]);
-  const cx = 150, cy = 150, r = 118, kalinlik = 22, bosluk = 1.6; // derece
+  const cx = 150, cy = 150, r = 116, kalinlik = 14;
   const nokta = (aci: number, rr = r) => {
     const rad = (Math.PI * (180 - aci)) / 180;
     return [cx + rr * Math.cos(rad), cy - rr * Math.sin(rad)];
   };
-  const yay = (a1: number, a2: number) => {
-    const [x1, y1] = nokta(a1);
-    const [x2, y2] = nokta(a2);
-    return `M${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2}`;
+  const yay = (a1: number, a2: number, rr = r) => {
+    const [x1, y1] = nokta(a1, rr);
+    const [x2, y2] = nokta(a2, rr);
+    return `M${x1} ${y1} A${rr} ${rr} 0 ${a2 - a1 > 180 ? 1 : 0} 1 ${x2} ${y2}`;
   };
-  const dilimler = [...SINIFLAR].reverse(); // 0-20, 20-40 …
-  const ibreAci = (Math.min(100, Math.max(0, gosterilen)) / 100) * 180;
+  const deger = Math.min(100, Math.max(0, gosterilen));
+  const ibreAci = (deger / 100) * 180;
+  const yayUzunluk = Math.PI * r;
   return (
     <div className="relative w-full max-w-[340px]">
-      <svg viewBox="0 0 300 172" className="w-full" role="img" aria-label={tx("Toprak kalite indeksi {a} / 100, {b}", { a: yuzde, b: tx(sinif) })}>
-        {dilimler.map((d, i) => (
-          <path
-            key={d.ad}
-            d={yay(i * 36 + (i ? bosluk : 0), (i + 1) * 36 - (i < 4 ? bosluk : 0))}
-            fill="none"
-            stroke={d.renk}
-            strokeWidth={kalinlik}
-            opacity={yuzde >= d.min && (i === 4 || yuzde < dilimler[i + 1].min) ? 1 : 0.35}
-          />
-        ))}
+      <svg viewBox="0 0 300 172" className="w-full overflow-visible" role="img" aria-label={tx("Toprak kalite indeksi {a} / 100, {b}", { a: yuzde, b: tx(sinif) })}>
+        <defs>
+          <linearGradient id="karne-yay" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stopColor="#b5562e" />
+            <stop offset="0.38" stopColor="#d9a441" />
+            <stop offset="0.62" stopColor="#c9b35a" />
+            <stop offset="1" stopColor="#3fbf6a" />
+          </linearGradient>
+          <filter id="karne-isilti" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" />
+          </filter>
+        </defs>
+        {/* İz */}
+        <path d={yay(0, 180)} fill="none" stroke="rgba(255,255,255,.12)" strokeWidth={kalinlik} strokeLinecap="round" />
+        {/* Işıltı + dolu yay */}
+        <path
+          d={yay(0, 180)}
+          fill="none"
+          stroke="url(#karne-yay)"
+          strokeWidth={kalinlik}
+          strokeLinecap="round"
+          strokeDasharray={yayUzunluk}
+          strokeDashoffset={yayUzunluk * (1 - deger / 100)}
+          filter="url(#karne-isilti)"
+          opacity={0.55}
+          style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)' }}
+        />
+        <path
+          d={yay(0, 180)}
+          fill="none"
+          stroke="url(#karne-yay)"
+          strokeWidth={kalinlik}
+          strokeLinecap="round"
+          strokeDasharray={yayUzunluk}
+          strokeDashoffset={yayUzunluk * (1 - deger / 100)}
+          style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)' }}
+        />
+        {/* İnce iç halka ve çentikler */}
+        <path d={yay(0, 180, r - 20)} fill="none" stroke="rgba(226,182,92,.25)" strokeWidth="1" strokeDasharray="1 5" />
         {[0, 20, 40, 60, 80, 100].map((t) => {
-          const [x, y] = nokta(t * 1.8, r - kalinlik / 2 - 12);
+          // 0 ve 100 yayın uçlarının altına, diğerleri yayın dışına
+          const uc = t === 0 || t === 100;
+          const [x1, y1] = nokta(t * 1.8, r + kalinlik / 2 + 3);
+          const [x2, y2] = nokta(t * 1.8, r + kalinlik / 2 + 8);
+          const [tx_, ty] = uc ? [nokta(t * 1.8)[0], cy + kalinlik / 2 + 11] : nokta(t * 1.8, r + kalinlik / 2 + 17);
           return (
-            <text key={t} x={x} y={y + 3} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,.45)">
-              {t}
-            </text>
+            <g key={t}>
+              {!uc && <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,.4)" strokeWidth="1" />}
+              <text x={tx_} y={ty + 3} textAnchor="middle" fontSize="8.5" fill="rgba(255,255,255,.5)">
+                {t}
+              </text>
+            </g>
           );
         })}
         <g style={{ transform: `rotate(${ibreAci - 90}deg)`, transformOrigin: `${cx}px ${cy}px`, transition: 'transform 1.4s cubic-bezier(.2,.8,.2,1)' }}>
-          <path d={`M${cx - 5} ${cy} L${cx} ${cy - r + 8} L${cx + 5} ${cy} Z`} fill="#f5f0e6" />
+          <path d={`M${cx - 3.5} ${cy} L${cx} ${cy - r + 22} L${cx + 3.5} ${cy} Z`} fill="#e2b65c" />
         </g>
-        <circle cx={cx} cy={cy} r="11" fill="#f5f0e6" />
-        <circle cx={cx} cy={cy} r="5" fill="#121410" />
+        <circle cx={cx} cy={cy} r="9" fill="#e2b65c" />
+        <circle cx={cx} cy={cy} r="3.5" fill="#10251b" />
       </svg>
-      <div className="-mt-1 text-center">
+      <div className="-mt-2 text-center">
         <div className="font-display text-6xl font-medium leading-none tracking-[-0.03em] tabular-nums sm:text-7xl">
           {yuzde}
           <span className="ml-1 font-sans text-lg font-normal text-white/50">/100</span>
         </div>
-        <span className="mt-3 inline-block rounded-full px-4 py-1 text-sm font-bold text-white" style={{ background: renk }}>
+        <span className="mt-3 inline-block rounded-full border border-[#e2b65c]/40 bg-[#10251b]/70 px-4 py-1 text-sm font-semibold tracking-wide text-[#f3d27a] backdrop-blur">
           {tx(sinif)}
         </span>
       </div>
@@ -1424,9 +1463,11 @@ function RaporKapagi({
   const zayif = [...sirali].reverse().filter((x) => x.puan <= 2).slice(0, 3);
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] bg-[#121410] text-white shadow-[0_40px_80px_-30px_rgba(18,20,16,.6)] print:rounded-none print:shadow-none">
-      <div className="absolute inset-0 bg-[url('/toprak.jpg')] bg-cover bg-center" aria-hidden />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#121410]/80 via-[#121410]/60 to-[#121410]/95" aria-hidden />
+    <section className="relative overflow-hidden rounded-[32px] bg-[#10251b] text-white shadow-[0_40px_80px_-30px_rgba(16,37,27,.7)] print:rounded-none print:shadow-none">
+      {/* İGSAŞ ebru toprak kesiti: üstte filizler, altta altın damarlı toprak katmanları */}
+      <div className="absolute inset-0 bg-[url('/karne/toprak-ebru-m.webp')] bg-cover bg-[center_22%] sm:bg-[url('/karne/toprak-ebru.webp')]" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0d1f16]/80 via-[#0d1f16]/45 to-[#0d1f16]/85" aria-hidden />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_60%,rgba(13,31,22,.55),transparent_60%)]" aria-hidden />
 
       <div className="relative p-6 sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e2b65c]">{tx("Toprak karnesi")}</p>
@@ -1450,12 +1491,12 @@ function RaporKapagi({
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 {guclu.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8fd18f]">{tx("Güçlü yanları")}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8fe3a9]">{tx("Güçlü yanları")}</p>
                     <ul className="mt-2 space-y-1.5">
                       {guclu.map((x) => (
                         <li key={x.key} className="flex items-center justify-between gap-3 text-sm">
                           <span>{tx(x.ad)}</span>
-                          <PuanNoktalari puan={x.puan} />
+                          <KarnePuani puan={x.puan} tur="guclu" />
                         </li>
                       ))}
                     </ul>
@@ -1463,12 +1504,12 @@ function RaporKapagi({
                 )}
                 {zayif.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#f0a58f]">{tx("Geliştirilmesi gerekenler")}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e9a27a]">{tx("Geliştirilmesi gerekenler")}</p>
                     <ul className="mt-2 space-y-1.5">
                       {zayif.map((x) => (
                         <li key={x.key} className="flex items-center justify-between gap-3 text-sm">
                           <span>{tx(x.ad)}</span>
-                          <PuanNoktalari puan={x.puan} />
+                          <KarnePuani puan={x.puan} tur="zayif" />
                         </li>
                       ))}
                     </ul>
@@ -1483,15 +1524,15 @@ function RaporKapagi({
       </div>
 
       {indeks && (
-        <div className="relative grid grid-cols-3 border-t border-white/10 bg-[#121410]/70 backdrop-blur">
+        <div className="relative grid grid-cols-3 gap-2 px-3 pb-3 sm:gap-3 sm:px-6 sm:pb-6">
           {indeks.gruplar.map((g) => (
-            <div key={g.grup} className="border-white/10 px-3 py-5 text-center [&:not(:first-child)]:border-l sm:px-6">
+            <div key={g.grup} className="rounded-2xl border border-white/10 bg-[#0d1f16]/45 px-3 py-4 text-center backdrop-blur-md sm:px-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">{tx(g.ad)}</p>
               {g.yuzde !== null ? (
                 <>
                   <p className="mt-1 font-display text-3xl tabular-nums">{g.yuzde}</p>
                   <div className="mx-auto mt-2 h-1.5 max-w-[120px] overflow-hidden rounded-full bg-white/15">
-                    <div className="h-full rounded-full bg-[#e2b65c]" style={{ width: `${g.yuzde}%` }} />
+                    <div className="h-full rounded-full bg-gradient-to-r from-[#d9a441] to-[#3fbf6a]" style={{ width: `${g.yuzde}%` }} />
                   </div>
                   <p className="mt-1.5 text-[11px] text-white/45">{g.adet}{' '}{tx("ölçüm")}</p>
                 </>
@@ -1509,14 +1550,17 @@ function RaporKapagi({
   );
 }
 
-/** 0–5 puanı beş nokta olarak gösterir (koyu zemin) */
-function PuanNoktalari({ puan }: { puan: number }) {
+/** 0–5 puanı beş parçalı ince çubukla gösterir (koyu zemin): güçlüler yeşil, eksikler bakır */
+function KarnePuani({ puan, tur }: { puan: number; tur: 'guclu' | 'zayif' }) {
+  const renk = tur === 'guclu' ? '#3fbf6a' : '#d0703f';
   return (
-    <span className="flex shrink-0 items-center gap-1" aria-label={`${puan} / 5`}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className="h-2 w-2 rounded-full" style={{ background: i <= puan ? PUAN_RENK[puan] : 'rgba(255,255,255,.18)' }} />
-      ))}
-      <span className="ml-1 w-7 text-right text-xs tabular-nums text-white/60">{puan}/5</span>
+    <span className="flex shrink-0 items-center gap-2" aria-label={`${puan} / 5`}>
+      <span className="flex gap-[3px]">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <span key={i} className="h-1.5 w-4 rounded-full" style={{ background: i <= puan ? renk : 'rgba(255,255,255,.16)' }} />
+        ))}
+      </span>
+      <span className="w-7 text-right text-xs tabular-nums text-white/60">{puan}/5</span>
     </span>
   );
 }
