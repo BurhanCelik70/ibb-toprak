@@ -58,7 +58,7 @@ const PLAN: CozumPlani = {
 const kayit = '/giris?sonra=%2Ftarlalar%2Fyeni';
 
 export function OrnekRapor() {
-  // Örnek plan şimdilik yalnız Türkçe (İGSAŞ sürümünde diğer diller kapalı)
+  // Örnek plan Türkçe yazılır; diğer dillerde metinler lib/ceviri-igsas.ts sözlüğünden çevrilir, dozlar hektara döner
   const { t: tx } = useDil();
   return (
     <SonucEkrani

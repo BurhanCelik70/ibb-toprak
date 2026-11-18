@@ -2213,7 +2213,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "N-CALBOR",
-                "doz": "250 ce/da"
+                "doz": "250 cc/da"
               },
               {
                 "urun": "EDTA Zn-Mn",
@@ -2595,7 +2595,7 @@ export const ZKARTLAR: ZKart[] = [
             "urunler": [
               {
                 "urun": "UAN-32",
-                "doz": "yaprak"
+                "doz": "Hasat sonrası yapraktan; doz İGSAŞ dönem kartından teyit edilecek"
               },
               {
                 "urun": "EDTA Zn-Mn",

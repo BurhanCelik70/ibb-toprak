@@ -14,12 +14,12 @@ export const DILLER = {
 } as const;
 
 export type Dil = keyof typeof DILLER;
-export const VARSAYILAN_DIL: Dil = 'tr';
+/** İlk girişte (dil çerezi yokken) site İngilizce açılır; kullanıcı seçiciden değiştirir. */
+export const VARSAYILAN_DIL: Dil = 'en';
 export const DIL_COOKIE = 'dil';
 
-/** Sitede açık olan diller (seçicide görünür; tarayıcı/çerez dili bunlardan biri değilse Türkçe açılır) */
-/** İGSAŞ sürümü şimdilik yalnız Türkçe; İngilizce ürün metinleri çevrilince 'en' eklenecek (altyapı hazır). */
-export const ACIK_DILLER: Dil[] = ['tr'];
+/** Sitede açık olan diller (seçicide görünür; çerez yoksa İngilizce açılır) */
+export const ACIK_DILLER: Dil[] = ['en', 'tr', 'de', 'es', 'ar'];
 /** Noksanlık kataloğu, yaprak teşhisi, besinler ve su karnesi bu dillerde çevrili (Arapçada yalnız toprak raporu) */
 export const modullerAcik = (_dil?: Dil) => true;
 export const dilGecerli = (x: unknown): x is Dil => typeof x === 'string' && (ACIK_DILLER as string[]).includes(x);

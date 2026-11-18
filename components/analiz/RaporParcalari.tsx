@@ -216,6 +216,7 @@ function useDongu(gorunur: boolean, aralikMs = 7500, donusMs = 1100) {
 
 export function SorunSahnesi({ parametre, gecikme = 0 }: { parametre: string; gecikme?: number }) {
   const k = sorunKimligi(parametre);
+  const tx = useTx();
   const { ref, gorunur } = useGorunur<HTMLDivElement>();
   const kendi = useResimCifti(k.anahtar);
   const yedek = useResimCifti(k.cift ?? k.anahtar);
@@ -255,7 +256,7 @@ export function SorunSahnesi({ parametre, gecikme = 0 }: { parametre: string; ge
       </span>
       <span className="ss-halka absolute left-1/2 top-[62%] h-16 w-16 rounded-full border-2" style={{ borderColor: `${k.renk}` }} />
       <span className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
-        {k.sembol} · {parametre}
+        {k.sembol} · {tx(parametre)}
       </span>
     </div>
   );
@@ -464,7 +465,7 @@ function kgL(doz: string): { a: Aralik; birim: 'kg' | 'L' } | undefined {
   return { a: { min: d.min * c, max: d.max * c }, birim: d.birim === 'g' || d.birim === 'kg' ? 'kg' : 'L' };
 }
 
-type UrunToplam = { ad: string; a?: Aralik; birim?: 'kg' | 'L'; yaprak: number; yaprakDoz?: string; tohum?: string; toplamPlan?: boolean; onHazirlik?: boolean };
+type UrunToplam = { ad: string; a?: Aralik; birim?: 'kg' | 'L'; yaprak: number; yaprakDoz?: string; tohum?: string; ph?: string; toplamPlan?: boolean; onHazirlik?: boolean };
 
 export function sezonToplami(zkart: ZKart | undefined, yontem: SulamaYontemi, ai?: CozumPlani | null) {
   const besin: Record<string, Aralik> = {};
@@ -486,7 +487,9 @@ export function sezonToplami(zkart: ZKart | undefined, yontem: SulamaYontemi, ai
         }
         if (!bilgi.marka) continue;
         const t = urunAl(u.urun);
-        if (/100 kg tohum/.test(u.doz)) t.tohum = u.doz;
+        // Asitler miktarla değil sulama suyunun pH'ıyla verilir ("pH 5,0-5,5", "hat pH 5,5-6,5")
+        if (/\bpH\b/.test(u.doz)) t.ph = u.doz.replace(/^hat\s+/i, '');
+        else if (/100 kg tohum/.test(u.doz)) t.tohum = u.doz;
         else if (v) {
           t.a = topla(t.a, v.a);
           t.birim = v.birim;
@@ -674,6 +677,9 @@ export function SezonToplami({
                         <span className="font-bold">{u.yaprak}{' '}{tx("kez")}</span>{' '}{tx("yapraktan ·")}{' '}
                         {derisim ? tx("{s} L suya {m}", { s: derisim.su, m: derisim.miktar }) : tx.doz(u.yaprakDoz ?? '')}
                       </p>
+                    )}
+                    {u.ph && !u.a && (
+                      <p className="text-[13px] text-[#2a3d36]">{tx("Sulama suyunu {p} olacak kadar", { p: u.ph })}</p>
                     )}
                     {u.onHazirlik && <p className="text-xs text-[#6b7d72]">{tx("sezon öncesi toprak düzeltmesi dahil")}</p>}
                     {u.tohum && <p className="text-[13px] text-[#2a3d36]">{tx("Tohuma:")}{' '}{tx(u.tohum)}</p>}

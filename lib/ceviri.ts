@@ -191,9 +191,9 @@ export type Sozluk = typeof tr;
 
 const de: Sozluk = {
   marka: {
-    slogan: 'KI-gestützter Assistent für Bodengesundheit und Ertrag',
+    slogan: 'Lernen Sie Ihren Boden kennen – und ernten Sie mehr',
     aciklama:
-      'Laden Sie Ihren Bodenanalysebericht hoch und sehen Sie den Qualitätsindex Ihres Feldes, seine Mängel und einen Düngeplan nach Wachstumsphasen – passend zu Ihrer Bewässerung.',
+      'Laden Sie Ihren Bodenanalysebericht hoch und sehen Sie, welchen İGSAŞ-Dünger Sie wann und in welcher Menge pro Hektar geben – Phase für Phase, passend zu Ihrer Bewässerung.',
     logoAlt: 'Bodenassistent',
   },
   menu: {
@@ -225,8 +225,8 @@ const de: Sozluk = {
     ],
   },
   sahne: {
-    bolum: 'Humintech Bodenassistent: Wie der Boden wieder lebendig wird',
-    rozet: 'KI-gestützter Assistent für Bodengesundheit',
+    bolum: 'İGSAŞ Bodenassistent',
+    rozet: 'KI-gestützter Assistent für Bodenanalyse und Düngung',
     basla: 'Kostenlos starten',
     ornek: 'Beispielbericht ansehen',
     kaydir: 'Scrollen Sie – der Boden erwacht',
@@ -237,8 +237,8 @@ const de: Sozluk = {
     asamalar: ['Erschöpft', 'Humus', 'Belebung', 'Ertrag'],
     paneller: [
       {
-        baslik: 'Ertrag beginnt mit lebendigem Boden.',
-        metin: 'Laden Sie Ihre Bodenanalyse hoch. Gemeinsam sehen wir, wie gesund Ihr Boden ist, was ihm fehlt und was Sie tun können, um ihn wieder zu beleben.',
+        baslik: 'Lernen Sie Ihren Boden kennen – und ernten Sie mehr',
+        metin: 'Laden Sie Ihren Bodenanalysebericht hoch. Gemeinsam sehen wir, welchen İGSAŞ-Dünger Sie wann und in welcher Menge pro Hektar geben.',
       },
       {
         etiket: '01 · Erschöpfter Boden',
@@ -279,7 +279,7 @@ const de: Sozluk = {
       { t: 'Veränderungen erkennen', d: 'Welche Werte sich in der neuen Analyse verbessert oder verschlechtert haben und wie sich der Qualitätsindex über die Jahre entwickelt.' },
       {
         t: 'Passend zur Bewässerung ausbringen',
-        d: 'Wie viel kg Stickstoff, Phosphor und Kalium pro Hektar; wann Huminstoffe und biologische Präparate. Bei Tropfbewässerung mit Zeitfenster und der Gesamtmenge für Ihr Feld.',
+        d: 'Welcher İGSAŞ-Dünger in welcher Phase, wie viel Kilo pro Hektar. Bei Tropfbewässerung mit Zeitfenster und der Gesamtmenge für Ihr Feld.',
       },
     ],
     onizleme: {
@@ -373,9 +373,9 @@ const de: Sozluk = {
 
 const en: Sozluk = {
   marka: {
-    slogan: 'AI-powered soil health and productivity assistant',
+    slogan: 'Know your soil, grow your harvest',
     aciklama:
-      'Upload your soil analysis report and see your field’s quality index, its deficiencies and a stage-by-stage fertiliser plan matched to your irrigation method.',
+      'Upload your soil analysis report and see which İGSAŞ fertiliser to apply, when and how much per hectare – stage by stage, matched to your irrigation method.',
     logoAlt: 'Soil Assistant',
   },
   menu: {
@@ -407,8 +407,8 @@ const en: Sozluk = {
     ],
   },
   sahne: {
-    bolum: 'Humintech Soil Assistant: how the soil comes back to life',
-    rozet: 'AI-powered soil health assistant',
+    bolum: 'İGSAŞ Soil Assistant',
+    rozet: 'AI-powered soil analysis and fertilisation assistant',
     basla: 'Start for free',
     ornek: 'View the sample report',
     kaydir: 'Scroll down and the soil comes back to life',
@@ -419,8 +419,8 @@ const en: Sozluk = {
     asamalar: ['Depleted', 'Humus', 'Recovery', 'Yield'],
     paneller: [
       {
-        baslik: 'Yield starts with living soil.',
-        metin: 'Upload your soil analysis. Together we will see how healthy your soil is, what it lacks and what to do to bring it back to life.',
+        baslik: 'Know your soil, grow your harvest',
+        metin: 'Upload your soil analysis report and we will show you which İGSAŞ fertiliser to apply, when and how much per hectare.',
       },
       {
         etiket: '01 · Depleted soil',
@@ -461,7 +461,7 @@ const en: Sozluk = {
       { t: 'See what has changed', d: 'Which values improved or got worse in the new analysis, and how the quality index develops over the years.' },
       {
         t: 'Fertilise to match your irrigation',
-        d: 'How many kg of nitrogen, phosphorus and potassium per hectare; when to apply humic substances and biological products. For drip, with the injection window and the total amount for your field.',
+        d: 'Which İGSAŞ fertiliser at which growth stage, and how many kilos per hectare. For drip, with the injection window and the total amount for your field.',
       },
     ],
     onizleme: {
@@ -555,9 +555,9 @@ const en: Sozluk = {
 
 const es: Sozluk = {
   marka: {
-    slogan: 'Asistente de salud del suelo y productividad con inteligencia artificial',
+    slogan: 'Conozca su suelo, haga crecer su cosecha',
     aciklama:
-      'Suba el informe de análisis de suelo y vea el índice de calidad de su parcela, sus carencias y un plan de abonado por fases de cultivo adaptado a su sistema de riego.',
+      'Suba el informe de análisis de suelo y vea qué abono İGSAŞ aplicar, cuándo y cuánto por hectárea, fase a fase y adaptado a su sistema de riego.',
     logoAlt: 'Asistente de Suelos',
   },
   menu: {
@@ -589,8 +589,8 @@ const es: Sozluk = {
     ],
   },
   sahne: {
-    bolum: 'Asistente de Suelos Humintech: cómo revive el suelo',
-    rozet: 'Asistente de salud del suelo con inteligencia artificial',
+    bolum: 'Asistente de Suelos İGSAŞ',
+    rozet: 'Asistente de análisis de suelo y abonado con inteligencia artificial',
     basla: 'Empezar gratis',
     ornek: 'Ver el informe de ejemplo',
     kaydir: 'Desplácese y el suelo revivirá',
@@ -601,8 +601,8 @@ const es: Sozluk = {
     asamalar: ['Agotado', 'Humus', 'Recuperación', 'Rendimiento'],
     paneller: [
       {
-        baslik: 'El rendimiento empieza en un suelo vivo.',
-        metin: 'Suba su análisis de suelo. Veremos juntos cómo está su suelo, qué le falta y qué hacer para devolverle la vida.',
+        baslik: 'Conozca su suelo, haga crecer su cosecha',
+        metin: 'Suba su informe de análisis de suelo y le mostraremos qué abono İGSAŞ aplicar, cuándo y cuánto por hectárea.',
       },
       {
         etiket: '01 · Suelo agotado',
@@ -643,7 +643,7 @@ const es: Sozluk = {
       { t: 'Vea qué ha cambiado', d: 'Qué valores han mejorado o empeorado en el nuevo análisis y cómo evoluciona el índice de calidad con los años.' },
       {
         t: 'Aplique según su riego',
-        d: 'Cuántos kg de nitrógeno, fósforo y potasio por hectárea; cuándo aplicar sustancias húmicas y productos biológicos. En goteo, con la ventana horaria y la cantidad total para su parcela.',
+        d: 'Qué abono İGSAŞ en cada fase y cuántos kilos por hectárea. En goteo, con la ventana horaria y la cantidad total para su parcela.',
       },
     ],
     onizleme: {
@@ -737,9 +737,9 @@ const es: Sozluk = {
 
 const ar: Sozluk = {
   marka: {
-    slogan: 'مساعد ذكي لصحة التربة وإنتاجيتها',
+    slogan: 'اعرف تربتك، وضاعف محصولك',
     aciklama:
-      'ارفع تقرير تحليل التربة لترى مؤشر جودة حقلك ونقصه وبرنامج تسميد لكل مرحلة نمو يناسب طريقة الري لديك.',
+      'ارفع تقرير تحليل التربة لترى أي سماد من İGSAŞ تضيفه، ومتى، وكم لكل هكتار، مرحلةً بمرحلة وبما يناسب طريقة الري لديك.',
     logoAlt: 'مساعد التربة',
   },
   menu: {
@@ -771,8 +771,8 @@ const ar: Sozluk = {
     ],
   },
   sahne: {
-    bolum: 'مساعد التربة من Humintech: كيف تعود الحياة إلى التربة',
-    rozet: 'مساعد ذكي لصحة التربة',
+    bolum: 'مساعد التربة من İGSAŞ',
+    rozet: 'مساعد ذكي لتحليل التربة والتسميد',
     basla: 'ابدأ مجانًا',
     ornek: 'عرض التقرير النموذجي',
     kaydir: 'مرّر لأسفل لتعود الحياة إلى التربة',
@@ -783,8 +783,8 @@ const ar: Sozluk = {
     asamalar: ['مُنهَكة', 'الدبال', 'الانتعاش', 'الإنتاج'],
     paneller: [
       {
-        baslik: 'الإنتاج يبدأ من تربة حيّة.',
-        metin: 'ارفع تحليل تربتك. سنرى معًا مدى صحة تربتك، وما ينقصها، وما عليك فعله لإعادة الحياة إليها.',
+        baslik: 'اعرف تربتك، وضاعف محصولك',
+        metin: 'ارفع تقرير تحليل التربة وسنبيّن لك أي سماد من İGSAŞ تضيفه، ومتى، وكم لكل هكتار.',
       },
       {
         etiket: '01 · تربة مُنهَكة',
@@ -825,7 +825,7 @@ const ar: Sozluk = {
       { t: 'اعرف ما الذي تغيّر', d: 'أي القيم تحسّنت أو تراجعت في التحليل الجديد، وكيف يتطوّر مؤشر الجودة عبر السنين.' },
       {
         t: 'سمّد حسب طريقة الري',
-        d: 'كم كيلوغرامًا من النيتروجين والفوسفور والبوتاسيوم لكل هكتار، ومتى تُعطى المواد الدبالية والمنتجات الحيوية. في الري بالتنقيط مع نافذة الحقن والكمية الإجمالية لحقلك.',
+        d: 'أي سماد من İGSAŞ في كل مرحلة نمو، وكم كيلوغرامًا لكل هكتار. في الري بالتنقيط مع نافذة الحقن والكمية الإجمالية لحقلك.',
       },
     ],
     onizleme: {

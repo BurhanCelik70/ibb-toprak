@@ -11,6 +11,7 @@ import { DE, DE_DESEN } from './ceviri-de';
 import { EN, EN_DESEN } from './ceviri-en';
 import { ES, ES_DESEN } from './ceviri-es';
 import { TR } from './ceviri-tr';
+import { AR_IGSAS, DE_IGSAS, EN_IGSAS, ES_IGSAS } from './ceviri-igsas';
 import { alanYaz, dekarli, dozCevir, type Dil } from './dil';
 
 export type Degiskenler = Record<string, string | number | null | undefined>;
@@ -33,6 +34,9 @@ type Sozluk = { metin: Record<string, string>; desen: Desen[]; doz: [RegExp, str
 
 /** Doz metnindeki sabit sözcükler ("/100 L su" …) */
 const DOZ_DE: [RegExp, string][] = [
+  [/\s*[-:]\s*(\d+(?:[-–]\d+)?) gün ara$/, ' – alle $1 Tage'],
+  [/ · her salkım$/, ' · je Fruchtstand'],
+  [/^hat pH /, 'Leitungs-pH '],
   [/\/100 L su\b/g, '/100 L Wasser'],
   [/\/100 kg tohum\b/g, '/100 kg Saatgut'],
   [/\/ton tohum\b/g, '/t Saatgut'],
@@ -42,6 +46,9 @@ const DOZ_DE: [RegExp, string][] = [
   [/, iki haftada bir/g, ', alle zwei Wochen'],
 ];
 const DOZ_EN: [RegExp, string][] = [
+  [/\s*[-:]\s*(\d+(?:[-–]\d+)?) gün ara$/, ' – every $1 days'],
+  [/ · her salkım$/, ' · every truss'],
+  [/^hat pH /, 'line pH '],
   [/\/100 L su\b/g, '/100 L water'],
   [/\/100 kg tohum\b/g, '/100 kg seed'],
   [/\/ton tohum\b/g, '/t seed'],
@@ -51,6 +58,9 @@ const DOZ_EN: [RegExp, string][] = [
   [/, iki haftada bir/g, ', every two weeks'],
 ];
 const DOZ_ES: [RegExp, string][] = [
+  [/\s*[-:]\s*(\d+(?:[-–]\d+)?) gün ara$/, ' – cada $1 días'],
+  [/ · her salkım$/, ' · en cada racimo'],
+  [/^hat pH /, 'pH de la línea '],
   [/\/100 L su\b/g, '/100 L de agua'],
   [/\/100 kg tohum\b/g, '/100 kg de semilla'],
   [/\/ton tohum\b/g, '/t de semilla'],
@@ -60,6 +70,9 @@ const DOZ_ES: [RegExp, string][] = [
   [/, iki haftada bir/g, ', cada dos semanas'],
 ];
 const DOZ_AR: [RegExp, string][] = [
+  [/\s*[-:]\s*(\d+(?:[-–]\d+)?) gün ara$/, ' – كل $1 يومًا'],
+  [/ · her salkım$/, ' · لكل عنقود'],
+  [/^hat pH /, 'pH الخط '],
   [/\/100 L su\b/g, '/100 لتر ماء'],
   [/\/100 kg tohum\b/g, '/100 كغ بذور'],
   [/\/ton tohum\b/g, '/طن بذور'],
@@ -73,10 +86,10 @@ const DOZ_TR: [RegExp, string][] = [[/’lık uygulamalarla/g, ' uygulamalarla']
 const SOZLUKLER: Record<Dil, Sozluk> = {
   // İGSAŞ sürümünde Türkçede dekar kalır: dekar → hektar sözlüğü (lib/ceviri-tr.ts) kullanılmaz
   tr: { metin: {} as typeof TR, desen: [], doz: DOZ_TR },
-  en: { metin: EN, desen: EN_DESEN, doz: DOZ_EN },
-  de: { metin: DE, desen: DE_DESEN, doz: DOZ_DE },
-  es: { metin: ES, desen: ES_DESEN, doz: DOZ_ES },
-  ar: { metin: AR, desen: AR_DESEN, doz: DOZ_AR },
+  en: { metin: { ...EN, ...EN_IGSAS }, desen: EN_DESEN, doz: DOZ_EN },
+  de: { metin: { ...DE, ...DE_IGSAS }, desen: DE_DESEN, doz: DOZ_DE },
+  es: { metin: { ...ES, ...ES_IGSAS }, desen: ES_DESEN, doz: DOZ_ES },
+  ar: { metin: { ...AR, ...AR_IGSAS }, desen: AR_DESEN, doz: DOZ_AR },
 };
 
 function cevir(m: string, S: Sozluk, dil: Dil): string {

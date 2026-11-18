@@ -97,7 +97,11 @@ export function evreUygulamalari(e: ZEvre, yontem: SulamaYontemi): EvreReceteGru
     yontem === 'salma' || yontem === 'kuru'
       ? 'Kartta bu sulama için ayrı sütun yok; suda çözünen bu gübreleri toprağa serpip hemen sulayın (kuru tarımda yağıştan hemen önce).'
       : `Kartta ${SULAMA_YONTEMLERI[yontem].kisa.toLocaleLowerCase('tr-TR')} için ayrı sütun yok; en yakın sütun gösteriliyor.`;
-  return [{ ...yedek, not }, ...secilen];
+  // Asitler (fosforik, nitrik) yalnız damla/yağmurlama/pivot suyunun pH'ı ve hat temizliği içindir: toprağa serpilmez
+  const yedekUrunler =
+    yontem === 'salma' || yontem === 'kuru' ? yedek.urunler.filter((u) => !/AS[İI]T/i.test(u.urun) && !/\bpH\b/.test(u.doz)) : yedek.urunler;
+  if (!yedekUrunler.length) return secilen;
+  return [{ ...yedek, urunler: yedekUrunler, not }, ...secilen];
 }
 
 /* -------------------------------------------------------------------------- */

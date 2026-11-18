@@ -46,7 +46,8 @@ export const IGSAS_URUNLER: IgsasUrun[] = [
   // --- KIANA biyolojik destek ---
   {
     ad: 'KIANA EARTH PLUS', marka: 'KIANA', grup: 'biyolojik',
-    icerik: 'Kök bölgesi mikrobiyal konsorsiyumu.',
+    icerik: 'Organik asitler, humik maddeler, amino asitler, enzimler ve simbiyotik/simbiyotik olmayan mikroorganizmalar; sıvı ve toz.',
+    url: 'https://www.kianaagriculture.nl/soil-regeneration/',
     rol: 'Kök bölgesi mikrobiyal konsorsiyumu; kök gelişimini ve besin alımını artırır.',
     dozlar: [
       { yol: 'damla', doz: '200 g/da (toprağa ya da damlayla)' },
@@ -57,7 +58,8 @@ export const IGSAS_URUNLER: IgsasUrun[] = [
   },
   {
     ad: 'KIANA CLIMATE PLUS', marka: 'KIANA', grup: 'biyolojik',
-    icerik: 'Stres tamponu.',
+    icerik: 'Enzimler, mikroorganizmalar, organik asitler, polifenolik bileşikler, amino asitler, bitki hormonları ve doğal mineraller; toz.',
+    url: 'https://www.kianaagriculture.nl/protection-against-cold-stress-and-heat-waves/',
     rol: 'Don, sıcak ve kuraklık stresine karşı bitkiyi korur (stres tamponu).',
     dozlar: [{ yol: 'yaprak', doz: '200–300 g/da; stresten 5–10 gün ÖNCE' }],
     etiket: ['stres'],
