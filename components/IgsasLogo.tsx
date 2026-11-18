@@ -8,6 +8,7 @@ export function IgsasLogo({
   isaret = false,
   acik = false,
   baslik = 'İGSAŞ Toprak Asistanı',
+  alt = 'Toprak Asistanı',
 }: {
   className?: string;
   /** Yalnız filiz işareti */
@@ -15,7 +16,13 @@ export function IgsasLogo({
   /** Açık zemin (koyu yeşil yazı); varsayılan koyu zemin (beyaz yazı) */
   acik?: boolean;
   baslik?: string;
+  /** Logonun alt satırı, arayüz dilinde ("Soil Assistant", "Bodenassistent" …) */
+  alt?: string;
 }) {
+  const arapca = /[\u0600-\u06FF]/.test(alt);
+  const altYazi = arapca ? alt : alt.toLocaleUpperCase(alt === 'Toprak Asistanı' ? 'tr-TR' : 'en-US');
+  // Uzun alt satır logonun genişliğine sığsın
+  const sigdir = altYazi.length > 15 ? { textLength: 158, lengthAdjust: 'spacingAndGlyphs' as const } : {};
   const yazi = acik ? '#1C4734' : '#ffffff';
   const filiz = (
     <g>
@@ -34,14 +41,14 @@ export function IgsasLogo({
       </svg>
     );
   return (
-    <svg viewBox="0 0 220 48" className={className} role="img" aria-label={baslik}>
+    <svg viewBox="0 0 220 48" className={className} role="img" aria-label={baslik} direction="ltr" style={{ direction: 'ltr' }}>
       {baslik && <title>{baslik}</title>}
       {filiz}
       <text x="56" y="27" fill={yazi} fontFamily="'Plus Jakarta Sans Variable', system-ui, sans-serif" fontWeight="800" fontSize="24" letterSpacing="1">
         İGSAŞ
       </text>
-      <text x="57" y="42" fill={yazi} opacity="0.85" fontFamily="'Plus Jakarta Sans Variable', system-ui, sans-serif" fontWeight="600" fontSize="11" letterSpacing="2.2">
-        TOPRAK ASİSTANI
+      <text x="57" y="42" fill={yazi} opacity="0.85" fontFamily="'Plus Jakarta Sans Variable', system-ui, sans-serif" fontWeight="600" fontSize={arapca ? 13 : 11} letterSpacing={arapca ? 0 : 2.2} {...sigdir}>
+        {altYazi}
       </text>
     </svg>
   );

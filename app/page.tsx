@@ -6,7 +6,7 @@ import { DerinlikCizimi, SiteFooter, ZikzakCizimi } from '@/components/site';
 import { oturumKullanici } from '@/lib/supabase/server';
 import { alanYaz, DILLER, dozCevir, modullerAcik } from '@/lib/dil';
 import { ceviriAl } from '@/lib/dilSunucu';
-import { MARKA } from '@/lib/marka';
+import { MARKA, markaAdi } from '@/lib/marka';
 import { SITE_URL } from '@/lib/site';
 
 /** Ana sayfanın tek resmî adresi (www'li ve www'siz, parametreli adresler buna bağlanır) */
@@ -60,12 +60,14 @@ export default async function AnaSayfa() {
   const OZELLIKLER = a.ozellikler.map((x, k) => ({ ...x, i: OZELLIK_IKONLARI[k] }));
   const veri = {
     ...YAPILANDIRILMIS_VERI,
-    '@graph': [{ ...YAPILANDIRILMIS_VERI['@graph'][0], inLanguage: DILLER[dil].locale, description: t.marka.aciklama }, YAPILANDIRILMIS_VERI['@graph'][1]],
+    '@graph': [{ ...YAPILANDIRILMIS_VERI['@graph'][0], name: markaAdi(dil), inLanguage: DILLER[dil].locale, description: t.marka.aciklama }, YAPILANDIRILMIS_VERI['@graph'][1]],
   };
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip bg-[#f5f0e6] text-[#1d2a22]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(veri) }} />
       <EbruGiris
+        logoAlt={dil === 'tr' ? MARKA.logoSatirlari[1] : t.marka.logoAlt}
+        markaAd={markaAdi(dil)}
         m={{ bolum: sh.bolum, baslik: sh.paneller[0].baslik, metin: sh.paneller[0].metin, asagi: sh.asagi, basla: sh.basla, ornek: sh.ornek }}
         baslaHref="/tarlalar"
         ustSag={
@@ -82,6 +84,7 @@ export default async function AnaSayfa() {
       />
       <YuzenMenu
         etiket={sh.menu}
+        markaAd={markaAdi(dil)}
         linkler={[
           { href: '/ornek', ad: mn.ornekRapor },
           ...(modullerAcik(dil)

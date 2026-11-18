@@ -589,7 +589,7 @@ const es: Sozluk = {
     ],
   },
   sahne: {
-    bolum: 'Asistente de Suelos İGSAŞ',
+    bolum: 'İGSAŞ Asistente de Suelos',
     rozet: 'Asistente de análisis de suelo y abonado con inteligencia artificial',
     basla: 'Empezar gratis',
     ornek: 'Ver el informe de ejemplo',
@@ -771,7 +771,7 @@ const ar: Sozluk = {
     ],
   },
   sahne: {
-    bolum: 'مساعد التربة من İGSAŞ',
+    bolum: 'İGSAŞ مساعد التربة',
     rozet: 'مساعد ذكي لتحليل التربة والتسميد',
     basla: 'ابدأ مجانًا',
     ornek: 'عرض التقرير النموذجي',

@@ -6,25 +6,26 @@ import { sozluk } from '@/lib/ceviri';
 import { DILLER } from '@/lib/dil';
 import { dilAl } from '@/lib/dilSunucu';
 import { DilSaglayici } from '@/components/DilSaglayici';
-import { MARKA } from '@/lib/marka';
+import { MARKA, markaAdi } from '@/lib/marka';
 import { SITE_URL } from '@/lib/site';
 
 export async function generateMetadata(): Promise<Metadata> {
   const dil = await dilAl();
   const { marka } = sozluk(dil);
+  const ad = markaAdi(dil);
   return {
     metadataBase: new URL(SITE_URL),
-    title: { default: `${MARKA.ad} · ${marka.slogan}`, template: `%s · ${MARKA.ad}` },
+    title: { default: `${ad} · ${marka.slogan}`, template: `%s · ${ad}` },
     description: marka.aciklama,
-    applicationName: MARKA.ad,
+    applicationName: ad,
     authors: [{ name: `${MARKA.kurum} · ${MARKA.ekip.join(', ')}` }],
     openGraph: {
       type: 'website',
       locale: DILLER[dil].og,
-      siteName: MARKA.ad,
-      title: `${MARKA.ad} · ${marka.slogan}`,
+      siteName: ad,
+      title: `${ad} · ${marka.slogan}`,
       description: marka.aciklama,
-      images: [{ url: '/logo.png', width: 512, height: 512, alt: MARKA.ad }],
+      images: [{ url: '/logo.png', width: 512, height: 512, alt: ad }],
     },
     appleWebApp: { capable: true, title: MARKA.kisa, statusBarStyle: 'default' },
   };

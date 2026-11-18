@@ -41,7 +41,7 @@ const KUTU = {
   top: `calc(50cqh - max(100cqw, ${ORAN * 100}cqh) / ${ORAN} / 2)`,
 } as const;
 
-export function EbruGiris({ m, ustSag, baslaHref, ornekHref = '/ornek' }: { m: Metinler; ustSag?: ReactNode; baslaHref: string; ornekHref?: string }) {
+export function EbruGiris({ m, ustSag, baslaHref, ornekHref = '/ornek', logoAlt, markaAd }: { m: Metinler; ustSag?: ReactNode; baslaHref: string; ornekHref?: string; logoAlt?: string; markaAd?: string }) {
   // Resim yüklenemezse yedek resme düş
   const [yedek, setYedek] = useState(false);
 
@@ -85,8 +85,8 @@ export function EbruGiris({ m, ustSag, baslaHref, ornekHref = '/ornek' }: { m: M
 
       {/* Üst: solda logo, sağda dil ve giriş */}
       <div className="absolute inset-x-0 top-0 z-10 flex justify-start px-5 pt-5 sm:px-8 sm:pt-7">
-        <Link href="/" aria-label="İGSAŞ" className="drop-shadow-[0_2px_12px_rgba(0,0,0,.35)]">
-          <IgsasLogo className="h-auto w-44 sm:w-56" />
+        <Link href="/" aria-label={markaAd ?? "İGSAŞ"} className="drop-shadow-[0_2px_12px_rgba(0,0,0,.35)]">
+          <IgsasLogo className="h-auto w-44 sm:w-56" alt={logoAlt} baslik={markaAd} />
         </Link>
       </div>
       {ustSag && <div className="absolute end-4 top-4 z-20 flex items-center gap-2 sm:end-6 sm:top-6">{ustSag}</div>}
@@ -126,17 +126,19 @@ export function YuzenMenu({
   linkler,
   cta,
   etiket,
+  markaAd = 'İGSAŞ',
 }: {
   linkler: { href: string; ad: string }[];
   cta: { href: string; ad: string };
   etiket: string;
+  markaAd?: string;
 }) {
   return (
     <nav aria-label={etiket} className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-3 print:hidden sm:bottom-6">
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="flex items-center rounded-full bg-white/95 py-1.5 pl-1.5 pr-2 shadow-[0_12px_40px_-12px_rgba(0,0,0,.45)] backdrop-blur sm:pr-4">
-          <Link href="/" aria-label="İGSAŞ" className="grid h-11 w-11 place-items-center rounded-full sm:h-12 sm:w-12">
-            <IgsasLogo isaret acik className="h-10 w-10 sm:h-11 sm:w-11" />
+          <Link href="/" aria-label={markaAd} className="grid h-11 w-11 place-items-center rounded-full sm:h-12 sm:w-12">
+            <IgsasLogo isaret acik className="h-10 w-10 sm:h-11 sm:w-11" baslik={markaAd} />
           </Link>
           {linkler.map((l, i) => (
             <Link

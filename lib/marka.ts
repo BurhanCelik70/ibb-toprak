@@ -2,6 +2,9 @@
  * Uygulamanın marka bilgileri. Ad, slogan ve iletişim tek yerden değişir.
  * İleride firmalar için kendi logolarıyla sürüm çıkarılırken bu dosya kopyalanıp değiştirilir.
  */
+import { sozluk } from './ceviri';
+import type { Dil } from './dil';
+
 export const MARKA = {
   ad: 'İGSAŞ Toprak Asistanı',
   /** Dar yerler için (telefon ana ekranı, sekme) */
@@ -19,3 +22,6 @@ export const MARKA = {
   eposta: 'celikburhan56@gmail.com', // ör. destek@ornek.com — boşsa gösterilmez
   telefon: '+90 542 677 0885', // ör. +90 5xx xxx xx xx — boşsa gösterilmez
 };
+
+/** Marka adı arayüz dilinde: "İGSAŞ Toprak Asistanı", "İGSAŞ Soil Assistant", "İGSAŞ Bodenassistent" … */
+export const markaAdi = (dil: Dil) => (dil === 'tr' ? MARKA.ad : `${MARKA.logoSatirlari[0]} ${sozluk(dil).marka.logoAlt}`);

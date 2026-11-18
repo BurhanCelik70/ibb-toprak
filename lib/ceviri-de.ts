@@ -2423,7 +2423,7 @@ export const DE: Record<string, string> = {
   "İKİNCİ BÜYÜME (SON ŞİŞME)": "ZWEITES WACHSTUM (LETZTE VERGRÖSSERUNG)",
   "İkincil makro besinler": "Sekundäre Makronährstoffe",
   "İklim stresine karşı koruma (don, sıcak, kuraklık)": "Schutz vor Klimastress (Frost, Hitze, Trockenheit)",
-  "İl": "Bundesland",
+  "İl": "Provinz",
   "İl (provincia)": "Provinz",
   "İl / İlçe:": "Bundesland / Ort:",
   "İlaçlama yapıldı": "Es wurde gespritzt",
