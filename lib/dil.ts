@@ -14,7 +14,7 @@ export const DILLER = {
 } as const;
 
 export type Dil = keyof typeof DILLER;
-/** İlk girişte (dil çerezi yokken) site İngilizce açılır; kullanıcı seçiciden değiştirir. */
+/** Tarayıcı dili desteklenmiyorsa (Fransızca, Rusça …) site İngilizce açılır; kullanıcı seçiciden değiştirir. */
 export const VARSAYILAN_DIL: Dil = 'en';
 export const DIL_COOKIE = 'dil';
 

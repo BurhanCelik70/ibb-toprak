@@ -1,13 +1,18 @@
-/** Sunucuda geçerli dili bulur: `dil` çerezi; yoksa İngilizce (ilk giriş evrensel dilde açılır). */
-import { cookies } from 'next/headers';
+/**
+ * Sunucuda geçerli dili bulur:
+ * 1) ziyaretçi daha önce dil seçtiyse `dil` çerezi,
+ * 2) yoksa tarayıcının dili (Accept-Language): Türk çiftçi Türkçe, Alman Almanca görür,
+ * 3) tarayıcı dili desteklenmiyorsa İngilizce (VARSAYILAN_DIL).
+ */
+import { cookies, headers } from 'next/headers';
 import { sozluk } from './ceviri';
 import { ceviriFonk } from './i18n';
-import { DIL_COOKIE, dilGecerli, VARSAYILAN_DIL, type Dil } from './dil';
+import { DIL_COOKIE, dilGecerli, tarayicidanDil, type Dil } from './dil';
 
 export async function dilAl(): Promise<Dil> {
   const cerez = (await cookies()).get(DIL_COOKIE)?.value;
   if (dilGecerli(cerez)) return cerez;
-  return VARSAYILAN_DIL;
+  return tarayicidanDil((await headers()).get('accept-language'));
 }
 
 export async function ceviriAl() {
